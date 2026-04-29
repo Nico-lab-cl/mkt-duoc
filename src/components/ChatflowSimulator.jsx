@@ -16,7 +16,8 @@ import {
   Info,
   ArrowRight,
   Database,
-  Users
+  Users,
+  Home
 } from 'lucide-react';
 
 const nodeTypes = {
@@ -80,7 +81,17 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
     <div className="h-screen flex flex-col bg-[#f8f9fa] text-slate-800 font-sans overflow-hidden">
       {/* 1. Panel Superior (Header) */}
       <header className="h-20 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm z-20">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onBack}
+            className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-blue-600 border border-transparent hover:border-slate-200"
+            title="Volver al Dashboard"
+          >
+            <Home size={22} />
+          </button>
+          
+          <div className="h-10 w-[1px] bg-slate-200 mx-1" />
+
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Simulador Chatflow</span>
             <h1 className="text-xl font-bold text-slate-900 leading-none">{projectData.agencyName || 'Agencia MKA'}</h1>

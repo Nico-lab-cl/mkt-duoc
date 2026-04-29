@@ -152,14 +152,23 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       <div className="flex flex-col h-screen bg-fb-bg text-fb-text-primary">
         <header className="h-14 bg-white border-b border-fb-border flex items-center justify-between px-4 z-20">
           <div className="flex items-center gap-3">
-             <div className="w-8 h-8 bg-fb-blue rounded-full flex items-center justify-center text-white font-bold">f</div>
-             <div className="h-8 w-px bg-fb-border mx-2" />
-             <div className="flex flex-col">
-               <span className="text-[10px] font-bold text-fb-text-secondary uppercase leading-none">Administrador de anuncios</span>
-               <div className="flex items-center gap-1">
-                 <span className="text-sm font-bold truncate max-w-[200px]">{projectData.agencyName} (ID: 57704623)</span>
-                 <ChevronDown size={14} className="text-fb-text-secondary" />
-               </div>
+             <button 
+               onClick={onBack}
+               className="p-2 hover:bg-fb-header rounded-full transition-colors text-fb-text-secondary"
+               title="Volver al Dashboard"
+             >
+               <Home size={20} />
+             </button>
+             <div className="h-8 w-px bg-fb-border mx-1" />
+             <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-fb-blue rounded-full flex items-center justify-center text-white font-bold">f</div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-fb-text-secondary uppercase leading-none">Administrador de anuncios</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-bold truncate max-w-[200px]">{projectData.agencyName} (ID: 57704623)</span>
+                    <ChevronDown size={14} className="text-fb-text-secondary" />
+                  </div>
+                </div>
              </div>
           </div>
           <div className="flex items-center gap-4">
@@ -457,7 +466,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                           </div>
                           
                           <div className="justification-box">
-                            <span className="justification-title">Justificación (Pedagógico)</span>
+                            <span className="justification-title">Justificación</span>
                             <textarea 
                               className="justification-input"
                               value={formData.objectiveJustification}
@@ -632,15 +641,40 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                     Segmentación detallada
                                     <span className="text-fb-blue text-[10px] lowercase font-bold cursor-pointer hover:underline">Explorar</span>
                                   </label>
-                                  <textarea 
+                                 <textarea 
                                     className="meta-editor-input h-24 pt-3" 
                                     placeholder="Intereses, comportamientos o datos demográficos..." 
                                     value={formData.adSet.detailedTargeting} 
                                     onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, detailedTargeting: e.target.value}})} 
                                   />
                                 </div>
+
+                                <div>
+                                  <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Idiomas</label>
+                                  <div className="p-3 border border-fb-border rounded-sm bg-fb-header/30 text-xs font-bold text-fb-text-secondary">Todos los idiomas</div>
+                                </div>
                              </div>
                            )}
+                         </div>
+
+                         <div className="meta-editor-card !mx-0 !shadow-none !border-x-0 !border-b-0 pt-6">
+                            <div className="meta-editor-section-title !p-0 mb-4">Optimización y entrega</div>
+                            <div className="space-y-4">
+                               <div>
+                                  <label className="text-xs font-bold text-fb-text-secondary uppercase mb-1 block tracking-wider">Objetivo de rendimiento</label>
+                                  <select className="meta-editor-input font-bold">
+                                     <option>Maximizar el número de clics en el enlace</option>
+                                     <option>Maximizar el alcance único diario</option>
+                                     <option>Maximizar el número de impresiones</option>
+                                     <option>Maximizar la conversión</option>
+                                  </select>
+                               </div>
+                               <div className="p-4 bg-fb-header rounded-lg border border-fb-border border-dashed">
+                                  <p className="text-[11px] text-fb-text-secondary leading-tight italic">
+                                    "La optimización que elijas aquí determinará qué tipo de personas dentro de tu segmentación verán el anuncio con más frecuencia."
+                                  </p>
+                               </div>
+                            </div>
                          </div>
 
                          <div className="justification-box">
