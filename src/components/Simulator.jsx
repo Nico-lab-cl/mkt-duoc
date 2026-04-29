@@ -129,6 +129,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     specialCategories: 'NONE',
     buyingType: 'Subasta',
     advantageBudget: false,
+    shareBudget: true,
     campaignBudget: '25000',
     bidStrategy: 'Volumen más alto',
     testAB: false,
@@ -460,8 +461,13 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <p className="text-[11px] text-fb-text-secondary leading-relaxed">
                                Distribuye tu presupuesto entre conjuntos de anuncios para conseguir más resultados. Puedes controlar el gasto de cada conjunto. <span className="text-fb-blue cursor-pointer">Información sobre el presupuesto de campaña de Advantage+</span>
                             </p>
-                            <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100">
-                               <input type="checkbox" className="rounded" checked={true} readOnly />
+                            <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100 cursor-pointer" onClick={() => setFormData({...formData, shareBudget: !formData.shareBudget})}>
+                               <input 
+                                 type="checkbox" 
+                                 className="rounded cursor-pointer" 
+                                 checked={formData.shareBudget} 
+                                 onChange={() => {}} // Handled by div click
+                               />
                                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">Comparte hasta el 20 % de tu presupuesto con otros conjuntos de anuncios <HelpCircle size={12} /></span>
                             </div>
                             <div>
