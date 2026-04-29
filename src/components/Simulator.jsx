@@ -99,6 +99,17 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       endTime: '09:00',
       location: 'Chile',
       locationRadius: '40',
+      locationSearch: '',
+      includeUnknownAgeWhatsApp: true,
+      excludedCustomAudiences: '',
+      languages: ['Todos los idiomas'],
+      advantageAudience: {
+        customAudiences: '',
+        ageMin: '18',
+        ageMax: '65',
+        gender: 'all',
+        detailedTargeting: ''
+      },
       ageMin: '18',
       ageMax: '65',
       gender: 'all',
@@ -506,6 +517,215 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div className="grid grid-cols-2 gap-6"><div><label className="text-[12px] font-bold text-slate-800 block mb-1">Fecha de inicio</label><div className="flex gap-2"><input type="date" className="meta-editor-input font-bold flex-grow" value={formData.adSet.startDate} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, startDate: e.target.value}})} /><input type="time" className="meta-editor-input font-bold w-24" value={formData.adSet.startTime} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, startTime: e.target.value}})} /></div></div><div><div className="flex items-center gap-2 mb-1"><input type="checkbox" className="rounded" checked={formData.adSet.endDateEnabled} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, endDateEnabled: e.target.checked}})} /><label className="text-[12px] font-bold text-slate-800">Definir una fecha de finalización</label></div><div className={`flex gap-2 transition-opacity ${formData.adSet.endDateEnabled ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}><input type="date" className="meta-editor-input font-bold flex-grow" value={formData.adSet.endDate} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, endDate: e.target.value}})} /><input type="time" className="meta-editor-input font-bold w-24" value={formData.adSet.endTime} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, endTime: e.target.value}})} /></div></div></div>
                          </div>
                       </div>
+                      </div>
+
+                      {/* --- CONTROLES DE AUDIENCIA --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                               <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500">
+                                  <Check size={12} strokeWidth={3} />
+                               </div>
+                               <span className="text-[13px] font-bold">Controles de audiencia</span>
+                               <Info size={14} className="text-slate-400" />
+                            </div>
+                         </div>
+                         <div className="p-6 space-y-6">
+                            <p className="text-[11px] text-fb-text-secondary leading-relaxed mb-4">
+                               Ajusta los controles de audiencia únicamente para satisfacer condicionantes prácticos o legales. <span className="text-fb-blue cursor-pointer">Más información</span>
+                            </p>
+                            
+                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3">
+                               <Info size={18} className="text-slate-400 mt-0.5" />
+                               <div className="text-[11px] text-slate-600 leading-relaxed">
+                                  Puedes establecer los controles de audiencia en esta cuenta publicitaria para aplicarlos a todas las campañas. <br/>
+                                  <span className="text-fb-blue cursor-pointer font-bold">Establecer controles de audiencia para todas las campañas</span>
+                               </div>
+                            </div>
+
+                            <button className="text-[13px] font-bold text-slate-800 flex items-center gap-1 hover:bg-slate-50 px-2 py-1 rounded">
+                               Usar audiencia guardada <ChevronDown size={14} />
+                            </button>
+
+                            <div className="space-y-4 pt-4 border-t border-fb-border">
+                               <label className="text-[12px] font-bold text-slate-800 block">* Lugares <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <div className="border border-fb-border rounded-lg p-4 space-y-4">
+                                  <div className="bg-slate-50 p-3 rounded flex items-center justify-between">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-green-100 text-green-600 rounded flex items-center justify-center"><MapPin size={16} /></div>
+                                        <span className="text-[13px] font-bold">{formData.adSet.location || 'Chile'}</span>
+                                     </div>
+                                     <ChevronDown size={16} className="text-slate-400" />
+                                  </div>
+                                  
+                                  <div className="flex gap-2">
+                                     <select className="meta-editor-input w-24 font-bold"><option>Incluir</option><option>Excluir</option></select>
+                                     <div className="relative flex-grow">
+                                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input 
+                                          type="text" 
+                                          className="meta-editor-input pl-10 w-full" 
+                                          placeholder="Buscar lugares" 
+                                          value={formData.adSet.locationSearch}
+                                          onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, locationSearch: e.target.value}})}
+                                        />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                           <span className="text-[11px] font-bold text-slate-500 hover:text-fb-blue cursor-pointer flex items-center gap-1">Explorar <ChevronDown size={12} /></span>
+                                        </div>
+                                     </div>
+                                     <button className="p-2 border border-fb-border rounded hover:bg-slate-50"><ChevronDown size={16} /></button>
+                                  </div>
+                                  <button className="text-fb-blue text-[11px] font-bold hover:underline">Añadir lugares de forma masiva</button>
+                               </div>
+                            </div>
+
+                            <button className="text-fb-blue text-[12px] font-bold flex items-center gap-1">Mostrar más opciones <ChevronDown size={14} /></button>
+                            
+                            <div className="space-y-4 pt-4">
+                               <label className="text-[12px] font-bold text-slate-800 block">Edad mínima <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <div className="space-y-4">
+                                  <select 
+                                    className="meta-editor-input font-bold w-32"
+                                    value={formData.adSet.ageMin}
+                                    onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, ageMin: e.target.value}})}
+                                  >
+                                    {ageOptions.map(age => <option key={age} value={age}>{age}</option>)}
+                                  </select>
+                                  <label className="flex items-center gap-3 cursor-pointer group">
+                                     <input 
+                                       type="checkbox" 
+                                       className="w-5 h-5 rounded border-slate-300 text-fb-blue focus:ring-fb-blue" 
+                                       checked={formData.adSet.includeUnknownAgeWhatsApp}
+                                       onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, includeUnknownAgeWhatsApp: e.target.checked}})}
+                                     />
+                                     <span className="text-[13px] text-slate-700">Incluir a personas de WhatsApp cuya edad se desconoce</span>
+                                  </label>
+                                  
+                                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3">
+                                     <Info size={18} className="text-slate-400 mt-0.5" />
+                                     <div className="text-[11px] text-slate-600 leading-relaxed">
+                                        <span className="font-bold">La audiencia se ha actualizado</span> <br/>
+                                        Para llegar a más personas en la ubicación de estado de WhatsApp, el público de este conjunto de anuncios incluye personas en WhatsApp cuya edad se desconoce. <span className="text-fb-blue cursor-pointer">Información sobre cómo llegar a públicos nuevos</span>
+                                     </div>
+                                  </div>
+                               </div>
+                            </div>
+
+                            <div className="space-y-2 pt-4">
+                               <label className="text-[12px] font-bold text-fb-text-primary flex items-center justify-between">
+                                  Excluir estas audiencias personalizadas <Info size={12} className="text-slate-400" />
+                               </label>
+                               <div className="relative">
+                                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                  <input 
+                                    type="text" 
+                                    className="meta-editor-input pl-10 w-full" 
+                                    placeholder="Buscar audiencias existentes" 
+                                    value={formData.adSet.excludedCustomAudiences}
+                                    onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, excludedCustomAudiences: e.target.value}})}
+                                  />
+                               </div>
+                            </div>
+
+                            <div className="space-y-1 pt-4">
+                               <label className="text-[12px] font-bold text-fb-text-primary flex items-center gap-1">Idiomas <Info size={12} className="text-slate-400" /></label>
+                               <p className="text-[12px] text-slate-600">{formData.adSet.languages.join(', ')}</p>
+                               <button className="text-fb-blue text-[11px] font-bold hover:underline">Editar</button>
+                            </div>
+                         </div>
+                      </div>
+
+                      {/* --- AUDIENCIA DE ADVANTAGE+ --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                               <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500">
+                                  <Check size={12} strokeWidth={3} />
+                               </div>
+                               <span className="text-[13px] font-bold">Audiencia de Advantage+ ✨</span>
+                            </div>
+                         </div>
+                         <div className="p-6 space-y-6">
+                            <p className="text-[11px] text-fb-text-secondary leading-relaxed">
+                               Nuestra IA encuentra las audiencias para tus anuncios. Si añades una sugerencia de audiencia, guiarás a nuestra IA hacia las personas que crees que es más probable que respondan. <span className="text-fb-blue cursor-pointer">Información sobre la audiencia de Advantage+</span>
+                            </p>
+
+                            <div className="space-y-2">
+                               <div className="flex items-center justify-between">
+                                  <label className="text-[12px] font-bold text-slate-800">Incluir estas audiencias personalizadas <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                                  <button className="text-xs font-bold flex items-center gap-1">Crear <ChevronDown size={14} /></button>
+                               </div>
+                               <div className="relative">
+                                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                  <input 
+                                    type="text" 
+                                    className="meta-editor-input pl-10 w-full" 
+                                    placeholder="Buscar audiencias existentes" 
+                                    value={formData.adSet.advantageAudience.customAudiences}
+                                    onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, advantageAudience: {...formData.adSet.advantageAudience, customAudiences: e.target.value}}})}
+                                  />
+                               </div>
+                            </div>
+
+                            <div className="space-y-2">
+                               <label className="text-[12px] font-bold text-slate-800 block">Edad <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <div className="flex gap-2">
+                                  <select 
+                                    className="meta-editor-input font-bold w-24"
+                                    value={formData.adSet.advantageAudience.ageMin}
+                                    onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, advantageAudience: {...formData.adSet.advantageAudience, ageMin: e.target.value}}})}
+                                  >
+                                    {ageOptions.map(age => <option key={age} value={age}>{age}</option>)}
+                                  </select>
+                                  <select 
+                                    className="meta-editor-input font-bold w-24"
+                                    value={formData.adSet.advantageAudience.ageMax}
+                                    onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, advantageAudience: {...formData.adSet.advantageAudience, ageMax: e.target.value}}})}
+                                  >
+                                    {ageOptions.map(age => <option key={age} value={age}>{age}</option>)}
+                                  </select>
+                               </div>
+                            </div>
+
+                            <div className="space-y-2">
+                               <label className="text-[12px] font-bold text-slate-800 block">Género <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <div className="flex gap-6">
+                                  {['all', 'men', 'women'].map(g => (
+                                    <label key={g} className="flex items-center gap-2 cursor-pointer group">
+                                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.adSet.advantageAudience.gender === g ? 'border-fb-blue' : 'border-slate-300 group-hover:border-slate-400'}`} onClick={() => setFormData({...formData, adSet: {...formData.adSet, advantageAudience: {...formData.adSet.advantageAudience, gender: g}}})}>
+                                          {formData.adSet.advantageAudience.gender === g && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                       </div>
+                                       <span className="text-[13px] text-slate-700 capitalize">{g === 'all' ? 'Todos' : g === 'men' ? 'Hombres' : 'Mujeres'}</span>
+                                    </label>
+                                  ))}
+                               </div>
+                            </div>
+
+                            <div className="space-y-2">
+                               <label className="text-[12px] font-bold text-slate-800 block">Segmentación detallada <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <p className="text-[11px] text-slate-600 font-bold">Incluir personas que coincidan con <Info size={10} className="inline" /></p>
+                               <div className="flex gap-2">
+                                  <div className="relative flex-grow">
+                                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                     <input 
+                                       type="text" 
+                                       className="meta-editor-input pl-10 w-full" 
+                                       placeholder="Añade datos demográficos, intereses o comportamientos" 
+                                       value={formData.adSet.advantageAudience.detailedTargeting}
+                                       onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, advantageAudience: {...formData.adSet.advantageAudience, detailedTargeting: e.target.value}}})}
+                                     />
+                                  </div>
+                                  <button className="px-4 py-2 border border-fb-border rounded-md text-[13px] font-bold hover:bg-slate-50">Explorar</button>
+                               </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-fb-border flex items-center justify-between">
+                               <button className="px-6 py-2 border border-fb-border rounded-md font-bold text-[13px] hover:bg-slate-50">Guardar audiencia</button>
+                               <button className="text-fb-blue font-bold text-[12px] hover:underline">Cambiar a las opciones de audiencia originales</button>
+                            </div>
+                         </div>
+                      </div>
+
                       <div className="meta-editor-card p-6"><div className="justification-box"><span className="justification-title">Justificación</span><textarea className="justification-input" placeholder="Justificación estratégica del conjunto de anuncios..." value={formData.adSet.adSetJustification} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, adSetJustification: e.target.value}})} /></div></div>
                     </motion.div>
                   )}
