@@ -489,7 +489,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                          </div>
                          
                          <div className="justification-box">
-                           <span className="justification-title">Justificación Estratégica (Pedagógico)</span>
+                           <span className="justification-title">Justificación (Pedagógico)</span>
                            <textarea 
                              className="justification-input"
                              placeholder="Explica por qué elegiste este objetivo basándote en tu estrategia inbound..."
@@ -715,7 +715,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                         </div>
 
                         <div className="justification-box">
-                          <span className="justification-title">Justificación de la Segmentación</span>
+                          <span className="justification-title">Justificación</span>
                           <textarea 
                             className="justification-input"
                             placeholder="¿Por qué este público es el correcto para tu proyecto?"
@@ -933,7 +933,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                          </div>
 
                          <div className="justification-box">
-                          <span className="justification-title">Estrategia Creativa</span>
+                          <span className="justification-title">Justificación</span>
                           <textarea 
                             className="justification-input"
                             placeholder="¿Por qué este diseño y copy conectarán con tu audiencia?"

@@ -190,7 +190,7 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
 
                   {!node.justification && (
                     <div className="mt-3 flex items-center gap-1.5 text-red-500 text-[10px] font-bold animate-pulse">
-                      <Info size={12} /> Falta justificación estratégica
+                      <Info size={12} /> Falta justificación
                     </div>
                   )}
                 </div>
@@ -306,7 +306,7 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
 
                 <div className="pt-6 border-t border-slate-100">
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <label className="text-[11px] font-black text-amber-800 uppercase tracking-widest block mb-2">Justificación Estratégica (CRÍTICO)</label>
+                    <label className="text-[11px] font-black text-amber-800 uppercase tracking-widest block mb-2">Justificación (CRÍTICO)</label>
                     <textarea 
                       className="w-full bg-white border border-amber-200 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-amber-500 min-h-[120px] shadow-inner text-amber-950 italic"
                       placeholder="¿Por qué es necesario este paso?"
