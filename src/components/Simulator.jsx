@@ -295,11 +295,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
               <div className="flex bg-fb-header rounded-md p-1 border border-fb-border">
                  {[1, 2, 3].map(s => <button key={s} onClick={() => setCurrentStep(s)} className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${currentStep === s ? 'bg-white shadow-sm text-fb-blue' : 'text-fb-text-secondary hover:bg-white/50'}`}>{s}. {s === 1 ? 'Campaña' : s === 2 ? 'Conjunto' : 'Anuncio'}</button>)}
               </div>
-              {currentStep === 3 ? (
-                <button onClick={handleFinish} className="bg-fb-green-btn text-white px-6 py-2 rounded-md font-bold text-sm shadow-md hover:bg-green-700">Publicar</button>
-              ) : (
-                <button onClick={handleFinish} className="bg-fb-blue text-white px-6 py-2 rounded-md font-bold text-sm shadow-md hover:bg-blue-700">Finalizar y Guardar</button>
-              )}
+              <button onClick={handleFinish} className="bg-fb-blue text-white px-6 py-2 rounded-md font-bold text-sm shadow-md hover:bg-blue-700">Finalizar y Guardar</button>
            </div>
         </header>
 
@@ -475,7 +471,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
              <div className="flex gap-4">
                 <button onClick={() => setCurrentStep(currentStep - 1)} className="px-8 py-2 border border-fb-border rounded-md text-[13px] font-bold hover:bg-fb-header">Atrás</button>
                 {currentStep === 3 ? (
-                  <button onClick={handleFinish} className="px-10 py-2 bg-fb-green-btn text-white rounded-md text-[13px] font-bold shadow-md hover:bg-green-700">Publicar</button>
+                  <button onClick={handleFinish} className="px-10 py-2 bg-fb-blue text-white rounded-md text-[13px] font-bold shadow-md hover:bg-blue-700">Finalizar y Guardar</button>
                 ) : (
                   <button onClick={() => setCurrentStep(currentStep + 1)} className="px-8 py-2 bg-fb-blue text-white rounded-md text-[13px] font-bold hover:bg-blue-700">Siguiente</button>
                 )}
