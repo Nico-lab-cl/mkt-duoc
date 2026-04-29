@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 80;
 
 // Middleware
 app.use(cors());
@@ -38,7 +38,6 @@ pool.connect((err, client, release) => {
 
 // --- API ENDPOINTS ---
 
-// 1. Login
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -58,7 +57,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// 2. Obtener Grupos
 app.get('/api/groups', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM groups');
@@ -68,7 +66,6 @@ app.get('/api/groups', async (req, res) => {
   }
 });
 
-// 3. Seleccionar/Cambiar Grupo
 app.post('/api/select-group', async (req, res) => {
   const { userId, groupId } = req.body;
   try {
@@ -80,7 +77,6 @@ app.post('/api/select-group', async (req, res) => {
   }
 });
 
-// 4. Guardar Campaña (Meta Ads)
 app.post('/api/campaigns', async (req, res) => {
   const { name, userId, groupId, data } = req.body;
   try {
@@ -94,7 +90,6 @@ app.post('/api/campaigns', async (req, res) => {
   }
 });
 
-// 5. Guardar Chatflow
 app.post('/api/chatflows', async (req, res) => {
   const { name, userId, groupId, data } = req.body;
   try {
@@ -108,7 +103,6 @@ app.post('/api/chatflows', async (req, res) => {
   }
 });
 
-// 6. Obtener todo (Vista Admin)
 app.get('/api/admin/all', async (req, res) => {
   try {
     const campaigns = await pool.query(`
@@ -129,7 +123,6 @@ app.get('/api/admin/all', async (req, res) => {
   }
 });
 
-// 7. Obtener datos por Grupo (Vista Estudiante)
 app.get('/api/group-data/:groupId', async (req, res) => {
   const { groupId } = req.params;
   try {
@@ -141,12 +134,11 @@ app.get('/api/group-data/:groupId', async (req, res) => {
   }
 });
 
-// Manejar cualquier otra ruta enviando el index.html de React
-app.get('*', (req, res) => {
+// Manejar cualquier otra ruta con sintaxis compatible con Express 5
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-// Escuchar en 0.0.0.0 es CRÍTICO para Docker/Easypanel
 app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Servidor activo en http://0.0.0.0:${port}`);
+  console.log(`🚀 Servidor activo en puerto ${port}`);
 });

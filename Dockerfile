@@ -21,9 +21,9 @@ COPY --from=build /app/dist ./dist
 COPY server ./server
 
 # Set environment variables (should be overridden in Easypanel)
-ENV PORT=3000
+ENV PORT=80
 ENV DATABASE_URL=postgres://nicolas:cabrera@evolution-api_duoc-db:5432/duoc1?sslmode=disable
 
-EXPOSE 3000
+EXPOSE 80
 
 CMD ["node", "server/index.js"]
