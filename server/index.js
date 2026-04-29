@@ -24,7 +24,16 @@ app.use(express.static(path.join(__dirname, '../dist')));
 const { Pool } = pg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgres://nicolas:cabrera@evolution-api_duoc-db:5432/duoc1?sslmode=disable',
-  ssl: false // Ajustar según necesidad del servidor
+  ssl: false
+});
+
+// Probar conexión a la base de datos al iniciar
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error('❌ Error de conexión a la base de datos:', err.stack);
+  }
+  console.log('✅ Conexión a PostgreSQL exitosa');
+  release();
 });
 
 // --- API ENDPOINTS ---
@@ -137,6 +146,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-app.listen(port, () => {
-  console.log(`Servidor corriendo en el puerto ${port}`);
+// Escuchar en 0.0.0.0 es CRÍTICO para Docker/Easypanel
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Servidor activo en http://0.0.0.0:${port}`);
 });
