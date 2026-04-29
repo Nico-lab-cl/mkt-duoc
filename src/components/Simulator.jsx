@@ -40,7 +40,12 @@ import {
   Clock,
   ExternalLink,
   AlertCircle,
-  Share2
+  Share2,
+  Phone,
+  Link as LinkIcon,
+  MessageCircle,
+  Video,
+  Instagram
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -118,8 +123,12 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     ad: {
       name: 'Nuevo anuncio de Reconocimiento',
       partnerAd: false,
-      format: 'single', 
+      adConfig: 'create', // create, existing, creative_hub
+      format: 'single', // single, carousel
       multiAd: false,
+      destination: 'messaging_apps', // instant_experience, website, call, messaging_apps
+      messagingApps: { messenger: true, instagram: true, whatsapp: false },
+      mediaType: 'image', // image, video
       primaryText: '',
       headline: '',
       description: '',
@@ -727,35 +736,336 @@ const Simulator = ({ platform, onFinish, onBack }) => {
 
                   {currentStep === 3 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      {/* --- NOMBRE DEL ANUNCIO --- */}
                       <div className="meta-editor-card p-0">
-                         <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Nombre del anuncio</span></div>
-                         <div className="p-6 flex items-center gap-4"><input type="text" className="meta-editor-input flex-grow" value={formData.ad.name} onChange={(e) => setFormData({...formData, ad: {...formData.ad, name: e.target.value}})} /><button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header transition-colors">Crear plantilla</button></div>
-                      </div>
-                      <div className="meta-editor-card p-0">
-                         <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-4 h-4 bg-fb-blue rounded-full flex items-center justify-center text-white"><div className="w-2 h-2 border-r border-t border-white rotate-45" /></div><span className="text-[13px] font-bold">Identidad</span></div>
-                         <div className="p-6 space-y-6">
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Página de Facebook <HelpCircle size={14} className="inline text-slate-400" /></label><select className="meta-editor-input font-bold" value={formData.adSet.pageName} readOnly><option>{formData.adSet.pageName}</option></select></div>
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Perfil de Instagram <HelpCircle size={14} className="inline text-slate-400" /></label><select className="meta-editor-input font-bold"><option>{formData.adSet.pageName}</option></select></div>
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">WhatsApp <HelpCircle size={14} className="inline text-slate-400" /></label><div className="flex gap-2"><select className="meta-editor-input font-bold flex-grow"><option>Selecciona un número...</option></select><button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header">Conectar</button></div></div>
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Nombre del anuncio</span>
+                         </div>
+                         <div className="p-6 flex items-center gap-4">
+                            <input 
+                              type="text" 
+                              className="meta-editor-input flex-grow" 
+                              value={formData.ad.name} 
+                              onChange={(e) => setFormData({...formData, ad: {...formData.ad, name: e.target.value}})} 
+                            />
+                            <button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header transition-colors">Crear plantilla</button>
                          </div>
                       </div>
-                      <div className="meta-editor-card p-0">
-                         <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Configuración del anuncio</span></div>
-                         <div className="p-6 space-y-6">
-                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg flex items-start gap-3"><Info size={16} className="text-fb-blue mt-0.5" /><div><span className="text-[13px] font-bold block">Cambió la selección de formato</span><p className="text-[11px] text-slate-600 leading-relaxed">Opciones de visualización del formato es la nueva forma de mostrar tu anuncio...</p></div></div>
-                            <div className="space-y-2 pl-2">
-                               <label className="flex items-center gap-3 cursor-pointer"><div className="w-5 h-5 rounded-full border-2 border-fb-blue flex items-center justify-center"><div className="w-2.5 h-2.5 bg-fb-blue rounded-full" /></div><span className="text-[13px] text-slate-700">Un solo vídeo o imagen</span></label>
-                               <label className="flex items-center gap-3 cursor-pointer opacity-50"><div className="w-5 h-5 rounded-full border-2 border-slate-300" /><span className="text-[13px] text-slate-700">Secuencia</span></label>
+
+                      {/* --- ANUNCIO CON SOCIO --- */}
+                      <div className="meta-editor-card p-6 flex items-center justify-between">
+                         <div>
+                            <span className="text-[13px] font-bold">Anuncio con socio</span>
+                            <p className="text-[11px] text-fb-text-secondary mt-1">Publica anuncios con creadores, marcas y otras empresas. <span className="text-fb-blue cursor-pointer">Más información</span></p>
+                         </div>
+                         <div className="flex items-center gap-3">
+                            <span className="text-[12px] font-bold text-fb-text-secondary">{formData.ad.partnerAd ? 'Sí' : 'No'}</span>
+                            <div 
+                              className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.ad.partnerAd ? 'bg-fb-blue' : 'bg-fb-border'}`} 
+                              onClick={() => setFormData({...formData, ad: {...formData.ad, partnerAd: !formData.ad.partnerAd}})}
+                            >
+                               <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${formData.ad.partnerAd ? 'left-6' : 'left-1'}`} />
                             </div>
                          </div>
                       </div>
+
+                      {/* --- IDENTIDAD --- */}
                       <div className="meta-editor-card p-0">
-                         <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Seguimiento</span></div>
-                         <div className="p-6 space-y-4">
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Parámetros de URL</label><input type="text" className="meta-editor-input font-bold" value={formData.ad.tracking.urlParams} onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, urlParams: e.target.value}}})} /></div>
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Identidad</span>
+                         </div>
+                         <div className="p-6 space-y-6">
+                            <p className="text-[12px] text-fb-text-secondary">Los perfiles que se usarán en tu anuncio.</p>
+                            
+                            <div>
+                               <label className="text-[12px] font-bold text-slate-800 block mb-1">* Página de Facebook <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <div className="bg-slate-50 p-3 border border-fb-border rounded flex items-center justify-between opacity-80">
+                                  <div className="flex items-center gap-2">
+                                     <div className="w-6 h-6 bg-fb-blue rounded flex items-center justify-center text-white text-[10px] font-bold">T</div>
+                                     <span className="text-[13px] font-bold">{formData.adSet.pageName}</span>
+                                  </div>
+                                  <ChevronDown size={16} className="text-slate-400" />
+                               </div>
+                               <div className="mt-3 p-4 bg-slate-50 border border-fb-border rounded flex items-start gap-3">
+                                  <Info size={16} className="text-slate-500 mt-0.5" />
+                                  <p className="text-[11px] text-fb-text-secondary leading-tight">
+                                     Selecciona una página para el conjunto de anuncios. En este anuncio debes seleccionar una página que represente a tu empresa... <br/>
+                                     <span className="text-fb-blue font-bold cursor-pointer">Seleccionar página</span>
+                                  </p>
+                               </div>
+                            </div>
+
+                            <div>
+                               <label className="text-[12px] font-bold text-slate-800 block mb-1">Perfil de Instagram <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <div className="bg-slate-50 p-3 border border-fb-border rounded flex items-center justify-between opacity-80">
+                                  <div className="flex items-center gap-2">
+                                     <div className="w-6 h-6 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Instagram size={14} /></div>
+                                     <span className="text-[13px] font-bold">@{formData.adSet.pageName.toLowerCase().replace(' ', '.')}</span>
+                                  </div>
+                                  <ChevronDown size={16} className="text-slate-400" />
+                               </div>
+                            </div>
                          </div>
                       </div>
-                      <div className="meta-editor-card p-6"><div className="justification-box"><span className="justification-title">Justificación</span><textarea className="justification-input" placeholder="Justificación estratégica del anuncio..." value={formData.ad.creativeStrategyJustification} onChange={(e) => setFormData({...formData, ad: {...formData.ad, creativeStrategyJustification: e.target.value}})} /></div></div>
+
+                      {/* --- CONFIGURACIÓN DEL ANUNCIO --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Configuración del anuncio</span>
+                         </div>
+                         <div className="p-6 space-y-6">
+                            <select 
+                              className="meta-editor-input font-bold" 
+                              value={formData.ad.adConfig}
+                              onChange={(e) => setFormData({...formData, ad: {...formData.ad, adConfig: e.target.value}})}
+                            >
+                               <option value="create">Crear anuncio</option>
+                               <option value="existing">Usar publicación existente</option>
+                               <option value="creative_hub">Usar modelo de anuncio de Creative Hub</option>
+                            </select>
+
+                            <div className="space-y-4">
+                               <label className="text-[12px] font-bold text-slate-800 block">Formato <Info size={12} className="inline text-slate-400 ml-1" /></label>
+                               <p className="text-[11px] text-fb-text-secondary">Elige un diseño de contenido del anuncio.</p>
+                               
+                               <div className="p-4 border border-fb-border rounded-lg bg-slate-50/50 flex items-start gap-3">
+                                  <Info size={16} className="text-fb-blue mt-0.5" />
+                                  <div>
+                                     <span className="text-[13px] font-bold block">Cambió la selección de formato</span>
+                                     <p className="text-[11px] text-fb-text-secondary leading-relaxed">
+                                        Opciones de visualización del formato en "Contenido del anuncio" es la nueva forma de mostrar tu anuncio en formatos de colección... <span className="text-fb-blue cursor-pointer">Información sobre las opciones de visualización</span>
+                                     </p>
+                                  </div>
+                                  <X size={14} className="text-slate-400 cursor-pointer" />
+                               </div>
+
+                               <div className="space-y-3 pt-2">
+                                  <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setFormData({...formData, ad: {...formData.ad, format: 'single'}})}>
+                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.ad.format === 'single' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                        {formData.ad.format === 'single' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                     </div>
+                                     <span className="text-[13px] text-slate-700">Un solo vídeo o imagen</span>
+                                  </label>
+                                  <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setFormData({...formData, ad: {...formData.ad, format: 'carousel'}})}>
+                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.ad.format === 'carousel' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                        {formData.ad.format === 'carousel' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                     </div>
+                                     <span className="text-[13px] text-slate-700">Secuencia</span>
+                                  </label>
+                               </div>
+
+                               <div className="pt-4 border-t border-fb-border">
+                                  <label className="flex items-center gap-3 cursor-pointer">
+                                     <input 
+                                       type="checkbox" 
+                                       className="w-5 h-5 rounded border-slate-300 text-fb-blue" 
+                                       checked={formData.ad.multiAd}
+                                       onChange={(e) => setFormData({...formData, ad: {...formData.ad, multiAd: e.target.checked}})}
+                                     />
+                                     <div>
+                                        <span className="text-[13px] font-bold">Anuncios multianunciante</span>
+                                        <p className="text-[11px] text-fb-text-secondary">Tu anuncio puede aparecer con otros en el mismo bloque de anuncios para contribuir a fomentar el descubrimiento...</p>
+                                     </div>
+                                  </label>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+
+                      {/* --- DESTINO --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Destino</span>
+                         </div>
+                         <div className="p-6 space-y-6">
+                            <p className="text-[11px] text-fb-text-secondary leading-relaxed">Dinos dónde quieres que se dirija a las personas inmediatamente después de que toquen tu anuncio o hagan clic en él. <span className="text-fb-blue cursor-pointer">Más información</span></p>
+                            
+                            <div className="space-y-4">
+                               {[
+                                 { id: 'instant_experience', name: 'Experiencia instantánea', desc: 'Dirige a las personas a una experiencia de carga rápida optimizada para móviles.', icon: <Smartphone size={16} /> },
+                                 { id: 'website', name: 'Sitio web', desc: 'Dirige a las personas a tu sitio web.', icon: <LinkIcon size={16} /> },
+                                 { id: 'call', name: 'Llamada', desc: 'Permite que las personas te llamen directamente.', icon: <Phone size={16} /> },
+                                 { id: 'messaging_apps', name: 'Aplicaciones de mensajería', desc: 'Dirige a la gente a Messenger, Instagram y WhatsApp.', icon: <MessageCircle size={16} /> }
+                               ].map(opt => (
+                                 <label key={opt.id} className="flex items-start gap-3 cursor-pointer group" onClick={() => setFormData({...formData, ad: {...formData.ad, destination: opt.id}})}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${formData.ad.destination === opt.id ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                       {formData.ad.destination === opt.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                    </div>
+                                    <div className="flex gap-3">
+                                       <div className="text-slate-400 mt-0.5">{opt.icon}</div>
+                                       <div>
+                                          <div className="text-[13px] font-bold">{opt.name}</div>
+                                          <div className="text-[11px] text-fb-text-secondary">{opt.desc}</div>
+                                       </div>
+                                    </div>
+                                 </label>
+                               ))}
+                            </div>
+
+                            {formData.ad.destination === 'messaging_apps' && (
+                               <div className="pl-8 space-y-4 pt-2">
+                                  <div className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-fb-blue rounded-full flex items-center justify-center text-white text-[12px] font-bold">T</div>
+                                        <div><div className="text-[13px] font-bold">Messenger</div><div className="text-[11px] text-fb-text-secondary">{formData.adSet.pageName}</div></div>
+                                     </div>
+                                     <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps.messenger} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, messenger: e.target.checked}}})} />
+                                  </div>
+                                  <div className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Instagram size={16} /></div>
+                                        <div><div className="text-[13px] font-bold">Instagram</div><div className="text-[11px] text-fb-text-secondary">@{formData.adSet.pageName.toLowerCase().replace(' ', '.')}</div></div>
+                                     </div>
+                                     <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps.instagram} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, instagram: e.target.checked}}})} />
+                                  </div>
+                                  <div className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600"><MessageCircle size={16} /></div>
+                                        <div><div className="text-[13px] font-bold">WhatsApp</div><div className="text-[11px] text-fb-text-secondary">Conectar perfil</div></div>
+                                     </div>
+                                     <div className="flex gap-2">
+                                        <button className="px-3 py-1 border border-fb-border rounded text-[11px] font-bold hover:bg-white">Conectar perfil</button>
+                                        <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps.whatsapp} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, whatsapp: e.target.checked}}})} />
+                                     </div>
+                                  </div>
+                               </div>
+                            )}
+                         </div>
+                      </div>
+
+                      {/* --- CONTENIDO DEL ANUNCIO --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Contenido del anuncio</span>
+                         </div>
+                         <div className="p-6 space-y-6">
+                            <p className="text-[11px] text-fb-text-secondary leading-relaxed">Selecciona y optimiza el texto, el contenido multimedia y las mejoras de tus anuncios.</p>
+                            
+                            <div className="flex gap-2">
+                               <div className="relative group flex-grow">
+                                  <button className="w-full p-2 border border-fb-border rounded text-[13px] font-bold flex items-center justify-between hover:bg-slate-50">
+                                     <span>Configurar contenido</span>
+                                     <ChevronDown size={16} />
+                                  </button>
+                                  <div className="hidden group-focus-within:block absolute top-full left-0 right-0 mt-1 bg-white border border-fb-border rounded shadow-xl z-50">
+                                     <div className="p-2 hover:bg-fb-header cursor-pointer flex items-center gap-2" onClick={() => setFormData({...formData, ad: {...formData.ad, mediaType: 'image'}})}>
+                                        <ImageIcon size={14} className="text-slate-500" /> <span className="text-[13px]">Anuncio con imagen</span>
+                                     </div>
+                                     <div className="p-2 hover:bg-fb-header cursor-pointer flex items-center gap-2" onClick={() => setFormData({...formData, ad: {...formData.ad, mediaType: 'video'}})}>
+                                        <Video size={14} className="text-slate-500" /> <span className="text-[13px]">Anuncio con vídeo</span>
+                                     </div>
+                                  </div>
+                               </div>
+                               <button className="px-4 py-2 border border-fb-border rounded text-[13px] font-bold hover:bg-slate-50">Configurar prueba</button>
+                            </div>
+
+                            <div className="p-12 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-center space-y-4 bg-slate-50/30">
+                               <div className="w-20 h-20 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300">
+                                  {formData.ad.mediaType === 'image' ? <ImageIcon size={40} /> : <Video size={40} />}
+                               </div>
+                               <p className="text-[12px] text-fb-text-secondary font-bold">Añade contenido multimedia para ver ejemplos de anuncios.</p>
+                            </div>
+                         </div>
+                      </div>
+
+                      {/* --- SEGUIMIENTO --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Seguimiento</span>
+                         </div>
+                         <div className="p-6 space-y-6">
+                            <p className="text-[11px] text-fb-text-secondary leading-relaxed">
+                               Elige los eventos de conversión a los que quieres hacerles seguimiento. Se hará seguimiento de forma predeterminada del conjunto de datos de conversión seleccionado de esta cuenta publicitaria.
+                            </p>
+
+                            <div className="space-y-4">
+                               <div className="space-y-3">
+                                  <div className="flex items-center gap-3">
+                                     <input 
+                                       type="checkbox" 
+                                       className="w-5 h-5 rounded border-slate-300 text-fb-blue" 
+                                       checked={formData.ad.tracking.websiteEvents}
+                                       onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, websiteEvents: e.target.checked}}})}
+                                     />
+                                     <span className="text-[13px] text-slate-700">Eventos del sitio web</span>
+                                  </div>
+                                  {formData.ad.tracking.websiteEvents && (
+                                     <div className="pl-8 flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                                        <span className="text-[11px] font-bold text-green-600 tracking-wider">API PROFE NICO</span>
+                                     </div>
+                                  )}
+
+                                  <div className="flex items-center gap-3">
+                                     <input 
+                                       type="checkbox" 
+                                       className="w-5 h-5 rounded border-slate-300 text-fb-blue" 
+                                       checked={formData.ad.tracking.appEvents}
+                                       onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, appEvents: e.target.checked}}})}
+                                     />
+                                     <span className="text-[13px] text-slate-700">Eventos de la aplicación</span>
+                                  </div>
+                                  {formData.ad.tracking.appEvents && (
+                                     <div className="pl-8 flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                                        <span className="text-[11px] font-bold text-green-600 tracking-wider">API PROFE NICO</span>
+                                     </div>
+                                  )}
+
+                                  <div className="flex items-center gap-3">
+                                     <input 
+                                       type="checkbox" 
+                                       className="w-5 h-5 rounded border-slate-300 text-fb-blue" 
+                                       checked={formData.ad.tracking.offlineEvents}
+                                       onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, offlineEvents: e.target.checked}}})}
+                                     />
+                                     <span className="text-[13px] text-slate-700">Eventos offline</span>
+                                     <Info size={14} className="text-slate-400" />
+                                  </div>
+                               </div>
+
+                               <div className="pt-4 border-t border-fb-border space-y-4">
+                                  <div>
+                                     <label className="text-[12px] font-bold text-slate-800 flex items-center justify-between">Parámetros de URL <Info size={14} className="text-slate-400" /></label>
+                                     <input 
+                                       type="text" 
+                                       className="meta-editor-input mt-1" 
+                                       placeholder="key1=value1&key2=value2"
+                                       value={formData.ad.tracking.urlParams} 
+                                       onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, urlParams: e.target.value}}})} 
+                                     />
+                                     <button className="text-fb-blue text-[11px] font-bold mt-1 hover:underline">Crear un parámetro de URL</button>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                     <span className="text-[12px] font-bold text-slate-800">Herramienta de informes de terceros</span>
+                                     <p className="text-[11px] text-fb-text-secondary leading-relaxed">
+                                        Es posible que las compras de Meta no se incluyan en tus informes de Google. Conecta tu cuenta para medir las acciones de los anuncios... <span className="text-fb-blue cursor-pointer">Más información</span>
+                                     </p>
+                                     <button className="px-4 py-2 border border-fb-border rounded text-[13px] font-bold hover:bg-fb-header">Conectar</button>
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+
+                      <div className="meta-editor-card p-6">
+                         <div className="justification-box">
+                            <span className="justification-title">Justificación</span>
+                            <textarea 
+                              className="justification-input" 
+                              placeholder="Justificación estratégica del anuncio..." 
+                              value={formData.ad.creativeStrategyJustification} 
+                              onChange={(e) => setFormData({...formData, ad: {...formData.ad, creativeStrategyJustification: e.target.value}})} 
+                            />
+                         </div>
+                      </div>
                     </motion.div>
                   )}
                 </div>
