@@ -134,8 +134,9 @@ app.get('/api/group-data/:groupId', async (req, res) => {
   }
 });
 
-// Manejar cualquier otra ruta con sintaxis compatible con Express 5
-app.get('/:any*', (req, res) => {
+// ESTO ES EL FALLBACK: Captura todo lo que no sea API
+// Usamos un middleware genérico para evitar errores de sintaxis en rutas de Express 5
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
