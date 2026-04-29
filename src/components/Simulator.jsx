@@ -44,8 +44,7 @@ import {
   Phone,
   Link as LinkIcon,
   MessageCircle,
-  Video,
-  Instagram
+  Video
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -801,7 +800,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                <label className="text-[12px] font-bold text-slate-800 block mb-1">Perfil de Instagram <Info size={12} className="inline text-slate-400 ml-1" /></label>
                                <div className="bg-slate-50 p-3 border border-fb-border rounded flex items-center justify-between opacity-80">
                                   <div className="flex items-center gap-2">
-                                     <div className="w-6 h-6 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Instagram size={14} /></div>
+                                     <div className="w-6 h-6 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Camera size={14} /></div>
                                      <span className="text-[13px] font-bold">@{formData.adSet.pageName.toLowerCase().replace(' ', '.')}</span>
                                   </div>
                                   <ChevronDown size={16} className="text-slate-400" />
@@ -917,7 +916,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                   </div>
                                   <div className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
                                      <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Instagram size={16} /></div>
+                                        <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Camera size={16} /></div>
                                         <div><div className="text-[13px] font-bold">Instagram</div><div className="text-[11px] text-fb-text-secondary">@{formData.adSet.pageName.toLowerCase().replace(' ', '.')}</div></div>
                                      </div>
                                      <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps.instagram} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, instagram: e.target.checked}}})} />
