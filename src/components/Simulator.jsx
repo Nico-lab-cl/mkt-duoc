@@ -16,32 +16,31 @@ import {
   RotateCcw, 
   Check, 
   Info, 
-  MoreVertical,
-  MoreHorizontal,
-  Maximize2,
-  ChevronRight,
-  Monitor,
-  Send,
-  Globe,
-  MapPin,
-  Home,
-  Zap,
-  Smartphone,
-  Target,
-  Camera
+  MoreVertical, 
+  MoreHorizontal, 
+  Maximize2, 
+  ChevronRight, 
+  Monitor, 
+  Send, 
+  Globe, 
+  MapPin, 
+  Home, 
+  Zap, 
+  Smartphone, 
+  Target, 
+  Camera,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const metaObjectives = [
   { id: 'awareness', name: 'Reconocimiento', icon: <BarChart3 size={20} />, description: 'Muestra tus anuncios a las personas que tienen más probabilidades de recordarlos.' },
   { id: 'traffic', name: 'Tráfico', icon: <Plus size={20} />, description: 'Dirige a las personas a un destino, como tu sitio web, app o evento de Facebook.' },
-  { id: 'engagement', name: 'Interacción', icon: <MessageSquareIcon size={20} />, description: 'Consigue más mensajes, reproducciones de video, interacciones con tus publicaciones.' },
+  { id: 'engagement', name: 'Interacción', icon: <MessageSquare size={20} />, description: 'Consigue más mensajes, reproducciones de video, interacciones con tus publicaciones.' },
   { id: 'leads', name: 'Clientes potenciales', icon: <Users size={20} />, description: 'Genera clientes potenciales para tu empresa o marca.' },
   { id: 'promotion', name: 'Promoción de la app', icon: <Smartphone size={20} />, description: 'Consigue que más personas instalen tu app y la usen.' },
   { id: 'sales', name: 'Ventas', icon: <Plus size={20} />, description: 'Busca a personas con probabilidades de comprar tu producto o servicio.' },
 ];
-
-const MessageSquareIcon = ({ size }) => <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: size, height: size }} />;
 
 const ageOptions = Array.from({ length: 48 }, (_, i) => (i + 18).toString()).concat(['65+']);
 
@@ -300,24 +299,9 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                              <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Nombre de la campaña</label>
                              <input type="text" className="meta-editor-input" value={formData.campaignName} onChange={(e) => setFormData({...formData, campaignName: e.target.value})} />
                           </div>
-                          <div>
-                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Categorías especiales</label>
-                             <select className="meta-editor-input" value={formData.specialCategories} onChange={(e) => setFormData({...formData, specialCategories: e.target.value})}>
-                               <option value="NONE">Ninguna</option>
-                               <option value="CREDIT">Crédito</option>
-                               <option value="EMPLOYMENT">Empleo</option>
-                               <option value="HOUSING">Vivienda</option>
-                             </select>
-                          </div>
                           <div className="grid grid-cols-2 gap-6 pt-4 border-t border-fb-border">
-                             <div>
-                                <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Tipo de compra</label>
-                                <div className="text-sm font-bold text-fb-text-primary">Subasta</div>
-                             </div>
-                             <div>
-                                <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Objetivo</label>
-                                <div className="text-sm font-bold text-fb-text-primary">{metaObjectives.find(o => o.id === formData.objective)?.name}</div>
-                             </div>
+                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Tipo de compra</label><div className="text-sm font-bold text-fb-text-primary">Subasta</div></div>
+                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Objetivo</label><div className="text-sm font-bold text-fb-text-primary">{metaObjectives.find(o => o.id === formData.objective)?.name}</div></div>
                           </div>
                        </div>
                     </div>
@@ -340,14 +324,6 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                         <input type="text" className="meta-editor-input pl-6 font-bold" value={formData.campaignBudget} onChange={(e) => setFormData({...formData, campaignBudget: e.target.value})} />
                                      </div>
                                   </div>
-                                  <div className="w-1/3">
-                                     <label className="text-[10px] font-bold text-fb-text-secondary uppercase block mb-1">Estrategia de puja</label>
-                                     <select className="meta-editor-input font-bold" value={formData.bidStrategy} onChange={(e) => setFormData({...formData, bidStrategy: e.target.value})}>
-                                        <option>Menor costo</option>
-                                        <option>Límite de puja</option>
-                                        <option>ROAS deseado</option>
-                                     </select>
-                                  </div>
                                </div>
                             </motion.div>
                           )}
@@ -369,23 +345,6 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                              <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Nombre</label>
                              <input type="text" className="meta-editor-input" value={formData.adSet.name} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, name: e.target.value}})} />
                           </div>
-                          <div>
-                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Objetivo de rendimiento</label>
-                             <select className="meta-editor-input font-bold" value={formData.adSet.performanceGoal} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, performanceGoal: e.target.value}})}>
-                                <option>Maximizar el número de clics en el enlace</option>
-                                <option>Maximizar las impresiones</option>
-                                <option>Maximizar el alcance único diario</option>
-                             </select>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="meta-editor-card">
-                       <div className="meta-editor-section-title flex justify-between items-center">
-                          Contenido dinámico
-                          <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.adSet.dynamicCreative ? 'bg-fb-blue' : 'bg-fb-border'}`} onClick={() => setFormData({...formData, adSet: {...formData.adSet, dynamicCreative: !formData.adSet.dynamicCreative}})}>
-                             <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.adSet.dynamicCreative ? 'left-6' : 'left-1'}`} />
-                          </div>
                        </div>
                     </div>
 
@@ -397,22 +356,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div className="flex items-center gap-2 p-2 border border-fb-border rounded-md bg-white">
                                <Globe size={18} className="text-fb-blue" />
                                <input type="text" className="flex-grow bg-transparent border-none outline-none text-sm font-bold" value={formData.adSet.location} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, location: e.target.value}})} />
-                               <div className="text-[10px] font-bold text-fb-text-secondary bg-fb-header px-2 py-1 rounded">+{formData.adSet.locationRadius} KM</div>
                             </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                             <div>
-                               <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Edad mínima</label>
-                               <select className="meta-editor-input font-bold" value={formData.adSet.ageMin} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, ageMin: e.target.value}})}>
-                                 {ageOptions.map(age => <option key={age} value={age}>{age}</option>)}
-                               </select>
-                             </div>
-                             <div>
-                               <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Edad máxima</label>
-                               <select className="meta-editor-input font-bold" value={formData.adSet.ageMax} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, ageMax: e.target.value}})}>
-                                 {ageOptions.map(age => <option key={age} value={age}>{age}</option>)}
-                               </select>
-                             </div>
                           </div>
                        </div>
                     </div>
@@ -474,12 +418,10 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                        <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
                              <div className="flex items-center gap-3">
-                                 <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 rounded-full flex items-center justify-center text-white">
-                                    <Camera size={14} />
-                                 </div>
+                                <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center border border-green-200"><Zap size={20} /></div>
                                 <div className="flex flex-col">
                                    <span className="text-sm font-bold text-slate-800">Pixel de {projectData.agencyName || 'Marca'}</span>
-                                   <span className="text-[10px] text-green-500 font-black uppercase">Activo y Recibiendo Eventos</span>
+                                   <span className="text-[10px] text-green-500 font-black uppercase">Activo</span>
                                 </div>
                              </div>
                              <div className="text-[10px] font-bold text-slate-400">ID: 577046238821</div>
