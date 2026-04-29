@@ -432,6 +432,58 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div><label className="text-[11px] font-black text-slate-800 uppercase block mb-1 flex items-center gap-1">Estrategia de puja de la campaña <HelpCircle size={12} /></label><div className="text-[13px] font-bold text-fb-text-primary">{formData.bidStrategy}</div></div>
                          </div>
                       </div>
+                      {/* --- TEST A/B --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center justify-between">
+                            <span className="text-[13px] font-bold">Test A/B</span>
+                            <div className="flex items-center gap-2">
+                               <span className="text-[11px] font-bold text-slate-400">{formData.testAB ? 'Activado' : 'Desactivado'}</span>
+                               <div 
+                                 className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.testAB ? 'bg-fb-blue' : 'bg-fb-border'}`} 
+                                 onClick={() => setFormData({...formData, testAB: !formData.testAB})}
+                               >
+                                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${formData.testAB ? 'left-6' : 'left-1'}`} />
+                               </div>
+                            </div>
+                         </div>
+                         <div className="p-6">
+                            <p className="text-[11px] text-fb-text-secondary leading-relaxed">
+                               Ayuda a mejorar el rendimiento de los anuncios comparando versiones para ver cuál funciona mejor. Para mayor precisión, cada una se mostrará a grupos distintos de tu audiencia. <span className="text-fb-blue cursor-pointer">Información sobre los tests A/B</span>
+                            </p>
+                         </div>
+                      </div>
+
+                      {/* --- CATEGORÍAS ESPECIALES --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500">
+                               <Check size={12} strokeWidth={3} />
+                            </div>
+                            <span className="text-[13px] font-bold">Categorías de anuncios especiales</span>
+                         </div>
+                         <div className="p-6 space-y-4">
+                            <p className="text-[11px] text-fb-text-secondary leading-relaxed">
+                               Indica si tus anuncios están relacionados con productos y servicios financieros, empleo, vivienda, temas sociales, elecciones o política para evitar que se rechacen. Los requisitos varían en función del país. <span className="text-fb-blue cursor-pointer">Información sobre las categorías de anuncios especiales</span>
+                            </p>
+                            
+                            <div>
+                               <label className="text-[12px] font-bold text-slate-800 block mb-1">Categorías</label>
+                               <p className="text-[11px] text-fb-text-secondary mb-3">Selecciona las categorías que mejor describan qué se anunciará en esta campaña.</p>
+                               <select 
+                                 className="meta-editor-input font-bold" 
+                                 value={formData.specialCategories}
+                                 onChange={(e) => setFormData({...formData, specialCategories: e.target.value})}
+                               >
+                                  <option value="NONE">Indica una categoría (si corresponde)</option>
+                                  <option value="CREDIT">Crédito</option>
+                                  <option value="EMPLOYMENT">Empleo</option>
+                                  <option value="HOUSING">Vivienda</option>
+                                  <option value="ISSUES_ELECTIONS_POLITICS">Temas sociales, elecciones o política</option>
+                               </select>
+                            </div>
+                         </div>
+                      </div>
+
                       <div className="meta-editor-card p-6"><div className="justification-box"><span className="justification-title">Justificación</span><textarea className="justification-input" placeholder="Justificación estratégica de la campaña..." value={formData.objectiveJustification} onChange={(e) => setFormData({...formData, objectiveJustification: e.target.value})} /></div></div>
                     </motion.div>
                   )}
