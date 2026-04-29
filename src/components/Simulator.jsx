@@ -110,10 +110,6 @@ const Simulator = ({ platform, onFinish, onBack }) => {
         gender: 'all',
         detailedTargeting: ''
       },
-      ageMin: '18',
-      ageMax: '65',
-      gender: 'all',
-      detailedTargeting: '',
       placements: 'advantage',
       platforms: ['facebook', 'instagram', 'messenger', 'audience'],
       adSetJustification: '',
