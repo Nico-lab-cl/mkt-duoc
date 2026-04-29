@@ -135,7 +135,7 @@ app.get('/api/group-data/:groupId', async (req, res) => {
 });
 
 // Manejar cualquier otra ruta con sintaxis compatible con Express 5
-app.get('/*', (req, res) => {
+app.get('/:any*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
