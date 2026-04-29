@@ -16,18 +16,18 @@ import {
   RotateCcw, 
   Check, 
   Info, 
-  MoreVertical, 
-  MoreHorizontal, 
-  Maximize2, 
-  ChevronRight, 
-  Monitor, 
-  Send, 
-  Globe, 
-  MapPin, 
-  Home, 
-  Zap, 
-  Smartphone, 
-  Target, 
+  MoreVertical,
+  MoreHorizontal,
+  Maximize2,
+  ChevronRight,
+  Monitor,
+  Send,
+  Globe,
+  MapPin,
+  Home,
+  Zap,
+  Smartphone,
+  Target,
   Camera,
   MessageSquare
 } from 'lucide-react';
@@ -248,8 +248,11 @@ const Simulator = ({ platform, onFinish, onBack }) => {
             {formData.objective ? (
               <div className="max-w-md">
                 <h3 className="text-2xl font-bold mb-4">{metaObjectives.find(o => o.id === formData.objective)?.name}</h3>
-                <textarea className="w-full h-32 p-3 bg-white border border-slate-200 rounded-xl text-sm outline-none mb-8" placeholder="Justificación estratégica..." value={formData.objectiveJustification} onChange={(e) => setFormData({...formData, objectiveJustification: e.target.value})} />
-                <button onClick={() => setView('editor')} disabled={!formData.objectiveJustification} className={`w-full py-4 bg-fb-blue text-white rounded-xl font-bold ${!formData.objectiveJustification && 'opacity-50'}`}>Continuar</button>
+                <div className="text-left bg-white p-6 rounded-2xl border border-fb-border shadow-sm mb-8">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block mb-2">Justificación</label>
+                  <textarea className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-fb-blue transition-all" placeholder="Explica la razón estratégica detrás de este objetivo..." value={formData.objectiveJustification} onChange={(e) => setFormData({...formData, objectiveJustification: e.target.value})} />
+                </div>
+                <button onClick={() => setView('editor')} disabled={!formData.objectiveJustification} className={`w-full py-4 bg-fb-blue text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-blue-700 transition-all ${!formData.objectiveJustification && 'opacity-50 grayscale'}`}>Continuar <ChevronRight size={20} /></button>
               </div>
             ) : <h3 className="text-lg font-bold text-slate-400">Selecciona un objetivo</h3>}
           </div>
@@ -261,9 +264,10 @@ const Simulator = ({ platform, onFinish, onBack }) => {
   if (view === 'editor') {
     return (
       <div className="flex flex-col h-screen bg-fb-editor-bg">
-        <header className="h-14 bg-white border-b border-fb-border flex items-center justify-between px-4 z-30">
+        <header className="h-14 bg-white border-b border-fb-border flex items-center justify-between px-4 z-30 shadow-sm">
            <div className="flex items-center gap-3">
-              <button onClick={() => setView('manager')} className="p-2 hover:bg-fb-header rounded-full"><Home size={20} /></button>
+              <button onClick={() => setView('manager')} className="p-2 hover:bg-fb-header rounded-full transition-colors text-fb-text-secondary"><Home size={20} /></button>
+              <div className="h-8 w-px bg-fb-border mx-1" />
               <span className="text-sm font-bold truncate max-w-[250px]">{formData.campaignName}</span>
            </div>
            <div className="flex items-center gap-4">
@@ -274,34 +278,32 @@ const Simulator = ({ platform, onFinish, onBack }) => {
               <div className="flex bg-fb-header rounded-md p-1 border border-fb-border">
                  {[1, 2, 3].map(s => <button key={s} onClick={() => setCurrentStep(s)} className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${currentStep === s ? 'bg-white shadow-sm text-fb-blue' : 'text-fb-text-secondary hover:bg-white/50'}`}>{s}. {s === 1 ? 'Campaña' : s === 2 ? 'Conjunto' : 'Anuncio'}</button>)}
               </div>
-              <button onClick={handleFinish} className="bg-fb-blue text-white px-6 py-2 rounded-md font-bold text-sm">Finalizar y Guardar</button>
+              <button onClick={handleFinish} className="bg-fb-blue text-white px-6 py-2 rounded-md font-bold text-sm hover:bg-blue-700 shadow-md">Finalizar y Guardar</button>
            </div>
         </header>
 
         <div className="flex flex-grow overflow-hidden relative">
           <aside className="w-[280px] bg-white border-r border-fb-border flex flex-col p-4 z-20">
-             <div className="text-[11px] font-black text-fb-text-secondary uppercase tracking-widest mb-4">Jerarquía</div>
+             <div className="text-[11px] font-black text-fb-text-secondary uppercase tracking-widest mb-4 px-2">Jerarquía de Campaña</div>
              <div className="space-y-1">
-                <div onClick={() => setCurrentStep(1)} className={`p-2 rounded-lg flex items-center gap-3 cursor-pointer ${currentStep === 1 ? 'bg-blue-50 text-fb-blue border-l-4 border-fb-blue' : 'hover:bg-fb-header'}`}><BarChart3 size={14} /><span className="text-xs font-bold truncate">{formData.campaignName}</span></div>
-                <div onClick={() => setCurrentStep(2)} className={`p-2 rounded-lg flex items-center gap-3 cursor-pointer ml-4 ${currentStep === 2 ? 'bg-blue-50 text-fb-blue border-l-4 border-fb-blue' : 'hover:bg-fb-header'}`}><Users size={14} /><span className="text-xs font-bold truncate">{formData.adSet.name}</span></div>
-                <div onClick={() => setCurrentStep(3)} className={`p-2 rounded-lg flex items-center gap-3 cursor-pointer ml-8 ${currentStep === 3 ? 'bg-blue-50 text-fb-blue border-l-4 border-fb-blue' : 'hover:bg-fb-header'}`}><ImageIcon size={14} /><span className="text-xs font-bold truncate">{formData.ad.name}</span></div>
+                <div onClick={() => setCurrentStep(1)} className={`p-2.5 rounded-lg flex items-center gap-3 cursor-pointer transition-all ${currentStep === 1 ? 'bg-blue-50 text-fb-blue border-l-4 border-fb-blue' : 'text-fb-text-primary hover:bg-fb-header'}`}><div className={`p-1.5 rounded-md ${currentStep === 1 ? 'bg-fb-blue text-white' : 'bg-slate-100 text-slate-500'}`}><BarChart3 size={14} /></div><span className="text-xs font-bold truncate">{formData.campaignName}</span></div>
+                <div onClick={() => setCurrentStep(2)} className={`p-2.5 rounded-lg flex items-center gap-3 cursor-pointer ml-4 transition-all ${currentStep === 2 ? 'bg-blue-50 text-fb-blue border-l-4 border-fb-blue' : 'text-fb-text-primary hover:bg-fb-header'}`}><div className={`p-1.5 rounded-md ${currentStep === 2 ? 'bg-fb-blue text-white' : 'bg-slate-100 text-slate-500'}`}><Users size={14} /></div><span className="text-xs font-bold truncate">{formData.adSet.name}</span></div>
+                <div onClick={() => setCurrentStep(3)} className={`p-2.5 rounded-lg flex items-center gap-3 cursor-pointer ml-8 transition-all ${currentStep === 3 ? 'bg-blue-50 text-fb-blue border-l-4 border-fb-blue' : 'text-fb-text-primary hover:bg-fb-header'}`}><div className={`p-1.5 rounded-md ${currentStep === 3 ? 'bg-fb-blue text-white' : 'bg-slate-100 text-slate-500'}`}><ImageIcon size={14} /></div><span className="text-xs font-bold truncate">{formData.ad.name}</span></div>
              </div>
           </aside>
 
-          <main className="flex-grow overflow-y-auto bg-fb-editor-bg pb-32">
+          <main className="flex-grow overflow-y-auto bg-fb-editor-bg custom-scrollbar pb-32">
              <div className="max-w-[850px] mx-auto py-10 px-6 space-y-8">
                 {currentStep === 1 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                     <div className="meta-editor-card">
                        <div className="meta-editor-section-title">Detalles de la campaña</div>
                        <div className="p-6 space-y-6">
-                          <div>
-                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Nombre de la campaña</label>
-                             <input type="text" className="meta-editor-input" value={formData.campaignName} onChange={(e) => setFormData({...formData, campaignName: e.target.value})} />
-                          </div>
+                          <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Nombre de la campaña</label><input type="text" className="meta-editor-input" value={formData.campaignName} onChange={(e) => setFormData({...formData, campaignName: e.target.value})} /></div>
+                          <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Categorías especiales</label><select className="meta-editor-input" value={formData.specialCategories} onChange={(e) => setFormData({...formData, specialCategories: e.target.value})}><option value="NONE">Ninguna</option><option value="CREDIT">Crédito</option><option value="EMPLOYMENT">Empleo</option><option value="HOUSING">Vivienda</option></select></div>
                           <div className="grid grid-cols-2 gap-6 pt-4 border-t border-fb-border">
                              <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Tipo de compra</label><div className="text-sm font-bold text-fb-text-primary">Subasta</div></div>
-                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Objetivo</label><div className="text-sm font-bold text-fb-text-primary">{metaObjectives.find(o => o.id === formData.objective)?.name}</div></div>
+                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Objetivo</label><div className="text-sm font-bold text-fb-text-primary uppercase tracking-tight">{metaObjectives.find(o => o.id === formData.objective)?.name}</div></div>
                           </div>
                        </div>
                     </div>
@@ -310,7 +312,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                        <div className="meta-editor-section-title flex justify-between items-center">
                           Presupuesto de la campaña Advantage
                           <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.advantageBudget ? 'bg-fb-blue' : 'bg-fb-border'}`} onClick={() => setFormData({...formData, advantageBudget: !formData.advantageBudget})}>
-                             <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.advantageBudget ? 'left-6' : 'left-1'}`} />
+                             <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${formData.advantageBudget ? 'left-6' : 'left-1'}`} />
                           </div>
                        </div>
                        <div className="p-6 space-y-6">
@@ -318,18 +320,19 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="space-y-6 overflow-hidden">
                                <div className="flex gap-4">
                                   <div className="flex-grow">
-                                     <label className="text-[10px] font-bold text-fb-text-secondary uppercase block mb-1">Presupuesto de la campaña</label>
-                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-fb-text-secondary">$</span>
-                                        <input type="text" className="meta-editor-input pl-6 font-bold" value={formData.campaignBudget} onChange={(e) => setFormData({...formData, campaignBudget: e.target.value})} />
-                                     </div>
+                                     <label className="text-[10px] font-bold text-fb-text-secondary uppercase block mb-1">Presupuesto diario</label>
+                                     <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-fb-text-secondary">$</span><input type="text" className="meta-editor-input pl-6 font-bold" value={formData.campaignBudget} onChange={(e) => setFormData({...formData, campaignBudget: e.target.value})} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-fb-text-secondary uppercase">CLP</span></div>
+                                  </div>
+                                  <div className="w-1/3">
+                                     <label className="text-[10px] font-bold text-fb-text-secondary uppercase block mb-1">Estrategia de puja</label>
+                                     <select className="meta-editor-input font-bold" value={formData.bidStrategy} onChange={(e) => setFormData({...formData, bidStrategy: e.target.value})}><option>Menor costo</option><option>Límite de puja</option><option>ROAS deseado</option></select>
                                   </div>
                                </div>
                             </motion.div>
                           )}
                           <div className="justification-box">
                              <span className="justification-title">Justificación</span>
-                             <textarea className="justification-input" value={formData.objectiveJustification} onChange={(e) => setFormData({...formData, objectiveJustification: e.target.value})} />
+                             <textarea className="justification-input" placeholder="Justificación estratégica de la campaña..." value={formData.objectiveJustification} onChange={(e) => setFormData({...formData, objectiveJustification: e.target.value})} />
                           </div>
                        </div>
                     </div>
@@ -337,26 +340,31 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                 )}
 
                 {currentStep === 2 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                     <div className="meta-editor-card">
                        <div className="meta-editor-section-title">Conjunto de anuncios</div>
                        <div className="p-6 space-y-6">
-                          <div>
-                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Nombre</label>
-                             <input type="text" className="meta-editor-input" value={formData.adSet.name} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, name: e.target.value}})} />
+                          <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Nombre del conjunto</label><input type="text" className="meta-editor-input" value={formData.adSet.name} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, name: e.target.value}})} /></div>
+                          <div className="flex items-center justify-between p-4 bg-fb-header/30 rounded-lg border border-fb-border">
+                             <div className="flex flex-col"><span className="text-sm font-bold text-fb-text-primary">Contenido dinámico</span><span className="text-[11px] text-fb-text-secondary">Proporciona elementos como imágenes y títulos...</span></div>
+                             <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.adSet.dynamicCreative ? 'bg-fb-blue' : 'bg-fb-border'}`} onClick={() => setFormData({...formData, adSet: {...formData.adSet, dynamicCreative: !formData.adSet.dynamicCreative}})}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${formData.adSet.dynamicCreative ? 'left-6' : 'left-1'}`} /></div>
                           </div>
                        </div>
                     </div>
 
                     <div className="meta-editor-card">
-                       <div className="meta-editor-section-title">Público</div>
+                       <div className="meta-editor-section-title">Público y Segmentación</div>
                        <div className="p-6 space-y-6">
                           <div>
                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Lugar</label>
-                            <div className="flex items-center gap-2 p-2 border border-fb-border rounded-md bg-white">
-                               <Globe size={18} className="text-fb-blue" />
-                               <input type="text" className="flex-grow bg-transparent border-none outline-none text-sm font-bold" value={formData.adSet.location} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, location: e.target.value}})} />
+                            <div className="flex items-center gap-2 p-2.5 border border-fb-border rounded-md bg-white shadow-inner focus-within:ring-2 focus-within:ring-fb-blue transition-all">
+                               <Globe size={18} className="text-fb-blue" /><input type="text" className="flex-grow bg-transparent border-none outline-none text-sm font-bold" value={formData.adSet.location} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, location: e.target.value}})} />
+                               <div className="flex items-center gap-1 bg-fb-header px-2 py-1 rounded text-[10px] font-bold text-slate-600 border border-fb-border">+ {formData.adSet.locationRadius} KM</div>
                             </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Edad mínima</label><select className="meta-editor-input font-bold" value={formData.adSet.ageMin} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, ageMin: e.target.value}})}>{ageOptions.map(age => <option key={age} value={age}>{age}</option>)}</select></div>
+                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Edad máxima</label><select className="meta-editor-input font-bold" value={formData.adSet.ageMax} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, ageMax: e.target.value}})}>{ageOptions.map(age => <option key={age} value={age}>{age}</option>)}</select></div>
                           </div>
                        </div>
                     </div>
@@ -366,21 +374,15 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                        <div className="p-6 space-y-6">
                           <div className="flex gap-4">
                              {['facebook', 'instagram', 'messenger', 'audience'].map(p => (
-                               <div key={p} className={`flex-grow p-4 border rounded-xl flex flex-col items-center gap-2 transition-all cursor-pointer ${formData.adSet.platforms.includes(p) ? 'border-fb-blue bg-blue-50/50 text-fb-blue' : 'border-fb-border text-fb-text-secondary opacity-50'}`} onClick={() => {
-                                 const platforms = formData.adSet.platforms.includes(p) ? formData.adSet.platforms.filter(x => x !== p) : [...formData.adSet.platforms, p];
-                                 setFormData({...formData, adSet: {...formData.adSet, platforms}});
-                               }}>
-                                 {p === 'facebook' && <Layout size={24} />}
-                                 {p === 'instagram' && <Camera size={24} />}
-                                 {p === 'messenger' && <Send size={24} />}
-                                 {p === 'audience' && <Target size={24} />}
-                                 <span className="text-[10px] font-black uppercase">{p}</span>
+                               <div key={p} className={`flex-grow p-4 border rounded-2xl flex flex-col items-center gap-3 transition-all cursor-pointer shadow-sm ${formData.adSet.platforms.includes(p) ? 'border-fb-blue bg-blue-50 text-fb-blue shadow-blue-100' : 'border-fb-border text-fb-text-secondary opacity-50 hover:opacity-100'}`} onClick={() => { const platforms = formData.adSet.platforms.includes(p) ? formData.adSet.platforms.filter(x => x !== p) : [...formData.adSet.platforms, p]; setFormData({...formData, adSet: {...formData.adSet, platforms}}); }}>
+                                 {p === 'facebook' && <Layout size={24} />}{p === 'instagram' && <Camera size={24} />}{p === 'messenger' && <Send size={24} />}{p === 'audience' && <Target size={24} />}
+                                 <span className="text-[10px] font-black uppercase tracking-widest">{p}</span>
                                </div>
                              ))}
                           </div>
                           <div className="justification-box">
                              <span className="justification-title">Justificación</span>
-                             <textarea className="justification-input" value={formData.adSet.adSetJustification} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, adSetJustification: e.target.value}})} />
+                             <textarea className="justification-input" placeholder="Justificación de la segmentación..." value={formData.adSet.adSetJustification} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, adSetJustification: e.target.value}})} />
                           </div>
                        </div>
                     </div>
@@ -388,47 +390,31 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                 )}
 
                 {currentStep === 3 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                     <div className="meta-editor-card">
-                       <div className="meta-editor-section-title">Contenido del anuncio</div>
+                       <div className="meta-editor-section-title">Contenido Creativo</div>
                        <div className="p-6 space-y-6">
-                          <div>
-                            <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Texto principal</label>
-                            <textarea className="meta-editor-input h-32 pt-3" placeholder="Escribe el texto principal..." value={formData.ad.primaryText} onChange={(e) => setFormData({...formData, ad: {...formData.ad, primaryText: e.target.value}})} />
-                          </div>
+                          <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Texto principal</label><textarea className="meta-editor-input h-32 pt-3" placeholder="Escribe lo que la gente verá sobre tu anuncio..." value={formData.ad.primaryText} onChange={(e) => setFormData({...formData, ad: {...formData.ad, primaryText: e.target.value}})} /></div>
                           <div className="grid grid-cols-2 gap-6">
-                             <div>
-                               <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Título</label>
-                               <input type="text" className="meta-editor-input font-bold" placeholder="Escribe un título corto..." value={formData.ad.headline} onChange={(e) => setFormData({...formData, ad: {...formData.ad, headline: e.target.value}})} />
-                             </div>
-                             <div>
-                               <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Llamada a la acción</label>
-                               <select className="meta-editor-input font-bold" value={formData.ad.cta} onChange={(e) => setFormData({...formData, ad: {...formData.ad, cta: e.target.value}})}>
-                                 <option value="LEARN_MORE">Más información</option>
-                                 <option value="SUBSCRIBE">Suscribirte</option>
-                                 <option value="SEND_MESSAGE">Enviar mensaje</option>
-                               </select>
-                             </div>
+                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Título</label><input type="text" className="meta-editor-input font-bold" placeholder="Escribe un título llamativo..." value={formData.ad.headline} onChange={(e) => setFormData({...formData, ad: {...formData.ad, headline: e.target.value}})} /></div>
+                             <div><label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Llamada a la acción</label><select className="meta-editor-input font-bold" value={formData.ad.cta} onChange={(e) => setFormData({...formData, ad: {...formData.ad, cta: e.target.value}})}><option value="LEARN_MORE">Más información</option><option value="SUBSCRIBE">Suscribirte</option><option value="SEND_MESSAGE">Enviar mensaje</option><option value="SHOP_NOW">Comprar</option></select></div>
                           </div>
                        </div>
                     </div>
 
                     <div className="meta-editor-card">
-                       <div className="meta-editor-section-title">Seguimiento (Tracking)</div>
+                       <div className="meta-editor-section-title">Seguimiento y Píxel</div>
                        <div className="p-6">
-                          <div className="flex items-center justify-between mb-4">
-                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center border border-green-200"><Zap size={20} /></div>
-                                <div className="flex flex-col">
-                                   <span className="text-sm font-bold text-slate-800">Pixel de {projectData.agencyName || 'Marca'}</span>
-                                   <span className="text-[10px] text-green-500 font-black uppercase">Activo</span>
-                                </div>
+                          <div className="flex items-center justify-between p-4 bg-green-50/50 rounded-2xl border border-green-200 shadow-inner">
+                             <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white text-green-600 rounded-xl flex items-center justify-center shadow-sm"><Zap size={24} /></div>
+                                <div className="flex flex-col"><span className="text-sm font-black text-slate-800 uppercase tracking-tight">Pixel de {projectData.agencyName || 'Marca'}</span><span className="text-[10px] text-green-600 font-black uppercase tracking-widest flex items-center gap-1"><div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Activo y Sincronizado</span></div>
                              </div>
-                             <div className="text-[10px] font-bold text-slate-400">ID: 577046238821</div>
+                             <div className="text-[11px] font-black text-slate-400 bg-white px-3 py-1 rounded-full border border-green-100">ID: 577046238821</div>
                           </div>
                           <div className="justification-box">
                              <span className="justification-title">Justificación</span>
-                             <textarea className="justification-input" placeholder="Justificación creativa..." value={formData.ad.creativeStrategyJustification} onChange={(e) => setFormData({...formData, ad: {...formData.ad, creativeStrategyJustification: e.target.value}})} />
+                             <textarea className="justification-input" placeholder="Explica la estrategia creativa..." value={formData.ad.creativeStrategyJustification} onChange={(e) => setFormData({...formData, ad: {...formData.ad, creativeStrategyJustification: e.target.value}})} />
                           </div>
                        </div>
                     </div>
@@ -437,27 +423,22 @@ const Simulator = ({ platform, onFinish, onBack }) => {
              </div>
           </main>
 
-          <aside className="w-[420px] bg-white border-l border-fb-border overflow-y-auto hidden xl:block p-6">
+          <aside className="w-[450px] bg-white border-l border-fb-border overflow-y-auto hidden xl:block p-8">
              <div className="sticky top-0 space-y-6">
-                <div className="flex items-center justify-between border-b border-fb-border pb-4">
-                   <h4 className="text-xs font-black text-fb-text-secondary uppercase tracking-widest">Vista previa</h4>
-                </div>
-                <div className="bg-white border border-fb-border rounded-xl overflow-hidden shadow-2xl">
+                <div className="flex items-center justify-between border-b border-fb-border pb-4"><h4 className="text-[10px] font-black text-fb-text-secondary uppercase tracking-widest">Vista previa del anuncio</h4><Maximize2 size={16} className="text-fb-text-secondary" /></div>
+                <div className="bg-white border border-fb-border rounded-2xl overflow-hidden shadow-2xl transition-all hover:shadow-fb-blue/10">
                    <div className="p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-fb-blue rounded-full flex items-center justify-center text-white font-bold">{projectData.agencyName?.[0] || 'A'}</div>
-                      <div className="flex flex-col">
-                         <span className="text-[13px] font-bold">{projectData.agencyName || 'Página'}</span>
-                         <span className="text-[11px] text-fb-text-secondary">Publicidad · {formData.adSet.location}</span>
-                      </div>
+                      <div className="w-10 h-10 bg-fb-blue rounded-full flex items-center justify-center text-white font-black shadow-md shadow-blue-100 text-lg">{projectData.agencyName?.[0] || 'A'}</div>
+                      <div className="flex flex-col"><span className="text-[13px] font-bold leading-tight">{projectData.agencyName || 'Página de Marca'}</span><span className="text-[11px] text-fb-text-secondary leading-none">Publicidad · {formData.adSet.location}</span></div>
                    </div>
-                   <div className="p-4 pt-0 text-[13px] leading-snug whitespace-pre-wrap min-h-[3em]">{formData.ad.primaryText || 'Texto principal aquí...'}</div>
-                   <div className="aspect-square bg-fb-bg flex items-center justify-center border-y border-fb-border"><ImageIcon size={64} className="opacity-10" /></div>
-                   <div className="p-4 flex items-center justify-between">
+                   <div className="p-4 pt-0 text-[13px] leading-snug whitespace-pre-wrap min-h-[3em] text-slate-800">{formData.ad.primaryText || 'El texto principal aparecerá aquí para captar la atención de tu audiencia...'}</div>
+                   <div className="aspect-square bg-fb-bg flex items-center justify-center border-y border-fb-border"><ImageIcon size={64} className="opacity-10 text-slate-400" /></div>
+                   <div className="p-4 flex items-center justify-between bg-white">
                       <div className="flex-grow pr-4 truncate">
-                         <div className="text-[10px] text-fb-text-secondary uppercase">SITIO.COM</div>
-                         <div className="text-[15px] font-bold truncate text-fb-text-primary">{formData.ad.headline || 'Título del anuncio'}</div>
+                         <div className="text-[10px] text-fb-text-secondary uppercase font-bold tracking-tight">SITIO.COM</div>
+                         <div className="text-[15px] font-bold truncate text-fb-text-primary tracking-tight">{formData.ad.headline || 'Título de tu anuncio'}</div>
                       </div>
-                      <button className="bg-[#e4e6eb] px-5 py-2 rounded-md text-[13px] font-bold">{formData.ad.cta === 'LEARN_MORE' ? 'Más información' : 'Ver más'}</button>
+                      <button className="bg-[#e4e6eb] hover:bg-[#d8dadf] px-5 py-2.5 rounded-lg text-[13px] font-bold transition-colors whitespace-nowrap">{formData.ad.cta === 'LEARN_MORE' ? 'Más información' : 'Ver más'}</button>
                    </div>
                 </div>
              </div>
