@@ -695,14 +695,52 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                     <div className="meta-editor-card">
                        <div className="meta-editor-section-title">Identidad</div>
-                       <div className="p-6">
-                          <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Página de Facebook</label>
-                          <div className="p-3 border border-fb-border rounded-sm bg-fb-header/30 flex items-center justify-between opacity-80">
-                             <div className="flex items-center gap-3">
-                               <div className="w-8 h-8 bg-fb-blue rounded-full flex items-center justify-center text-white font-bold">f</div>
-                               <span className="text-sm font-bold text-fb-text-secondary">{projectData.agencyName || 'Página seleccionada'}</span>
+                       <div className="p-6 space-y-6">
+                          <div>
+                            <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Página de Facebook</label>
+                            <div className="p-3 border border-fb-border rounded-sm bg-fb-header/30 flex items-center justify-between opacity-80">
+                               <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 bg-fb-blue rounded-full flex items-center justify-center text-white font-bold">f</div>
+                                 <span className="text-sm font-bold text-fb-text-secondary">{projectData.agencyName || 'Página seleccionada'}</span>
+                               </div>
+                               <ChevronDown size={16} className="text-fb-text-secondary" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Cuenta de Instagram</label>
+                            <div className="p-3 border border-fb-border rounded-sm bg-fb-header/30 flex items-center justify-between opacity-80">
+                               <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 rounded-full flex items-center justify-center text-white">
+                                    <ImageIcon size={14} />
+                                 </div>
+                                 <span className="text-sm font-bold text-fb-text-secondary">Usar página seleccionada</span>
+                               </div>
+                               <ChevronDown size={16} className="text-fb-text-secondary" />
+                            </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="meta-editor-card">
+                       <div className="meta-editor-section-title">Configuración del anuncio</div>
+                       <div className="p-6 space-y-6">
+                          <div>
+                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Formato</label>
+                             <div className="space-y-2">
+                                {[
+                                  { id: 'single', label: 'Una sola imagen o video', desc: 'Una imagen o un video, o una presentación con varias imágenes.' },
+                                  { id: 'carousel', label: 'Secuencia', desc: 'Dos o más imágenes o videos desplazables.' },
+                                  { id: 'collection', label: 'Colección', desc: 'Un grupo de artículos que se abre en una experiencia en pantalla completa.' }
+                                ].map(f => (
+                                  <label key={f.id} className={`flex items-start gap-3 p-3 border rounded-sm cursor-pointer transition-all ${formData.ad.format === f.id ? 'border-fb-blue bg-blue-50/20' : 'border-fb-border hover:bg-fb-header/50'}`}>
+                                     <input type="radio" name="format" checked={formData.ad.format === f.id} onChange={() => setFormData({...formData, ad: {...formData.ad, format: f.id}})} className="mt-1" />
+                                     <div className="flex flex-col">
+                                        <span className={`text-sm font-bold ${formData.ad.format === f.id ? 'text-fb-blue' : 'text-fb-text-primary'}`}>{f.label}</span>
+                                        <span className="text-[11px] text-fb-text-secondary">{f.desc}</span>
+                                     </div>
+                                  </label>
+                                ))}
                              </div>
-                             <ChevronDown size={16} className="text-fb-text-secondary" />
                           </div>
                        </div>
                     </div>
@@ -719,6 +757,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             </label>
                             <textarea 
                               className="meta-editor-input h-32 pt-3" 
+                              placeholder="Escribe el texto principal..."
                               value={formData.ad.primaryText} 
                               onChange={(e) => setFormData({...formData, ad: {...formData.ad, primaryText: e.target.value}})} 
                             />
@@ -730,24 +769,56 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                <input 
                                  type="text" 
                                  className="meta-editor-input font-bold" 
+                                 placeholder="Escribe un título corto..."
                                  value={formData.ad.headline} 
                                  onChange={(e) => setFormData({...formData, ad: {...formData.ad, headline: e.target.value}})} 
                                />
                              </div>
                              <div>
-                               <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Llamada a la acción</label>
-                               <select className="meta-editor-input" value={formData.ad.cta} onChange={(e) => setFormData({...formData, ad: {...formData.ad, cta: e.target.value}})}>
-                                 <option value="LEARN_MORE">Más información</option>
-                                 <option value="SUBSCRIBE">Suscribirte</option>
-                                 <option value="SEND_MESSAGE">Enviar mensaje</option>
-                               </select>
+                               <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Descripción (opcional)</label>
+                               <input 
+                                 type="text" 
+                                 className="meta-editor-input" 
+                                 placeholder="Añade más detalles..."
+                                 value={formData.ad.description} 
+                                 onChange={(e) => setFormData({...formData, ad: {...formData.ad, description: e.target.value}})} 
+                               />
                              </div>
+                          </div>
+
+                          <div>
+                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-2 block tracking-wider">Llamada a la acción</label>
+                             <select className="meta-editor-input font-bold" value={formData.ad.cta} onChange={(e) => setFormData({...formData, ad: {...formData.ad, cta: e.target.value}})}>
+                               <option value="LEARN_MORE">Más información</option>
+                               <option value="SUBSCRIBE">Suscribirte</option>
+                               <option value="SEND_MESSAGE">Enviar mensaje</option>
+                               <option value="SHOP_NOW">Comprar</option>
+                               <option value="SIGN_UP">Registrarte</option>
+                               <option value="CONTACT_US">Contactar</option>
+                             </select>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="meta-editor-card">
+                       <div className="meta-editor-section-title">Destino</div>
+                       <div className="p-6 space-y-4">
+                          <div>
+                             <label className="text-xs font-bold text-fb-text-secondary uppercase mb-1 block tracking-wider">URL del sitio web</label>
+                             <input 
+                               type="text" 
+                               className="meta-editor-input" 
+                               placeholder="https://ejemplo.com/pagina-destino" 
+                               value={formData.ad.destinationUrl} 
+                               onChange={(e) => setFormData({...formData, ad: {...formData.ad, destinationUrl: e.target.value}})} 
+                             />
                           </div>
 
                           <div className="justification-box">
                            <span className="justification-title">Justificación</span>
                            <textarea 
                              className="justification-input"
+                             placeholder="¿Por qué este diseño y copy conectarán con tu audiencia?"
                              value={formData.ad.creativeStrategyJustification}
                              onChange={(e) => setFormData({...formData, ad: {...formData.ad, creativeStrategyJustification: e.target.value}})}
                            />
