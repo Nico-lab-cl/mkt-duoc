@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../context/ProjectContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Layout, 
   Search, 
@@ -11,7 +11,14 @@ import {
   Users, 
   History,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  Home,
+  Monitor,
+  Palette,
+  LogOut,
+  Bell,
+  Menu,
+  X
 } from 'lucide-react';
 
 const platforms = [
@@ -19,52 +26,45 @@ const platforms = [
     id: 'meta',
     name: 'Meta Ads',
     description: 'Facebook & Instagram Ads Manager',
-    icon: <Layout size={40} />,
+    icon: <Layout size={24} />,
     color: 'bg-[#1877F2]',
-    lightColor: 'bg-[#E7F3FF]',
-    textColor: 'text-[#1877F2]',
     status: 'active'
   },
   {
     id: 'chatflow',
     name: 'Marketing Conversacional',
     description: 'Diseño de Chatbots y Flujos Omnicanal',
-    icon: <MessageSquare size={40} />,
+    icon: <MessageSquare size={24} />,
     color: 'bg-[#16a34a]',
-    lightColor: 'bg-[#f0fdf4]',
-    textColor: 'text-[#16a34a]',
     status: 'active'
   },
   {
     id: 'google',
     name: 'Google Ads',
     description: 'Search, Display & Video Campaigns',
-    icon: <Search size={40} />,
+    icon: <Search size={24} />,
     color: 'bg-[#4285F4]',
-    lightColor: 'bg-white',
-    textColor: 'text-slate-700',
-    border: 'border-2 border-slate-100',
     status: 'coming-soon'
   },
   {
     id: 'tiktok',
     name: 'TikTok Ads',
     description: 'For Business - Short Form Video',
-    icon: <Video size={40} />,
+    icon: <Video size={24} />,
     color: 'bg-black',
-    lightColor: 'bg-[#121212]',
-    textColor: 'text-white',
     status: 'coming-soon'
   }
 ];
 
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
-  const { projectData, currentUser } = useProject();
+  const { projectData, updateProjectData, currentUser } = useProject();
+  const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config'
   const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [] });
   const [loading, setLoading] = useState(false);
+  const [showProfileConfig, setShowProfileConfig] = useState(false);
 
   useEffect(() => {
-    if (currentUser?.role === 'admin') {
+    if (currentUser?.role === 'admin' && activeView === 'admin') {
       setLoading(true);
       fetch('/api/admin/all')
         .then(res => res.json())
@@ -73,145 +73,204 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
           setLoading(false);
         });
     }
-  }, [currentUser]);
+  }, [currentUser, activeView]);
+
+  const SidebarItem = ({ icon: Icon, label, view, badge }) => (
+    <button 
+      onClick={() => setActiveView(view)}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 ${activeView === view ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-500 hover:bg-slate-100'}`}
+    >
+      <Icon size={20} />
+      <span className="font-bold text-sm flex-grow text-left">{label}</span>
+      {badge && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{badge}</span>}
+    </button>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-12 flex justify-between items-start">
-          <div>
-            <h2 className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-              Dashboard Principal {currentUser?.role === 'admin' && <ShieldCheck size={14} />}
-            </h2>
-            <h1 className="text-4xl font-black text-slate-800 tracking-tighter">Bienvenido, {currentUser?.full_name.split(' ')[0]}</h1>
-            <div className="flex items-center gap-4 mt-3">
-               <p className="text-slate-500 text-sm">
-                 Sesión: <span className="font-bold text-slate-800">{currentUser?.email}</span>
-               </p>
-               {currentUser?.role === 'student' && (
-                 <button 
-                  onClick={onChangeGroup}
-                  className="px-3 py-1 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-all flex items-center gap-1.5 shadow-sm"
-                 >
-                   <Users size={12} /> Cambiar Grupo
-                 </button>
-               )}
-            </div>
-          </div>
-          <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hidden md:block">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado de Conexión</p>
-             <div className="flex items-center gap-2 text-green-600 font-bold text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                Base de Datos Conectada
-             </div>
-          </div>
-        </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          {platforms.map((platform, index) => (
-            <motion.button
-              key={platform.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={platform.status === 'active' ? { y: -8, transition: { duration: 0.2 } } : {}}
-              onClick={() => platform.status === 'active' && onSelectPlatform(platform.id)}
-              disabled={platform.status !== 'active'}
-              className={`relative overflow-hidden group p-8 rounded-3xl text-left glass-card transition-all ${platform.border || ''} ${platform.status === 'active' ? 'hover:shadow-2xl cursor-pointer' : 'opacity-60 cursor-not-allowed grayscale'}`}
-            >
-              {platform.status === 'coming-soon' && (
-                <div className="absolute top-4 right-4 bg-slate-200 text-slate-500 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
-                  Próximamente
-                </div>
-              )}
-
-              <div className={`w-16 h-16 ${platform.color} ${platform.id === 'google' ? 'shadow-inner' : 'text-white'} rounded-2xl flex items-center justify-center mb-6 transition-transform ${platform.status === 'active' ? 'group-hover:scale-110' : ''}`}>
-                {platform.icon}
-              </div>
-              
-              <h3 className="text-2xl font-bold text-slate-800 mb-2">{platform.name}</h3>
-              <p className="text-slate-500 mb-6 leading-relaxed text-sm">{platform.description}</p>
-              
-              <div className={`flex items-center gap-2 font-semibold ${platform.status === 'active' ? 'text-blue-600 group-hover:gap-4' : 'text-slate-400'} transition-all`}>
-                {platform.status === 'active' ? 'Configurar Canal' : 'En desarrollo'} <ArrowRight size={18} />
-              </div>
-
-              {/* Decorative Background Elements */}
-              <div className={`absolute -right-4 -bottom-4 w-32 h-32 ${platform.color} opacity-5 rounded-full blur-3xl`} />
-            </motion.button>
-          ))}
+    <div className="min-h-screen bg-slate-50 flex overflow-hidden">
+      {/* --- SIDEBAR --- */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col p-4 z-40">
+        <div className="flex items-center gap-3 px-2 mb-8">
+           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-100">
+              <ShieldCheck size={24} />
+           </div>
+           <div className="flex flex-col">
+              <span className="font-black text-slate-800 tracking-tighter leading-none">SIMULADOR</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MKA1215 v2.5</span>
+           </div>
         </div>
 
-        {/* --- PANEL DE ADMINISTRADOR (SOLO PROFE NICO) --- */}
-        {currentUser?.role === 'admin' && (
-          <motion.section 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-8"
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-               <div>
-                 <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Panel de Control Docente</h2>
-                 <p className="text-slate-500 text-sm">Monitoreo de campañas y flujos por grupo</p>
+        <nav className="flex-grow">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-4">Simulación</p>
+          <SidebarItem icon={Home} label="Dashboard" view="home" />
+          
+          {currentUser?.role === 'admin' && (
+            <>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mt-8 mb-4">Administración</p>
+              <SidebarItem icon={Monitor} label="Proyectos en Vivo" view="admin" badge="LIVE" />
+              <SidebarItem icon={Users} label="Gestión de Grupos" view="groups" />
+            </>
+          )}
+
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mt-8 mb-4">Personalización</p>
+          <SidebarItem icon={Settings} label="Configuración" view="config" />
+        </nav>
+
+        <div className="mt-auto pt-6 border-t border-slate-100">
+           <div className="p-4 bg-slate-50 rounded-2xl flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                 {currentUser?.full_name[0]}
+              </div>
+              <div className="flex flex-col truncate">
+                 <span className="text-xs font-bold text-slate-800 truncate">{currentUser?.full_name}</span>
+                 <span className="text-[10px] text-slate-400 font-bold uppercase truncate">{currentUser?.role}</span>
+              </div>
+           </div>
+           <button className="w-full flex items-center gap-2 px-4 py-2 text-red-500 font-bold text-xs hover:bg-red-50 rounded-lg transition-colors">
+              <LogOut size={16} /> Salir
+           </button>
+        </div>
+      </aside>
+
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-grow overflow-y-auto bg-[#F8FAFC] relative">
+        {/* Header Superior */}
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-10 sticky top-0 z-30">
+           <h2 className="text-xl font-black text-slate-800 tracking-tighter uppercase">
+             {activeView === 'home' && 'Canales de Operación'}
+             {activeView === 'admin' && 'Control de Proyectos Alumnos'}
+             {activeView === 'config' && 'Ajustes de Perfil'}
+           </h2>
+           
+           <div className="flex items-center gap-4">
+              <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors relative">
+                 <Bell size={20} />
+                 <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+              </button>
+              <div className="h-8 w-px bg-slate-200 mx-2" />
+              <button 
+                onClick={() => setActiveView('config')}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all group"
+              >
+                 <Settings size={18} className="text-slate-500 group-hover:rotate-90 transition-transform duration-500" />
+                 <span className="text-sm font-bold text-slate-600">Configurar</span>
+              </button>
+           </div>
+        </header>
+
+        <div className="p-10">
+          {activeView === 'home' && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+               <div className="bg-blue-600 p-8 rounded-[2rem] text-white flex items-center justify-between shadow-2xl shadow-blue-200 relative overflow-hidden">
+                  <div className="relative z-10">
+                    <h3 className="text-3xl font-black tracking-tighter mb-2 italic">ESTADO DEL PROYECTO: {projectData.projectName.toUpperCase()}</h3>
+                    <p className="text-blue-100 font-medium max-w-lg">Has iniciado sesión como {currentUser?.full_name}. Selecciona una plataforma para continuar diseñando tu estrategia de Inbound Marketing.</p>
+                  </div>
+                  <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                </div>
-               <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold text-slate-600 transition-all">
-                 <History size={18} /> Exportar Reporte Global
-               </button>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map(groupId => (
-                <div key={groupId} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="bg-slate-900 p-4 text-white">
-                    <h4 className="font-bold flex items-center gap-2 italic">
-                      <Users size={16} /> Grupo {groupId}
-                    </h4>
-                  </div>
-                  <div className="p-4 space-y-6">
-                    {/* Campañas del grupo */}
-                    <div>
-                      <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Campañas Meta Ads</h5>
-                      <div className="space-y-2">
-                        {adminData.campaigns.filter(c => c.group_id === groupId).map(camp => (
-                          <div key={camp.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between group">
-                            <div>
-                              <p className="text-xs font-bold text-slate-800 truncate max-w-[120px]">{camp.name}</p>
-                              <p className="text-[10px] text-slate-500">{camp.student_name.split(' ')[0]}</p>
-                            </div>
-                            <ExternalLink size={14} className="text-slate-300 group-hover:text-blue-600 cursor-pointer" />
-                          </div>
-                        ))}
-                        {adminData.campaigns.filter(c => c.group_id === groupId).length === 0 && (
-                          <p className="text-[10px] text-slate-400 italic">Sin campañas aún</p>
-                        )}
-                      </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+                {platforms.map((platform, index) => (
+                  <motion.button
+                    key={platform.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => platform.status === 'active' && onSelectPlatform(platform.id)}
+                    className={`group p-8 rounded-3xl bg-white border border-slate-200 text-left shadow-sm transition-all ${platform.status === 'active' ? 'hover:shadow-2xl hover:border-blue-500 cursor-pointer' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                  >
+                    <div className={`w-12 h-12 ${platform.color} rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform`}>
+                      {platform.icon}
                     </div>
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tighter mb-2">{platform.name}</h3>
+                    <p className="text-slate-500 text-sm mb-6 leading-relaxed">{platform.description}</p>
+                    <div className={`flex items-center gap-2 font-black text-xs uppercase tracking-widest ${platform.status === 'active' ? 'text-blue-600' : 'text-slate-400'}`}>
+                      {platform.status === 'active' ? 'Iniciar Simulación' : 'Próximamente'} <ArrowRight size={16} />
+                    </div>
+                  </motion.button>
+                ))}
+               </div>
+            </motion.div>
+          )}
 
-                    {/* Chatflows del grupo */}
-                    <div>
-                      <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Chatflows</h5>
-                      <div className="space-y-2">
-                        {adminData.chatflows.filter(ch => ch.group_id === groupId).map(flow => (
-                          <div key={flow.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between group">
-                            <div>
-                              <p className="text-xs font-bold text-slate-800 truncate max-w-[120px]">{flow.name}</p>
-                              <p className="text-[10px] text-slate-500">{flow.student_name.split(' ')[0]}</p>
+          {activeView === 'admin' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {[1, 2, 3].map(groupId => (
+                    <div key={groupId} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
+                       <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+                          <h4 className="font-black italic tracking-tighter text-xl uppercase">Grupo {groupId}</h4>
+                          <span className="bg-green-500 w-2 h-2 rounded-full animate-pulse" />
+                       </div>
+                       <div className="p-6 flex-grow overflow-y-auto custom-scrollbar space-y-4">
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Entregas de Campañas (Meta)</h5>
+                          {adminData.campaigns.filter(c => c.group_id === groupId).map(camp => (
+                            <div key={camp.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-blue-200 transition-all cursor-pointer">
+                               <p className="text-sm font-bold text-slate-800 mb-1">{camp.name}</p>
+                               <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-blue-600 uppercase italic">{camp.student_name}</span>
+                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-blue-500" />
+                               </div>
                             </div>
-                            <ExternalLink size={14} className="text-slate-300 group-hover:text-green-600 cursor-pointer" />
-                          </div>
-                        ))}
-                        {adminData.chatflows.filter(ch => ch.group_id === groupId).length === 0 && (
-                          <p className="text-[10px] text-slate-400 italic">Sin flujos aún</p>
-                        )}
-                      </div>
+                          ))}
+                          
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Estrategias Conversacionales</h5>
+                          {adminData.chatflows.filter(ch => ch.group_id === groupId).map(flow => (
+                            <div key={flow.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-green-200 transition-all cursor-pointer">
+                               <p className="text-sm font-bold text-slate-800 mb-1">{flow.name}</p>
+                               <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-green-600 uppercase italic">{flow.student_name}</span>
+                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-green-500" />
+                               </div>
+                            </div>
+                          ))}
+                       </div>
                     </div>
+                  ))}
+               </div>
+            </motion.div>
+          )}
+
+          {activeView === 'config' && (
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl bg-white rounded-[2rem] border border-slate-200 p-12 shadow-xl shadow-slate-100 mx-auto">
+               <div className="text-center mb-10">
+                  <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                     <Palette size={40} />
                   </div>
-                </div>
-              ))}
-            </div>
-          </motion.section>
-        )}
-      </div>
+                  <h3 className="text-3xl font-black tracking-tighter text-slate-800">CONFIGURA TU IDENTIDAD</h3>
+                  <p className="text-slate-500 font-medium">Personaliza cómo se verá tu marca en el simulador.</p>
+               </div>
+
+               <div className="space-y-8">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Nombre de la Agencia / Grupo</label>
+                    <input 
+                      type="text" 
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                      value={projectData.agencyName}
+                      onChange={(e) => updateProjectData({ agencyName: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Nombre del Proyecto Actual</label>
+                    <input 
+                      type="text" 
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                      value={projectData.projectName}
+                      onChange={(e) => updateProjectData({ projectName: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="pt-6">
+                     <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all">
+                        Guardar Cambios de Diseño
+                     </button>
+                  </div>
+               </div>
+            </motion.div>
+          )}
+        </div>
+      </main>
     </div>
   );
 };
