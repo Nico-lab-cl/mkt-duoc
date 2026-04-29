@@ -27,9 +27,8 @@ import {
   Home,
   Zap,
   Smartphone,
-  Facebook,
-  Instagram,
-  Target
+  Target,
+  Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -427,8 +426,8 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                  const platforms = formData.adSet.platforms.includes(p) ? formData.adSet.platforms.filter(x => x !== p) : [...formData.adSet.platforms, p];
                                  setFormData({...formData, adSet: {...formData.adSet, platforms}});
                                }}>
-                                 {p === 'facebook' && <Facebook size={24} />}
-                                 {p === 'instagram' && <Instagram size={24} />}
+                                 {p === 'facebook' && <Layout size={24} />}
+                                 {p === 'instagram' && <Camera size={24} />}
                                  {p === 'messenger' && <Send size={24} />}
                                  {p === 'audience' && <Target size={24} />}
                                  <span className="text-[10px] font-black uppercase">{p}</span>
@@ -475,9 +474,9 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                        <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center border border-green-200">
-                                   <Zap size={20} />
-                                </div>
+                                 <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 rounded-full flex items-center justify-center text-white">
+                                    <Camera size={14} />
+                                 </div>
                                 <div className="flex flex-col">
                                    <span className="text-sm font-bold text-slate-800">Pixel de {projectData.agencyName || 'Marca'}</span>
                                    <span className="text-[10px] text-green-500 font-black uppercase">Activo y Recibiendo Eventos</span>
