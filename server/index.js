@@ -108,14 +108,14 @@ app.get('/api/admin/all', async (req, res) => {
     const campaigns = await pool.query(`
       SELECT c.*, u.full_name as student_name, g.name as group_name 
       FROM campaigns c 
-      JOIN users u ON c.user_id = u.id 
-      JOIN groups g ON c.group_id = g.id
+      LEFT JOIN users u ON c.user_id = u.id 
+      LEFT JOIN groups g ON c.group_id = g.id
     `);
     const chatflows = await pool.query(`
       SELECT ch.*, u.full_name as student_name, g.name as group_name 
       FROM chatflows ch 
-      JOIN users u ON ch.user_id = u.id 
-      JOIN groups g ON ch.group_id = g.id
+      LEFT JOIN users u ON ch.user_id = u.id 
+      LEFT JOIN groups g ON ch.group_id = g.id
     `);
     res.json({ campaigns: campaigns.rows, chatflows: chatflows.rows });
   } catch (err) {
