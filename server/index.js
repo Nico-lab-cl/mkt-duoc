@@ -78,28 +78,66 @@ app.post('/api/select-group', async (req, res) => {
 });
 
 app.post('/api/campaigns', async (req, res) => {
-  const { name, userId, groupId, data } = req.body;
+  const { id, name, userId, groupId, data } = req.body;
   try {
-    const result = await pool.query(
-      'INSERT INTO campaigns (name, user_id, group_id, data) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, userId, groupId, data]
-    );
+    let result;
+    if (id) {
+      result = await pool.query(
+        'UPDATE campaigns SET name = $1, data = $2 WHERE id = $3 RETURNING *',
+        [name, data, id]
+      );
+    } else {
+      result = await pool.query(
+        'INSERT INTO campaigns (name, user_id, group_id, data) VALUES ($1, $2, $3, $4) RETURNING *',
+        [name, userId, groupId, data]
+      );
+    }
     res.json({ success: true, campaign: result.rows[0] });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Error al guardar campaña' });
   }
 });
 
-app.post('/api/chatflows', async (req, res) => {
-  const { name, userId, groupId, data } = req.body;
+app.delete('/api/campaigns/:id', async (req, res) => {
+  const { id } = req.params;
   try {
-    const result = await pool.query(
-      'INSERT INTO chatflows (name, user_id, group_id, data) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, userId, groupId, data]
-    );
+    await pool.query('DELETE FROM campaigns WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Campaña eliminada' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar campaña' });
+  }
+});
+
+app.post('/api/chatflows', async (req, res) => {
+  const { id, name, userId, groupId, data } = req.body;
+  try {
+    let result;
+    if (id) {
+      result = await pool.query(
+        'UPDATE chatflows SET name = $1, data = $2 WHERE id = $3 RETURNING *',
+        [name, data, id]
+      );
+    } else {
+      result = await pool.query(
+        'INSERT INTO chatflows (name, user_id, group_id, data) VALUES ($1, $2, $3, $4) RETURNING *',
+        [name, userId, groupId, data]
+      );
+    }
     res.json({ success: true, chatflow: result.rows[0] });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Error al guardar chatflow' });
+  }
+});
+
+app.delete('/api/chatflows/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM chatflows WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Chatflow eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar chatflow' });
   }
 });
 

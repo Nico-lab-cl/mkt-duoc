@@ -164,6 +164,24 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     setView('modal');
   };
 
+  const handleDeleteCampaign = async () => {
+    if (!selectedCampaignId) return;
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta campaña?')) return;
+    
+    try {
+      const res = await fetch(`/api/campaigns/${selectedCampaignId}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedCampaignId(null);
+        fetchCampaigns();
+      }
+    } catch (err) {
+      console.error('Error deleting campaign:', err);
+    }
+  };
+
   const handleFinish = async () => {
     updateProjectData({ platform, ...formData });
     try {
@@ -230,7 +248,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                  }} disabled={!selectedCampaignId}><Edit2 size={14} /> Editar</button>
                  <button className="meta-btn-secondary" disabled={!selectedCampaignId}><Copy size={14} /> Duplicar</button>
                  <div className="h-6 w-px bg-fb-border mx-1" />
-                 <button className="meta-btn-secondary" disabled={!selectedCampaignId}><Trash2 size={14} /></button>
+                 <button onClick={handleDeleteCampaign} className="meta-btn-secondary" disabled={!selectedCampaignId}><Trash2 size={14} /></button>
                </div>
                <button onClick={fetchCampaigns} className="p-2 hover:bg-fb-header rounded-full text-slate-500"><RotateCcw size={16} className={loadingCampaigns ? 'animate-spin' : ''} /></button>
             </div>
