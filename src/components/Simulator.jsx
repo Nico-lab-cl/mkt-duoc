@@ -72,8 +72,9 @@ const Simulator = ({ platform, onFinish, onBack }) => {
   const [savedCampaigns, setSavedCampaigns] = useState([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [showBuyingTypeDropdown, setShowBuyingTypeDropdown] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
 
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     objective: 'awareness',
     objectiveJustification: '',
     campaignName: 'Nueva campaña de Reconocimiento',
@@ -126,15 +127,42 @@ const Simulator = ({ platform, onFinish, onBack }) => {
         urlParams: 'key1=value1&key2=value2'
       }
     }
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
+
+  const fetchCampaigns = async () => {
+    setLoadingCampaigns(true);
+    const url = currentUser?.role === 'admin' ? '/api/admin/all' : `/api/group-data/${currentUser?.group_id}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      setSavedCampaigns(data.campaigns || []);
+    } catch (err) {
+      console.error('Error fetching campaigns:', err);
+    } finally {
+      setLoadingCampaigns(false);
+    }
+  };
 
   useEffect(() => {
     if (view === 'manager') {
-      setLoadingCampaigns(true);
-      const url = currentUser?.role === 'admin' ? '/api/admin/all' : `/api/group-data/${currentUser?.group_id}`;
-      fetch(url).then(res => res.json()).then(data => { setSavedCampaigns(data.campaigns || []); setLoadingCampaigns(false); }).catch(err => { console.error(err); setLoadingCampaigns(false); });
+      fetchCampaigns();
     }
   }, [view, currentUser]);
+
+  const handleEditCampaign = (camp) => {
+    setFormData(camp.data || initialFormState);
+    setSelectedCampaignId(camp.id);
+    setView('editor');
+    setCurrentStep(1);
+  };
+
+  const handleCreateNew = () => {
+    setFormData(initialFormState);
+    setSelectedCampaignId(null);
+    setView('modal');
+  };
 
   const handleFinish = async () => {
     updateProjectData({ platform, ...formData });
@@ -142,7 +170,13 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       await fetch('/api/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formData.campaignName, userId: currentUser.id, groupId: currentUser.group_id, data: formData })
+        body: JSON.stringify({ 
+          id: selectedCampaignId, // Enviar ID si estamos editando
+          name: formData.campaignName, 
+          userId: currentUser.id, 
+          groupId: currentUser.group_id, 
+          data: formData 
+        })
       });
     } catch (err) { console.error('Error saving campaign'); }
     onFinish();
@@ -188,7 +222,17 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                </div>
             </div>
             <div className="bg-white border-b border-fb-border p-2 flex items-center justify-between">
-               <button onClick={() => setView('modal')} className="meta-btn-green"><Plus size={16} /> Crear</button>
+               <div className="flex items-center gap-2">
+                 <button onClick={handleCreateNew} className="meta-btn-green"><Plus size={16} /> Crear</button>
+                 <button className="meta-btn-secondary" onClick={() => {
+                   const camp = savedCampaigns.find(c => c.id === selectedCampaignId);
+                   if (camp) handleEditCampaign(camp);
+                 }} disabled={!selectedCampaignId}><Edit2 size={14} /> Editar</button>
+                 <button className="meta-btn-secondary" disabled={!selectedCampaignId}><Copy size={14} /> Duplicar</button>
+                 <div className="h-6 w-px bg-fb-border mx-1" />
+                 <button className="meta-btn-secondary" disabled={!selectedCampaignId}><Trash2 size={14} /></button>
+               </div>
+               <button onClick={fetchCampaigns} className="p-2 hover:bg-fb-header rounded-full text-slate-500"><RotateCcw size={16} className={loadingCampaigns ? 'animate-spin' : ''} /></button>
             </div>
             <div className="flex-grow overflow-auto bg-white">
               <div className="min-w-[1200px]">
@@ -199,15 +243,45 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                   <div className="w-32 px-3 flex items-center">Entrega</div>
                   <div className="w-32 px-3 flex items-center">Resultados</div>
                   <div className="w-32 px-3 flex items-center">Presupuesto</div>
+                  {currentUser?.role === 'admin' && <div className="flex-grow px-3 flex items-center border-l border-fb-border text-fb-blue">Autor (Alumno)</div>}
                 </div>
-                {savedCampaigns.map((camp) => (
-                  <div key={camp.id} className="flex h-12 border-b border-fb-border items-center text-[12px]">
-                    <div className="w-12 flex justify-center"><input type="checkbox" /></div>
-                    <div className="w-40 px-3 flex items-center gap-2"><div className="w-8 h-4 bg-fb-blue/20 rounded-full relative"><div className="absolute left-1 top-1 w-2 h-2 bg-fb-blue rounded-full" /></div><span className="font-bold text-fb-blue uppercase">Activa</span></div>
-                    <div className="w-[350px] px-3 font-bold text-fb-blue hover:underline cursor-pointer truncate">{camp.name}</div>
+                {loadingCampaigns ? (
+                  <div className="flex flex-col gap-4 p-12 items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-fb-blue border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando campañas...</span>
+                  </div>
+                ) : savedCampaigns.length === 0 ? (
+                  <div className="p-20 text-center space-y-4">
+                     <Megaphone size={48} className="mx-auto text-slate-200" />
+                     <p className="text-slate-400 font-bold">No hay campañas guardadas aún.</p>
+                     <button onClick={handleCreateNew} className="text-fb-blue font-bold hover:underline">¡Crea tu primera campaña!</button>
+                  </div>
+                ) : savedCampaigns.map((camp) => (
+                  <div 
+                    key={camp.id} 
+                    className={`flex h-12 border-b border-fb-border items-center text-[12px] cursor-pointer transition-colors ${selectedCampaignId === camp.id ? 'bg-blue-50/50' : 'hover:bg-fb-header/40'}`}
+                    onClick={() => setSelectedCampaignId(camp.id)}
+                    onDoubleClick={() => handleEditCampaign(camp)}
+                  >
+                    <div className="w-12 flex justify-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selectedCampaignId === camp.id} onChange={() => setSelectedCampaignId(camp.id)} /></div>
+                    <div className="w-40 px-3 flex items-center gap-2">
+                      <div className={`w-8 h-4 ${camp.data?.active !== false ? 'bg-fb-blue/20' : 'bg-slate-200'} rounded-full relative`}>
+                        <div className={`absolute top-1 w-2 h-2 rounded-full ${camp.data?.active !== false ? 'left-5 bg-fb-blue' : 'left-1 bg-slate-400'}`} />
+                      </div>
+                      <span className={`font-bold uppercase ${camp.data?.active !== false ? 'text-fb-blue' : 'text-slate-400'}`}>Activa</span>
+                    </div>
+                    <div className="w-[350px] px-3 font-bold text-fb-blue hover:underline truncate" onClick={() => handleEditCampaign(camp)}>
+                      {camp.name}
+                    </div>
                     <div className="w-32 px-3 text-slate-600">Aprendizaje</div>
                     <div className="w-32 px-3 font-bold">{Math.floor(Math.random() * 50)}</div>
                     <div className="w-32 px-3 font-bold">${camp.data?.adSet?.budget || '2.500'} CLP</div>
+                    {currentUser?.role === 'admin' && (
+                      <div className="flex-grow px-3 border-l border-fb-border flex flex-col justify-center">
+                        <span className="font-bold text-slate-700">{camp.student_name || 'Desconocido'}</span>
+                        <span className="text-[10px] text-fb-text-secondary">Grupo {camp.group_id}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -340,6 +414,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div><label className="text-[11px] font-black text-slate-800 uppercase block mb-1 flex items-center gap-1">Estrategia de puja de la campaña <HelpCircle size={12} /></label><div className="text-[13px] font-bold text-fb-text-primary">{formData.bidStrategy}</div></div>
                          </div>
                       </div>
+                      <div className="meta-editor-card p-6"><div className="justification-box"><span className="justification-title">Justificación</span><textarea className="justification-input" placeholder="Justificación estratégica de la campaña..." value={formData.objectiveJustification} onChange={(e) => setFormData({...formData, objectiveJustification: e.target.value})} /></div></div>
                     </motion.div>
                   )}
 
@@ -361,6 +436,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div className="grid grid-cols-2 gap-6"><div><label className="text-[12px] font-bold text-slate-800 block mb-1">Fecha de inicio</label><div className="flex gap-2"><input type="date" className="meta-editor-input font-bold flex-grow" value={formData.adSet.startDate} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, startDate: e.target.value}})} /><input type="time" className="meta-editor-input font-bold w-24" value={formData.adSet.startTime} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, startTime: e.target.value}})} /></div></div><div><div className="flex items-center gap-2 mb-1"><input type="checkbox" className="rounded" checked={formData.adSet.endDateEnabled} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, endDateEnabled: e.target.checked}})} /><label className="text-[12px] font-bold text-slate-800">Definir una fecha de finalización</label></div><div className={`flex gap-2 transition-opacity ${formData.adSet.endDateEnabled ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}><input type="date" className="meta-editor-input font-bold flex-grow" value={formData.adSet.endDate} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, endDate: e.target.value}})} /><input type="time" className="meta-editor-input font-bold w-24" value={formData.adSet.endTime} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, endTime: e.target.value}})} /></div></div></div>
                          </div>
                       </div>
+                      <div className="meta-editor-card p-6"><div className="justification-box"><span className="justification-title">Justificación</span><textarea className="justification-input" placeholder="Justificación estratégica del conjunto de anuncios..." value={formData.adSet.adSetJustification} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, adSetJustification: e.target.value}})} /></div></div>
                     </motion.div>
                   )}
 
@@ -370,82 +446,30 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                          <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Nombre del anuncio</span></div>
                          <div className="p-6 flex items-center gap-4"><input type="text" className="meta-editor-input flex-grow" value={formData.ad.name} onChange={(e) => setFormData({...formData, ad: {...formData.ad, name: e.target.value}})} /><button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header transition-colors">Crear plantilla</button></div>
                       </div>
-
-                      <div className="meta-editor-card p-4 flex items-center justify-between">
-                         <div className="flex flex-col"><span className="text-sm font-bold text-slate-800">Anuncio con socio</span><p className="text-[11px] text-fb-text-secondary leading-tight">Publica anuncios con creadores, marcas y otras empresas...</p></div>
-                         <div className="flex items-center gap-2"><span className="text-[11px] font-bold text-slate-400">No</span><div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors bg-fb-border`}><div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-all`} /></div></div>
-                      </div>
-
                       <div className="meta-editor-card p-0">
                          <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-4 h-4 bg-fb-blue rounded-full flex items-center justify-center text-white"><div className="w-2 h-2 border-r border-t border-white rotate-45" /></div><span className="text-[13px] font-bold">Identidad</span></div>
                          <div className="p-6 space-y-6">
-                            <p className="text-[11px] text-fb-text-secondary">Los perfiles que se usarán en tu anuncio.</p>
                             <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Página de Facebook <HelpCircle size={14} className="inline text-slate-400" /></label><select className="meta-editor-input font-bold" value={formData.adSet.pageName} readOnly><option>{formData.adSet.pageName}</option></select></div>
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Perfil de Instagram <HelpCircle size={14} className="inline text-slate-400" /></label><select className="meta-editor-input font-bold"><option>Seleccionar perfil</option><option>{formData.adSet.pageName}</option></select></div>
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Número de teléfono de WhatsApp <HelpCircle size={14} className="inline text-slate-400" /></label><div className="flex gap-2"><select className="meta-editor-input font-bold flex-grow"><option>Selecciona un número de W...</option></select><button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header">Conectar perfil</button></div></div>
+                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Perfil de Instagram <HelpCircle size={14} className="inline text-slate-400" /></label><select className="meta-editor-input font-bold"><option>{formData.adSet.pageName}</option></select></div>
+                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">WhatsApp <HelpCircle size={14} className="inline text-slate-400" /></label><div className="flex gap-2"><select className="meta-editor-input font-bold flex-grow"><option>Selecciona un número...</option></select><button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header">Conectar</button></div></div>
                          </div>
                       </div>
-
                       <div className="meta-editor-card p-0">
                          <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Configuración del anuncio</span></div>
                          <div className="p-6 space-y-6">
-                            <select className="meta-editor-input font-bold"><option>Crear anuncio</option><option>Usar publicación existente</option></select>
-                            <div className="space-y-3">
-                               <label className="text-[12px] font-bold text-slate-800 block">Formato <HelpCircle size={14} className="inline text-slate-400" /></label>
-                               <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg space-y-3">
-                                  <div className="flex items-start gap-3"><Info size={16} className="text-fb-blue mt-0.5" /><div><span className="text-[13px] font-bold block">Cambió la selección de formato</span><p className="text-[11px] text-slate-600 leading-relaxed">Opciones de visualización del formato en "Contenido del anuncio" es la nueva forma de mostrar tu anuncio...</p></div></div>
-                               </div>
-                               <div className="space-y-2 pl-2 pt-2">
-                                  <label className="flex items-center gap-3 cursor-pointer"><div className="w-5 h-5 rounded-full border-2 border-fb-blue flex items-center justify-center"><div className="w-2.5 h-2.5 bg-fb-blue rounded-full" /></div><span className="text-[13px] text-slate-700">Un solo vídeo o imagen</span></label>
-                                  <label className="flex items-center gap-3 cursor-pointer opacity-50"><div className="w-5 h-5 rounded-full border-2 border-slate-300" /><span className="text-[13px] text-slate-700">Secuencia</span></label>
-                               </div>
-                            </div>
-                            <div className="flex items-start gap-3 p-4 bg-fb-header/20 rounded-lg">
-                               <input type="checkbox" className="rounded mt-1" />
-                               <div><span className="text-[13px] font-bold block">Anuncios multianunciante</span><p className="text-[11px] text-fb-text-secondary leading-tight">Tu anuncio puede aparecer con otros en el mismo bloque de anuncios...</p></div>
+                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg flex items-start gap-3"><Info size={16} className="text-fb-blue mt-0.5" /><div><span className="text-[13px] font-bold block">Cambió la selección de formato</span><p className="text-[11px] text-slate-600 leading-relaxed">Opciones de visualización del formato es la nueva forma de mostrar tu anuncio...</p></div></div>
+                            <div className="space-y-2 pl-2">
+                               <label className="flex items-center gap-3 cursor-pointer"><div className="w-5 h-5 rounded-full border-2 border-fb-blue flex items-center justify-center"><div className="w-2.5 h-2.5 bg-fb-blue rounded-full" /></div><span className="text-[13px] text-slate-700">Un solo vídeo o imagen</span></label>
+                               <label className="flex items-center gap-3 cursor-pointer opacity-50"><div className="w-5 h-5 rounded-full border-2 border-slate-300" /><span className="text-[13px] text-slate-700">Secuencia</span></label>
                             </div>
                          </div>
                       </div>
-
-                      <div className="meta-editor-card p-0">
-                         <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Contenido del anuncio</span></div>
-                         <div className="p-6 space-y-6">
-                            <button className="px-4 py-2 border border-fb-border rounded-md text-[13px] font-bold flex items-center gap-2">Configurar contenido <ChevronDown size={16} /></button>
-                            <div className="pt-4 border-t border-fb-border space-y-3">
-                               <label className="text-[12px] font-bold text-slate-800 block flex items-center gap-1">Tests de contenido <HelpCircle size={14} className="text-slate-400" /></label>
-                               <p className="text-[11px] text-fb-text-secondary leading-tight">Compara hasta 5 versiones diferentes de tu contenido en un test...</p>
-                               <button className="px-4 py-2 border border-fb-border rounded-md text-[13px] font-bold">Configurar prueba</button>
-                            </div>
-                         </div>
-                      </div>
-
-                      <div className="meta-editor-card p-0">
-                         <div className="p-4 border-b border-fb-border flex items-center justify-between">
-                            <span className="text-[13px] font-bold">Idiomas</span>
-                            <div className="flex items-center gap-2"><span className="text-[11px] font-bold text-slate-400">Desactivado</span><div className="w-10 h-5 rounded-full bg-fb-border relative"><div className="absolute top-1 left-1 w-3 h-3 bg-white rounded-full" /></div></div>
-                         </div>
-                      </div>
-
                       <div className="meta-editor-card p-0">
                          <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Seguimiento</span></div>
-                         <div className="p-6 space-y-6">
-                            <p className="text-[11px] text-fb-text-secondary leading-relaxed">Elige los eventos de conversión a los que quieres hacerles seguimiento...</p>
-                            <div className="space-y-3">
-                               <label className="flex items-center gap-3 text-[13px] text-slate-700 opacity-50"><div className="w-4 h-4 border border-slate-300 rounded" /> Eventos del sitio web</label>
-                               <label className="flex items-center gap-3 text-[13px] text-slate-700 opacity-50"><div className="w-4 h-4 border border-slate-300 rounded" /> Eventos de la aplicación</label>
-                            </div>
-                            <div>
-                               <label className="text-[12px] font-bold text-slate-800 block mb-1 flex items-center gap-1">Parámetros de URL <HelpCircle size={14} className="text-slate-400" /></label>
-                               <input type="text" className="meta-editor-input font-bold" value={formData.ad.tracking.urlParams} onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, urlParams: e.target.value}}})} />
-                            </div>
-                            <div className="pt-4 border-t border-fb-border">
-                               <h5 className="text-[12px] font-bold mb-1">Herramienta de informes de terceros</h5>
-                               <p className="text-[11px] text-fb-text-secondary mb-3 leading-tight">Conecta tu cuenta para medir las acciones de los anuncios que envían a las personas a tu sitio...</p>
-                               <button className="px-4 py-2 border border-fb-border rounded-md text-[13px] font-bold">Conectar</button>
-                            </div>
+                         <div className="p-6 space-y-4">
+                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Parámetros de URL</label><input type="text" className="meta-editor-input font-bold" value={formData.ad.tracking.urlParams} onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, urlParams: e.target.value}}})} /></div>
                          </div>
                       </div>
-
                       <div className="meta-editor-card p-6"><div className="justification-box"><span className="justification-title">Justificación</span><textarea className="justification-input" placeholder="Justificación estratégica del anuncio..." value={formData.ad.creativeStrategyJustification} onChange={(e) => setFormData({...formData, ad: {...formData.ad, creativeStrategyJustification: e.target.value}})} /></div></div>
                     </motion.div>
                   )}
@@ -456,11 +480,16 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                       <div className="w-16 h-16 rounded-full border-[6px] border-fb-blue border-t-fb-header flex items-center justify-center"><span className="text-xl font-black text-fb-text-primary">100</span></div>
                       <div className="flex flex-col pr-2"><div className="flex items-center gap-1"><span className="text-[13px] font-bold">Puntuación</span><HelpCircle size={12} className="text-slate-400" /></div><p className="text-[11px] text-fb-text-secondary leading-tight mt-1">Configuración óptima detectada.</p></div>
                    </div>
+                   {currentStep === 2 && (
+                     <div className="bg-white border border-fb-border rounded-lg p-6 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between"><span className="text-[13px] font-bold">Público estimado</span><HelpCircle size={14} className="text-slate-400" /></div>
+                        <div className="text-xl font-black text-slate-800">16 800 000 - 19 700 000</div>
+                        <div className="h-1.5 w-full bg-fb-header rounded-full overflow-hidden flex"><div className="w-1/3 bg-yellow-400" /><div className="w-1/3 bg-green-500 border-x-4 border-white" /><div className="w-1/3 bg-red-400" /></div>
+                     </div>
+                   )}
                    {currentStep === 3 && (
                      <div className="bg-white border border-fb-border rounded-lg p-4 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="w-10 h-5 bg-fb-header rounded-full relative"><div className="absolute top-1 left-1 w-3 h-3 bg-slate-400 rounded-full" /></div><span className="text-[11px] font-bold">Vista previa del anuncio</span></div></div>
                         <button className="w-full py-2 border border-fb-border rounded-md text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-fb-header"><Maximize2 size={14} /> Vista previa avanzada</button>
-                        <div className="flex justify-center pt-2"><button className="p-2 border border-fb-border rounded-md text-slate-400"><Share2 size={18} /></button></div>
                      </div>
                    )}
                 </div>
@@ -469,7 +498,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
           <footer className="h-14 bg-white border-t border-fb-border px-6 flex items-center justify-between z-40 fixed bottom-0 left-0 right-0">
              <button onClick={() => setView('manager')} className="px-4 py-2 border border-fb-border rounded-md text-[13px] font-bold hover:bg-fb-header">Cerrar</button>
              <div className="flex gap-4">
-                <button onClick={() => setCurrentStep(currentStep - 1)} className="px-8 py-2 border border-fb-border rounded-md text-[13px] font-bold hover:bg-fb-header">Atrás</button>
+                <button onClick={() => setCurrentStep(currentStep - 1)} className="px-8 py-2 border border-fb-border rounded-md text-[13px] font-bold hover:bg-fb-header" disabled={currentStep === 1}>Atrás</button>
                 {currentStep === 3 ? (
                   <button onClick={handleFinish} className="px-10 py-2 bg-fb-blue text-white rounded-md text-[13px] font-bold shadow-md hover:bg-blue-700">Finalizar y Guardar</button>
                 ) : (
