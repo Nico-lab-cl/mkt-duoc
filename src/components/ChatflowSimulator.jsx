@@ -26,7 +26,7 @@ const nodeTypes = {
 };
 
 const ChatflowSimulator = ({ onBack, onFinish }) => {
-  const { projectData } = useProject();
+  const { projectData, currentUser } = useProject();
   const [nodes, setNodes] = useState([
     { 
       id: '1', 
@@ -474,7 +474,23 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
                    <p className="text-sm font-bold">Datos listos para captura de pantalla y entrega.</p>
                  </div>
                  <button 
-                  onClick={onFinish}
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/chatflows', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          name: `Chatflow - ${trigger}`,
+                          userId: currentUser.id,
+                          groupId: currentUser.group_id,
+                          data: nodes
+                        })
+                      });
+                    } catch (err) {
+                      console.error('Error saving chatflow');
+                    }
+                    onFinish();
+                  }}
                   className="px-6 py-2 bg-blue-600 rounded-lg font-bold hover:bg-blue-700 transition-colors"
                  >
                    Confirmar Finalización

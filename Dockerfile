@@ -1,28 +1,29 @@
-# Etapa de construcción
+# Stage 1: Build React Frontend
 FROM node:20-alpine as build
-
 WORKDIR /app
-
-# Copiar archivos de dependencias
 COPY package*.json ./
-
-# Instalar dependencias
 RUN npm install
-
-# Copiar el resto del código
 COPY . .
-
-# Construir la aplicación para producción
 RUN npm run build
 
-# Etapa de producción (Servidor Nginx)
-FROM nginx:stable-alpine
+# Stage 2: Run Express Server
+FROM node:20-alpine
+WORKDIR /app
 
-# Copiar los archivos construidos desde la etapa anterior
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy package files for server dependencies
+COPY package*.json ./
+RUN npm install --production
 
-# Exponer el puerto 80
-EXPOSE 80
+# Copy built frontend
+COPY --from=build /app/dist ./dist
 
-# Ejecutar Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Copy server code
+COPY server ./server
+
+# Set environment variables (should be overridden in Easypanel)
+ENV PORT=3000
+ENV DATABASE_URL=postgres://nicolas:cabrera@evolution-api_duoc-db:5432/duoc1?sslmode=disable
+
+EXPOSE 3000
+
+CMD ["node", "server/index.js"]

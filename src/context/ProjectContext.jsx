@@ -6,11 +6,13 @@ export const ProjectProvider = ({ children }) => {
   const [projectData, setProjectData] = useState({
     agencyName: '',
     projectName: '',
-    platform: null, // 'meta' | 'google' | 'tiktok'
+    platform: null,
     campaign: {},
     adSet: {},
     ad: {},
   });
+
+  const [currentUser, setCurrentUser] = useState(null);
 
   const updateProjectData = (newData) => {
     setProjectData((prev) => ({ ...prev, ...newData }));
@@ -28,7 +30,7 @@ export const ProjectProvider = ({ children }) => {
   };
 
   return (
-    <ProjectContext.Provider value={{ projectData, updateProjectData, resetProject }}>
+    <ProjectContext.Provider value={{ projectData, updateProjectData, resetProject, currentUser, setCurrentUser }}>
       {children}
     </ProjectContext.Provider>
   );

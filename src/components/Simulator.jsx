@@ -44,7 +44,7 @@ const metaObjectives = [
 ];
 
 const Simulator = ({ platform, onFinish, onBack }) => {
-  const { projectData, updateProjectData } = useProject();
+  const { projectData, updateProjectData, currentUser } = useProject();
   const [view, setView] = useState('manager'); // 'manager' | 'modal' | 'editor'
   const [activeTab, setActiveTab] = useState('campaigns'); // 'campaigns' | 'adsets' | 'ads'
   const [currentStep, setCurrentStep] = useState(1); // 1: Campaña, 2: Ad Set, 3: Ad
@@ -108,8 +108,25 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     updateProjectData({ platform, ...formData });
+    
+    // Guardar en la base de datos
+    try {
+      await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.campaign.name || 'Campaña sin nombre',
+          userId: currentUser.id,
+          groupId: currentUser.group_id,
+          data: formData
+        })
+      });
+    } catch (err) {
+      console.error('Error saving campaign');
+    }
+
     onFinish();
   };
 
