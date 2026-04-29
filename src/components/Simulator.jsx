@@ -23,7 +23,8 @@ import {
   Monitor,
   Send,
   Globe,
-  MapPin
+  MapPin,
+  Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
