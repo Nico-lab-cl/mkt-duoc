@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
   MessageSquare, 
-  User, 
+  User as UserIcon, 
   Zap, 
   Smartphone, 
   Download, 
@@ -22,7 +22,7 @@ import {
 
 const nodeTypes = {
   BOT: { id: 'BOT', name: 'Bloque Bot', icon: <MessageSquare size={18} />, color: 'bg-blue-600', light: 'bg-blue-50' },
-  USER: { id: 'USER', name: 'Bloque Usuario', icon: <User size={18} />, color: 'bg-green-600', light: 'bg-green-50' },
+  USER: { id: 'USER', name: 'Bloque Usuario', icon: <UserIcon size={18} />, color: 'bg-green-600', light: 'bg-green-50' },
   ACTION: { id: 'ACTION', name: 'Bloque Acción', icon: <Zap size={18} />, color: 'bg-purple-600', light: 'bg-purple-50' }
 };
 
@@ -222,7 +222,7 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
                     className="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-green-600 hover:scale-110 transition-transform"
                     title="Añadir Bloque Usuario"
                   >
-                    <User size={14} />
+                    <UserIcon size={14} />
                   </button>
                   <button 
                     onClick={() => addNode('ACTION')}

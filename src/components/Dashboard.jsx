@@ -19,9 +19,12 @@ import {
   Bell,
   Menu,
   X,
-  User,
+  User as UserIcon,
   AlertCircle
 } from 'lucide-react';
+
+import GroupsManagement from './GroupsManagement';
+
 
 const platforms = [
   {
@@ -58,7 +61,7 @@ const platforms = [
   }
 ];
 
-import GroupsManagement from './GroupsManagement';
+
 
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme } = useProject();
@@ -300,7 +303,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                   <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
                     <div className="flex items-center gap-4 mb-8">
                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: 'var(--primary)' }}>
-                          <User size={24} />
+                          <UserIcon size={24} />
                        </div>
                        <div>
                           <h3 className="text-xl font-black tracking-tighter uppercase italic">Perfil Personal</h3>

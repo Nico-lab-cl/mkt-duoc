@@ -8,7 +8,7 @@ import {
   UserPlus, 
   RefreshCcw,
   Shield,
-  User,
+  User as UserIcon,
   Trash2,
   CheckCircle2,
   AlertCircle
@@ -35,9 +35,17 @@ const GroupsManagement = () => {
   });
   const [message, setMessage] = useState(null);
 
+  const [searchTerm, setSearchTerm] = useState('');
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  const filteredUsers = users.filter(u => 
+    u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.group_name && u.group_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   const fetchData = async () => {
     setLoading(true);
@@ -56,7 +64,6 @@ const GroupsManagement = () => {
       setLoading(false);
     }
   };
-
   const handleEdit = (user) => {
     setEditingUser(user.id);
     setEditForm({
@@ -132,14 +139,25 @@ const GroupsManagement = () => {
     </div>
   );
 
+
   return (
     <div className="space-y-8 pb-20">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h3 className="text-3xl font-black tracking-tighter text-slate-800 uppercase italic">Gestión de Alumnos y Grupos</h3>
           <p className="text-slate-500 font-medium">Control total sobre los accesos y equipos de trabajo.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 w-full md:w-auto">
+          <div className="relative flex-grow md:flex-grow-0 md:w-64">
+             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+             <input 
+               type="text" 
+               placeholder="Buscar alumno o grupo..." 
+               className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold text-xs"
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+             />
+          </div>
           <button 
             onClick={() => setShowAddForm(!showAddForm)}
             className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100"
@@ -154,6 +172,26 @@ const GroupsManagement = () => {
             <RefreshCcw size={20} />
           </button>
         </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Alumnos</span>
+            <span className="text-2xl font-black text-slate-800 tracking-tighter">{users.length}</span>
+         </div>
+         <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Grupos Activos</span>
+            <span className="text-2xl font-black text-blue-600 tracking-tighter">{groups.length}</span>
+         </div>
+         <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Sin Grupo</span>
+            <span className="text-2xl font-black text-amber-500 tracking-tighter">{users.filter(u => !u.group_id).length}</span>
+         </div>
+         <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Admins</span>
+            <span className="text-2xl font-black text-purple-600 tracking-tighter">{users.filter(u => u.role === 'admin').length}</span>
+         </div>
       </div>
 
       <AnimatePresence>
@@ -255,7 +293,7 @@ const GroupsManagement = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-6 py-4">
                   {editingUser === user.id ? (
@@ -379,7 +417,7 @@ const GroupsManagement = () => {
                       <div className="w-2 h-2 bg-blue-500 rounded-full" />
                       <span className="text-sm font-bold text-slate-700">{member.full_name}</span>
                     </div>
-                    <User size={14} className="text-slate-300" />
+                    <UserIcon size={14} className="text-slate-300" />
                   </div>
                 ))}
                 {groupMembers.length === 0 && (

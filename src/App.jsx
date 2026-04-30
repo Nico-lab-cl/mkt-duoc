@@ -9,7 +9,7 @@ import GroupSelection from './components/GroupSelection';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser } = useProject();
-  const [view, setView] = useState('login'); 
+  const [view, setView] = useState(currentUser ? (currentUser.group_id || currentUser.role === 'admin' ? 'dashboard' : 'group-selection') : 'login'); 
   const [selectedPlatform, setSelectedPlatform] = useState(null);
 
   // Determinar la vista inicial o transiciones automáticas
