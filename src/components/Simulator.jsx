@@ -216,10 +216,6 @@ const Simulator = ({ platform, onFinish, onBack }) => {
         term: ''
       }
     }
-        campaign: '',
-        content: ''
-      }
-    }
   };
 
   const [formData, setFormData] = useState(initialFormState);
