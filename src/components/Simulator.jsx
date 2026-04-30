@@ -571,7 +571,27 @@ const bidStrategies = [
                 <div className="flex gap-4 min-h-[400px]">
                    <div className="w-1/2 space-y-1">
                       {metaObjectives.map((obj) => (
-                        <div key={obj.id} onClick={() => setFormData({...formData, objective: obj.id, campaignName: `Nueva campaña de ${obj.name}`})} className={`p-2 rounded-md flex items-center gap-3 cursor-pointer transition-all ${formData.objective === obj.id ? 'bg-blue-50/50 ring-1 ring-fb-blue/20' : 'hover:bg-fb-header/50'}`}>
+                        <div key={obj.id} onClick={() => {
+                          let defaultLoc = 'website';
+                          let defaultGoal = 'reach';
+                          if (obj.id === 'traffic') {
+                            defaultLoc = 'website';
+                            defaultGoal = 'landing_page_views';
+                          } else if (obj.id === 'engagement') {
+                            defaultLoc = 'messaging_apps';
+                            defaultGoal = 'conversations';
+                          }
+                          setFormData({
+                            ...formData, 
+                            objective: obj.id, 
+                            campaignName: `Nueva campaña de ${obj.name}`,
+                            adSet: {
+                              ...formData.adSet,
+                              conversionLocation: defaultLoc,
+                              performanceGoal: defaultGoal
+                            }
+                          });
+                        }} className={`p-2 rounded-md flex items-center gap-3 cursor-pointer transition-all ${formData.objective === obj.id ? 'bg-blue-50/50 ring-1 ring-fb-blue/20' : 'hover:bg-fb-header/50'}`}>
                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.objective === obj.id ? 'border-fb-blue' : 'border-slate-300'}`}>{formData.objective === obj.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}</div>
                            <div className={`p-2 rounded ${formData.objective === obj.id ? 'bg-fb-blue text-white' : 'bg-slate-100 text-slate-500'}`}>{obj.icon}</div>
                            <span className={`text-[13px] ${formData.objective === obj.id ? 'font-bold text-fb-blue' : 'text-slate-700'}`}>{obj.name}</span>
@@ -692,7 +712,30 @@ const bidStrategies = [
                                       <div 
                                         key={obj.id} 
                                         onClick={() => { 
-                                          setFormData({...formData, objective: obj.id, campaignName: `Nueva campaña de ${obj.name}`, adSet: {...formData.adSet, name: `Nuevo conjunto de anuncios de ${obj.name}`}, ad: {...formData.ad, name: `Nuevo anuncio de ${obj.name}`}});
+                                          let defaultLoc = 'website';
+                                          let defaultGoal = 'reach';
+                                          if (obj.id === 'traffic') {
+                                            defaultLoc = 'website';
+                                            defaultGoal = 'landing_page_views';
+                                          } else if (obj.id === 'engagement') {
+                                            defaultLoc = 'messaging_apps';
+                                            defaultGoal = 'conversations';
+                                          }
+                                          setFormData({
+                                            ...formData, 
+                                            objective: obj.id, 
+                                            campaignName: `Nueva campaña de ${obj.name}`, 
+                                            adSet: {
+                                              ...formData.adSet, 
+                                              name: `Nuevo conjunto de anuncios de ${obj.name}`,
+                                              conversionLocation: defaultLoc,
+                                              performanceGoal: defaultGoal
+                                            }, 
+                                            ad: {
+                                              ...formData.ad, 
+                                              name: `Nuevo anuncio de ${obj.name}`
+                                            }
+                                          });
                                           setShowEditorObjective(false);
                                         }} 
                                         className={`px-4 py-3 flex items-center gap-3 cursor-pointer transition-all border-b border-fb-border/50 last:border-0 ${formData.objective === obj.id ? 'bg-blue-50/70' : 'hover:bg-fb-header/50'}`}
