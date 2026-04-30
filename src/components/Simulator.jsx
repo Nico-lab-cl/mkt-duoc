@@ -935,6 +935,22 @@ const bidStrategies = [
 
                   {currentStep === 2 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      {/* --- NOMBRE DEL CONJUNTO DE ANUNCIOS --- */}
+                      <div className="meta-editor-card p-0">
+                         <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Nombre del conjunto de anuncios</span>
+                         </div>
+                         <div className="p-6 flex items-center gap-4">
+                            <input 
+                              type="text" 
+                              className="meta-editor-input flex-grow" 
+                              value={formData.adSet.name} 
+                              onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, name: e.target.value}})} 
+                            />
+                            <button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header transition-colors">Crear plantilla</button>
+                         </div>
+                      </div>
                       {/* --- CONVERSION / GOAL CARD --- */}
                       {formData.objective === 'awareness' ? (
                         <div className="meta-editor-card p-0">
