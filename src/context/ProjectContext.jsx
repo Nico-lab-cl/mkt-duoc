@@ -27,6 +27,17 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  // Gestión de Temas
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('simulador_theme') || 'default';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('simulador_theme', theme);
+    // Aplicar clase de tema al body para CSS global
+    document.body.className = `theme-${theme}`;
+  }, [theme]);
+
   const updateProjectData = (newData) => {
     setProjectData((prev) => ({ ...prev, ...newData }));
   };
@@ -43,7 +54,15 @@ export const ProjectProvider = ({ children }) => {
   };
 
   return (
-    <ProjectContext.Provider value={{ projectData, updateProjectData, resetProject, currentUser, setCurrentUser }}>
+    <ProjectContext.Provider value={{ 
+      projectData, 
+      updateProjectData, 
+      resetProject, 
+      currentUser, 
+      setCurrentUser,
+      theme,
+      setTheme
+    }}>
       {children}
     </ProjectContext.Provider>
   );

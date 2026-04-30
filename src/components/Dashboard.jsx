@@ -59,15 +59,49 @@ const platforms = [
 import GroupsManagement from './GroupsManagement';
 
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
-  const { projectData, updateProjectData, currentUser, setCurrentUser } = useProject();
+  const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme } = useProject();
   const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
   const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [] });
   const [loading, setLoading] = useState(false);
-  const [showProfileConfig, setShowProfileConfig] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: currentUser?.full_name || '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [configMessage, setConfigMessage] = useState(null);
 
   const handleLogout = () => {
     setCurrentUser(null);
-    window.location.reload(); // Recargar para limpiar todo el estado
+    window.location.reload(); 
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (profileForm.password && profileForm.password !== profileForm.confirmPassword) {
+      setConfigMessage({ type: 'error', text: 'Las contraseñas no coinciden' });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          full_name: profileForm.full_name,
+          password: profileForm.password
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setCurrentUser(data.user);
+        setConfigMessage({ type: 'success', text: 'Perfil actualizado correctamente' });
+        setProfileForm({ ...profileForm, password: '', confirmPassword: '' });
+        setTimeout(() => setConfigMessage(null), 3000);
+      }
+    } catch (error) {
+      setConfigMessage({ type: 'error', text: 'Error al actualizar perfil' });
+    }
   };
 
   useEffect(() => {
@@ -85,7 +119,8 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const SidebarItem = ({ icon: Icon, label, view, badge }) => (
     <button 
       onClick={() => setActiveView(view)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 ${activeView === view ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-500 hover:bg-slate-100'}`}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 ${activeView === view ? 'text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
+      style={activeView === view ? { backgroundColor: 'var(--primary)' } : {}}
     >
       <Icon size={20} />
       <span className="font-bold text-sm flex-grow text-left">{label}</span>
@@ -93,16 +128,24 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
     </button>
   );
 
+  const themes = [
+    { id: 'default', name: 'Original', color: 'bg-blue-600' },
+    { id: 'dark', name: 'Dark Mode', color: 'bg-slate-800' },
+    { id: 'midnight', name: 'Midnight', color: 'bg-indigo-900' },
+    { id: 'emerald', name: 'Emerald', color: 'bg-emerald-600' },
+    { id: 'cyberpunk', name: 'Cyberpunk', color: 'bg-pink-600' },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50 flex overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
       {/* --- SIDEBAR --- */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col p-4 z-40">
+      <aside className="w-64 border-r border-slate-200 flex flex-col p-4 z-40 transition-colors duration-500 shadow-xl" style={{ backgroundColor: 'var(--sidebar-bg)' }}>
         <div className="flex items-center gap-3 px-2 mb-8">
-           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-100">
+           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-xl" style={{ backgroundColor: 'var(--primary)' }}>
               <ShieldCheck size={24} />
            </div>
            <div className="flex flex-col">
-              <span className="font-black text-slate-800 tracking-tighter leading-none">SIMULADOR</span>
+              <span className="font-black tracking-tighter leading-none" style={{ color: 'var(--text-primary)' }}>SIMULADOR</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MKA1215 v2.5</span>
            </div>
         </div>
@@ -124,12 +167,12 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
         </nav>
 
         <div className="mt-auto pt-6 border-t border-slate-100">
-           <div className="p-4 bg-slate-50 rounded-2xl flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+           <div className="p-4 bg-slate-50/50 rounded-2xl flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
                  {currentUser?.full_name[0]}
               </div>
               <div className="flex flex-col truncate">
-                 <span className="text-xs font-bold text-slate-800 truncate">{currentUser?.full_name}</span>
+                 <span className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{currentUser?.full_name}</span>
                  <span className="text-[10px] text-slate-400 font-bold uppercase truncate">{currentUser?.role}</span>
               </div>
            </div>
@@ -143,10 +186,10 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
       </aside>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="flex-grow overflow-y-auto bg-[#F8FAFC] relative">
+      <main className="flex-grow overflow-y-auto relative transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
         {/* Header Superior */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-10 sticky top-0 z-30">
-           <h2 className="text-xl font-black text-slate-800 tracking-tighter uppercase">
+        <header className="h-20 border-b border-slate-200 flex items-center justify-between px-10 sticky top-0 z-30 backdrop-blur-md transition-colors duration-500" style={{ backgroundColor: 'var(--header-bg)' }}>
+           <h2 className="text-xl font-black tracking-tighter uppercase" style={{ color: 'var(--text-primary)' }}>
              {activeView === 'home' && 'Canales de Operación'}
              {activeView === 'admin' && 'Control de Proyectos Alumnos'}
              {activeView === 'groups' && 'Gestión de Equipos y Usuarios'}
@@ -249,41 +292,131 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
           )}
 
           {activeView === 'config' && (
-            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl bg-white rounded-[2rem] border border-slate-200 p-12 shadow-xl shadow-slate-100 mx-auto">
-               <div className="text-center mb-10">
-                  <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                     <Palette size={40} />
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-8 pb-20">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Perfil Personal */}
+                  <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
+                    <div className="flex items-center gap-4 mb-8">
+                       <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: 'var(--primary)' }}>
+                          <User size={24} />
+                       </div>
+                       <div>
+                          <h3 className="text-xl font-black tracking-tighter uppercase italic">Perfil Personal</h3>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Actualiza tus credenciales</p>
+                       </div>
+                    </div>
+
+                    <form onSubmit={handleUpdateProfile} className="space-y-6">
+                       <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Nombre Completo</label>
+                          <input 
+                            type="text" 
+                            className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-sm text-slate-800"
+                            value={profileForm.full_name}
+                            onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                          />
+                       </div>
+                       <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Nueva Contraseña</label>
+                          <input 
+                            type="password" 
+                            placeholder="Dejar en blanco para no cambiar"
+                            className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-sm text-slate-800"
+                            value={profileForm.password}
+                            onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
+                          />
+                       </div>
+                       <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Confirmar Contraseña</label>
+                          <input 
+                            type="password" 
+                            className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-sm text-slate-800"
+                            value={profileForm.confirmPassword}
+                            onChange={(e) => setProfileForm({ ...profileForm, confirmPassword: e.target.value })}
+                          />
+                       </div>
+                       <button type="submit" className="w-full py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all">
+                          Actualizar Perfil
+                       </button>
+                    </form>
                   </div>
-                  <h3 className="text-3xl font-black tracking-tighter text-slate-800">CONFIGURA TU IDENTIDAD</h3>
-                  <p className="text-slate-500 font-medium">Personaliza cómo se verá tu marca en el simulador.</p>
+
+                  {/* Branding y Proyecto */}
+                  <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
+                    <div className="flex items-center gap-4 mb-8">
+                       <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: 'var(--primary)' }}>
+                          <Palette size={24} />
+                       </div>
+                       <div>
+                          <h3 className="text-xl font-black tracking-tighter uppercase italic">Identidad de Marca</h3>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Personaliza el simulador</p>
+                       </div>
+                    </div>
+
+                    <div className="space-y-6">
+                       <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Nombre de la Agencia / Grupo</label>
+                          <input 
+                            type="text" 
+                            className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-sm text-slate-800"
+                            value={projectData.agencyName}
+                            onChange={(e) => updateProjectData({ agencyName: e.target.value })}
+                          />
+                       </div>
+                       <div>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Nombre del Proyecto Actual</label>
+                          <input 
+                            type="text" 
+                            className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-sm text-slate-800"
+                            value={projectData.projectName}
+                            onChange={(e) => updateProjectData({ projectName: e.target.value })}
+                          />
+                       </div>
+                    </div>
+                  </div>
                </div>
 
-               <div className="space-y-8">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Nombre de la Agencia / Grupo</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-slate-800"
-                      value={projectData.agencyName}
-                      onChange={(e) => updateProjectData({ agencyName: e.target.value })}
-                    />
+               {/* Selección de Temas Premium */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
+                  <div className="flex items-center gap-4 mb-10">
+                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: 'var(--primary)' }}>
+                        <Monitor size={24} />
+                     </div>
+                     <div>
+                        <h3 className="text-xl font-black tracking-tighter uppercase italic">Temas Premium</h3>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cambia el aspecto visual de tu entorno</p>
+                     </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Nombre del Proyecto Actual</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all font-bold text-slate-800"
-                      value={projectData.projectName}
-                      onChange={(e) => updateProjectData({ projectName: e.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="pt-6">
-                     <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all">
-                        Guardar Cambios de Diseño
-                     </button>
+
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                    {themes.map((t) => (
+                      <button 
+                        key={t.id}
+                        onClick={() => setTheme(t.id)}
+                        className={`group relative p-4 rounded-3xl border-2 transition-all ${theme === t.id ? 'border-[var(--primary)] bg-slate-50' : 'border-slate-100 hover:border-slate-300'}`}
+                      >
+                         <div className={`w-full aspect-video rounded-xl mb-3 ${t.color} shadow-lg`} />
+                         <span className="text-[10px] font-black uppercase tracking-widest block text-center" style={{ color: theme === t.id ? 'var(--primary)' : 'inherit' }}>{t.name}</span>
+                         {theme === t.id && (
+                           <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                             <ShieldCheck size={12} />
+                           </div>
+                         )}
+                      </button>
+                    ))}
                   </div>
                </div>
+
+               {configMessage && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-4 rounded-2xl flex items-center gap-3 font-bold text-sm fixed bottom-10 right-10 shadow-2xl z-50 ${configMessage.type === 'success' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}
+                  >
+                    {configMessage.type === 'success' ? <ShieldCheck size={18} /> : <AlertCircle size={18} />}
+                    {configMessage.text}
+                  </motion.div>
+               )}
             </motion.div>
           )}
         </div>

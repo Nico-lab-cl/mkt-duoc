@@ -12,8 +12,50 @@
 }
 
 @layer base {
+  :root {
+    --primary: #0866ff;
+    --sidebar-bg: #ffffff;
+    --main-bg: #F8FAFC;
+    --header-bg: rgba(255, 255, 255, 0.8);
+    --text-primary: #050505;
+  }
+
+  body.theme-dark {
+    --primary: #3b82f6;
+    --sidebar-bg: #0f172a;
+    --main-bg: #020617;
+    --header-bg: rgba(15, 23, 42, 0.8);
+    --text-primary: #f1f5f9;
+  }
+
+  body.theme-midnight {
+    --primary: #6366f1;
+    --sidebar-bg: #1e1b4b;
+    --main-bg: #0f172a;
+    --header-bg: rgba(30, 27, 75, 0.8);
+    --text-primary: #e0e7ff;
+  }
+
+  body.theme-emerald {
+    --primary: #10b981;
+    --sidebar-bg: #064e3b;
+    --main-bg: #f0fdf4;
+    --header-bg: rgba(6, 78, 59, 0.8);
+    --text-primary: #ecfdf5;
+  }
+
+  body.theme-cyberpunk {
+    --primary: #ff00ff;
+    --sidebar-bg: #000000;
+    --main-bg: #1a001a;
+    --header-bg: rgba(0, 0, 0, 0.8);
+    --text-primary: #00ffff;
+  }
+
   body {
-    @apply bg-fb-bg text-fb-text-primary font-sans antialiased overflow-hidden;
+    background-color: var(--main-bg);
+    color: var(--text-primary);
+    @apply font-sans antialiased overflow-hidden;
   }
 }
 

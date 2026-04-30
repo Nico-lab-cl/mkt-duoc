@@ -214,6 +214,28 @@ app.delete('/api/admin/users/:id', async (req, res) => {
   }
 });
 
+app.post('/api/update-profile', async (req, res) => {
+  const { userId, full_name, password } = req.body;
+  try {
+    let query = 'UPDATE users SET full_name = $1';
+    let params = [full_name];
+    
+    if (password) {
+      query += ', password = $2 WHERE id = $3';
+      params.push(password, userId);
+    } else {
+      query += ' WHERE id = $2';
+      params.push(userId);
+    }
+    
+    const result = await pool.query(query + ' RETURNING *', params);
+    res.json({ success: true, user: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar perfil' });
+  }
+});
+
 app.get('/api/group-data/:groupId', async (req, res) => {
   const { groupId } = req.params;
   try {
