@@ -161,6 +161,59 @@ app.get('/api/admin/all', async (req, res) => {
   }
 });
 
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT u.id, u.email, u.full_name, u.role, u.group_id, g.name as group_name 
+      FROM users u
+      LEFT JOIN groups g ON u.group_id = g.id
+      ORDER BY u.id ASC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+app.put('/api/admin/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { full_name, email, role, group_id } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE users SET full_name = $1, email = $2, role = $3, group_id = $4 WHERE id = $5 RETURNING *',
+      [full_name, email, role, group_id, id]
+    );
+    res.json({ success: true, user: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+});
+
+app.post('/api/admin/users', async (req, res) => {
+  const { full_name, email, password, role, group_id } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO users (full_name, email, password, role, group_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [full_name, email, password || 'duoc2024', role || 'student', group_id || null]
+    );
+    res.json({ success: true, user: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
+});
+
+app.delete('/api/admin/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Usuario eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
 app.get('/api/group-data/:groupId', async (req, res) => {
   const { groupId } = req.params;
   try {

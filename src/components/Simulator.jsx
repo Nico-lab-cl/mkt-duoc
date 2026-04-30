@@ -101,7 +101,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       endDateEnabled: false,
       endDate: '',
       endTime: '09:00',
-      location: 'Chile',
+      locations: ['Chile'],
       locationRadius: '40',
       locationSearch: '',
       includeUnknownAgeWhatsApp: true,
@@ -110,7 +110,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       advantageAudience: {
         customAudiences: '',
         ageMin: '18',
-        ageMax: '65',
+        ageMax: '65+',
         gender: 'all',
         detailedTargeting: ''
       },
@@ -133,18 +133,81 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       description: '',
       cta: 'LEARN_MORE',
       destinationUrl: '',
+      phoneNumber: '',
       creativeStrategyJustification: '',
       languagesEnabled: false,
       tracking: {
         websiteEvents: false,
         appEvents: false,
         offlineEvents: false,
-        urlParams: 'key1=value1&key2=value2'
+        urlParams: ''
+      },
+      utmBuilder: {
+        source: '',
+        medium: '',
+        campaign: '',
+        content: ''
       }
     }
   };
 
   const [formData, setFormData] = useState(initialFormState);
+
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showUtmModal, setShowUtmModal] = useState(false);
+
+  const generateUtmString = (builder) => {
+    const params = [];
+    if (builder.source) params.push(`utm_source=${builder.source}`);
+    if (builder.medium) params.push(`utm_medium=${builder.medium}`);
+    if (builder.campaign) params.push(`utm_campaign=${builder.campaign}`);
+    if (builder.content) params.push(`utm_content=${builder.content}`);
+    return params.join('&');
+  };
+  const commonLanguages = [
+    'Español', 'Inglés (EE. UU.)', 'Inglés (Reino Unido)', 'Portugués (Brasil)', 'Portugués (Portugal)', 
+    'Francés (Francia)', 'Italiano', 'Alemán', 'Chino (Simplificado)', 'Japonés'
+  ];
+
+  const handleAddLocation = (e) => {
+    if (e.key === 'Enter' && formData.adSet.locationSearch.trim()) {
+      e.preventDefault();
+      const newLoc = formData.adSet.locationSearch.trim();
+      if (!formData.adSet.locations.includes(newLoc)) {
+        setFormData({
+          ...formData,
+          adSet: {
+            ...formData.adSet,
+            locations: [...formData.adSet.locations, newLoc],
+            locationSearch: ''
+          }
+        });
+      }
+    }
+  };
+
+  const removeLocation = (loc) => {
+    setFormData({
+      ...formData,
+      adSet: {
+        ...formData.adSet,
+        locations: formData.adSet.locations.filter(l => l !== loc)
+      }
+    });
+  };
+
+  const toggleLanguage = (lang) => {
+    let newLangs = [...formData.adSet.languages];
+    if (newLangs.includes('Todos los idiomas')) {
+      newLangs = [lang];
+    } else if (newLangs.includes(lang)) {
+      newLangs = newLangs.filter(l => l !== lang);
+      if (newLangs.length === 0) newLangs = ['Todos los idiomas'];
+    } else {
+      newLangs.push(lang);
+    }
+    setFormData({ ...formData, adSet: { ...formData.adSet, languages: newLangs } });
+  };
 
   const fetchCampaigns = async () => {
     setLoadingCampaigns(true);
@@ -553,12 +616,24 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div className="space-y-4 pt-4 border-t border-fb-border">
                                <label className="text-[12px] font-bold text-slate-800 block">* Lugares <Info size={12} className="inline text-slate-400 ml-1" /></label>
                                <div className="border border-fb-border rounded-lg p-4 space-y-4">
-                                  <div className="bg-slate-50 p-3 rounded flex items-center justify-between">
-                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-green-100 text-green-600 rounded flex items-center justify-center"><MapPin size={16} /></div>
-                                        <span className="text-[13px] font-bold">{formData.adSet.location || 'Chile'}</span>
-                                     </div>
-                                     <ChevronDown size={16} className="text-slate-400" />
+                                  <div className="space-y-2">
+                                     {formData.adSet.locations.map(loc => (
+                                        <div key={loc} className="bg-slate-50 p-3 rounded flex items-center justify-between border border-fb-border/50">
+                                           <div className="flex items-center gap-3">
+                                              <div className="w-8 h-8 bg-green-100 text-green-600 rounded flex items-center justify-center"><MapPin size={16} /></div>
+                                              <div>
+                                                 <div className="text-[13px] font-bold">{loc}</div>
+                                                 <div className="text-[11px] text-fb-text-secondary">País/Región</div>
+                                              </div>
+                                           </div>
+                                           <button 
+                                             onClick={() => removeLocation(loc)} 
+                                             className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
+                                           >
+                                              <X size={14} />
+                                           </button>
+                                        </div>
+                                     ))}
                                   </div>
                                   
                                   <div className="flex gap-2">
@@ -568,9 +643,10 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                         <input 
                                           type="text" 
                                           className="meta-editor-input pl-10 w-full" 
-                                          placeholder="Buscar lugares" 
+                                          placeholder="Escribe un país y presiona Enter" 
                                           value={formData.adSet.locationSearch}
                                           onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, locationSearch: e.target.value}})}
+                                          onKeyDown={handleAddLocation}
                                         />
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                                            <span className="text-[11px] font-bold text-slate-500 hover:text-fb-blue cursor-pointer flex items-center gap-1">Explorar <ChevronDown size={12} /></span>
@@ -633,7 +709,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div className="space-y-1 pt-4">
                                <label className="text-[12px] font-bold text-fb-text-primary flex items-center gap-1">Idiomas <Info size={12} className="text-slate-400" /></label>
                                <p className="text-[12px] text-slate-600">{formData.adSet.languages.join(', ')}</p>
-                               <button className="text-fb-blue text-[11px] font-bold hover:underline">Editar</button>
+                               <button onClick={() => setShowLanguageModal(true)} className="text-fb-blue text-[11px] font-bold hover:underline">Editar</button>
                             </div>
                          </div>
                       </div>
@@ -890,18 +966,49 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                  { id: 'call', name: 'Llamada', desc: 'Permite que las personas te llamen directamente.', icon: <Phone size={16} /> },
                                  { id: 'messaging_apps', name: 'Aplicaciones de mensajería', desc: 'Dirige a la gente a Messenger, Instagram y WhatsApp.', icon: <MessageCircle size={16} /> }
                                ].map(opt => (
-                                 <label key={opt.id} className="flex items-start gap-3 cursor-pointer group" onClick={() => setFormData({...formData, ad: {...formData.ad, destination: opt.id}})}>
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${formData.ad.destination === opt.id ? 'border-fb-blue' : 'border-slate-300'}`}>
-                                       {formData.ad.destination === opt.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
-                                    </div>
-                                    <div className="flex gap-3">
-                                       <div className="text-slate-400 mt-0.5">{opt.icon}</div>
-                                       <div>
-                                          <div className="text-[13px] font-bold">{opt.name}</div>
-                                          <div className="text-[11px] text-fb-text-secondary">{opt.desc}</div>
+                                 <div key={opt.id} className="space-y-3">
+                                   <label className="flex items-start gap-3 cursor-pointer group" onClick={() => setFormData({...formData, ad: {...formData.ad, destination: opt.id}})}>
+                                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${formData.ad.destination === opt.id ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                         {formData.ad.destination === opt.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                      </div>
+                                      <div className="flex gap-3">
+                                         <div className="text-slate-400 mt-0.5">{opt.icon}</div>
+                                         <div>
+                                            <div className="text-[13px] font-bold">{opt.name}</div>
+                                            <div className="text-[11px] text-fb-text-secondary">{opt.desc}</div>
+                                         </div>
+                                      </div>
+                                   </label>
+                                   
+                                   {opt.id === 'website' && formData.ad.destination === 'website' && (
+                                     <div className="pl-8 pb-2">
+                                       <label className="text-[11px] font-bold text-slate-600 block mb-1">URL del sitio web</label>
+                                       <input 
+                                         type="text" 
+                                         className="meta-editor-input text-[13px]" 
+                                         placeholder="https://ejemplo.com"
+                                         value={formData.ad.destinationUrl}
+                                         onChange={(e) => setFormData({...formData, ad: {...formData.ad, destinationUrl: e.target.value}})}
+                                       />
+                                     </div>
+                                   )}
+
+                                   {opt.id === 'call' && formData.ad.destination === 'call' && (
+                                     <div className="pl-8 pb-2">
+                                       <label className="text-[11px] font-bold text-slate-600 block mb-1">Número de teléfono</label>
+                                       <div className="flex gap-2">
+                                         <div className="px-3 py-2 border border-fb-border rounded bg-fb-header/20 text-[13px] font-bold">+56</div>
+                                         <input 
+                                           type="text" 
+                                           className="meta-editor-input flex-grow text-[13px]" 
+                                           placeholder="9 1234 5678"
+                                           value={formData.ad.phoneNumber}
+                                           onChange={(e) => setFormData({...formData, ad: {...formData.ad, phoneNumber: e.target.value}})}
+                                         />
                                        </div>
-                                    </div>
-                                 </label>
+                                     </div>
+                                   )}
+                                 </div>
                                ))}
                             </div>
 
@@ -1039,7 +1146,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                        value={formData.ad.tracking.urlParams} 
                                        onChange={(e) => setFormData({...formData, ad: {...formData.ad, tracking: {...formData.ad.tracking, urlParams: e.target.value}}})} 
                                      />
-                                     <button className="text-fb-blue text-[11px] font-bold mt-1 hover:underline">Crear un parámetro de URL</button>
+                                     <button onClick={() => setShowUtmModal(true)} className="text-fb-blue text-[11px] font-bold mt-1 hover:underline">Crear un parámetro de URL</button>
                                   </div>
 
                                   <div className="space-y-1">
@@ -1100,6 +1207,32 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                 )}
              </div>
           </footer>
+          {showLanguageModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50">
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+                <div className="p-4 border-b border-fb-border flex items-center justify-between">
+                  <span className="font-bold text-slate-800">Seleccionar idiomas</span>
+                  <button onClick={() => setShowLanguageModal(false)} className="p-1 hover:bg-slate-100 rounded-full"><X size={20} /></button>
+                </div>
+                <div className="p-4 max-h-[400px] overflow-y-auto grid grid-cols-1 gap-2">
+                  {commonLanguages.map(lang => (
+                    <label key={lang} className="flex items-center gap-3 p-2 hover:bg-fb-header rounded-md cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5 rounded border-slate-300 text-fb-blue focus:ring-fb-blue" 
+                        checked={formData.adSet.languages.includes(lang)}
+                        onChange={() => toggleLanguage(lang)}
+                      />
+                      <span className="text-[13px] font-bold text-slate-700 group-hover:text-fb-blue">{lang}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="p-4 border-t border-fb-border flex justify-end">
+                  <button onClick={() => setShowLanguageModal(false)} className="px-6 py-2 bg-fb-blue text-white rounded-md font-bold text-[13px] hover:bg-blue-700">Listo</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
       </div>
     );

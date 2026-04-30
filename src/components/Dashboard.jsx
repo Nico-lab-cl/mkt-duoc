@@ -56,9 +56,11 @@ const platforms = [
   }
 ];
 
+import GroupsManagement from './GroupsManagement';
+
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const { projectData, updateProjectData, currentUser } = useProject();
-  const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config'
+  const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
   const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [] });
   const [loading, setLoading] = useState(false);
   const [showProfileConfig, setShowProfileConfig] = useState(false);
@@ -139,6 +141,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
            <h2 className="text-xl font-black text-slate-800 tracking-tighter uppercase">
              {activeView === 'home' && 'Canales de Operación'}
              {activeView === 'admin' && 'Control de Proyectos Alumnos'}
+             {activeView === 'groups' && 'Gestión de Equipos y Usuarios'}
              {activeView === 'config' && 'Ajustes de Perfil'}
            </h2>
            
@@ -228,6 +231,12 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                     </div>
                   ))}
                </div>
+            </motion.div>
+          )}
+
+          {activeView === 'groups' && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+               <GroupsManagement />
             </motion.div>
           )}
 
