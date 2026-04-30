@@ -151,6 +151,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       destination: 'messaging_apps', // instant_experience, website, call, messaging_apps
       messagingApps: { messenger: true, instagram: true, whatsapp: false },
       mediaType: 'image', // image, video
+      mediaUrl: null,
       primaryText: '',
       headline: '',
       description: '',
@@ -1537,23 +1538,87 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                      <span>Configurar contenido</span>
                                      <ChevronDown size={16} />
                                   </button>
-                                  <div className="hidden group-focus-within:block absolute top-full left-0 right-0 mt-1 bg-white border border-fb-border rounded shadow-xl z-50">
+                                  <div className="hidden group-focus-within:block absolute top-full left-0 right-0 mt-1 bg-white border border-fb-border rounded shadow-xl z-50 overflow-hidden">
+                                     <div className="p-3 hover:bg-fb-header cursor-pointer flex items-center gap-2 border-b border-fb-border/50" onClick={() => document.getElementById('ad-media-upload').click()}>
+                                        <Plus size={16} className="text-fb-blue" /> <span className="text-[13px] font-bold text-fb-blue">Añadir imagen</span>
+                                     </div>
                                      <div className="p-2 hover:bg-fb-header cursor-pointer flex items-center gap-2" onClick={() => setFormData({...formData, ad: {...formData.ad, mediaType: 'image'}})}>
-                                        <ImageIcon size={14} className="text-slate-500" /> <span className="text-[13px]">Anuncio con imagen</span>
+                                        <ImageIcon size={14} className="text-slate-500" /> <span className="text-[13px]">Seleccionar de la cuenta</span>
                                      </div>
                                      <div className="p-2 hover:bg-fb-header cursor-pointer flex items-center gap-2" onClick={() => setFormData({...formData, ad: {...formData.ad, mediaType: 'video'}})}>
-                                        <Video size={14} className="text-slate-500" /> <span className="text-[13px]">Anuncio con vídeo</span>
+                                        <Video size={14} className="text-slate-500" /> <span className="text-[13px]">Añadir vídeo</span>
                                      </div>
                                   </div>
+                                  <input 
+                                    id="ad-media-upload"
+                                    type="file" 
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        const url = URL.createObjectURL(file);
+                                        setFormData({...formData, ad: {...formData.ad, mediaUrl: url, mediaType: 'image'}});
+                                      }
+                                    }}
+                                  />
                                </div>
                                <button className="px-4 py-2 border border-fb-border rounded text-[13px] font-bold hover:bg-slate-50">Configurar prueba</button>
                             </div>
 
-                            <div className="p-12 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-center space-y-4 bg-slate-50/30">
-                               <div className="w-20 h-20 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300">
-                                  {formData.ad.mediaType === 'image' ? <ImageIcon size={40} /> : <Video size={40} />}
+                            {/* FORMAT REMINDERS */}
+                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg flex gap-3">
+                               <Info size={18} className="text-fb-blue mt-0.5 flex-shrink-0" />
+                               <div className="space-y-1">
+                                 <span className="text-[12px] font-bold text-slate-800">Recordatorio de formatos</span>
+                                 <div className="grid grid-cols-2 gap-4 pt-1">
+                                   <div>
+                                     <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Móvil / Stories</div>
+                                     <div className="text-[11px] text-slate-700 font-bold">Relación 9:16 (Vertical)</div>
+                                     <div className="text-[10px] text-slate-500 italic">Ej: 1080 x 1920 px</div>
+                                   </div>
+                                   <div>
+                                     <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Escritorio / Feed</div>
+                                     <div className="text-[11px] text-slate-700 font-bold">Relación 1:1 o 4:5</div>
+                                     <div className="text-[10px] text-slate-500 italic">Ej: 1080 x 1080 px</div>
+                                   </div>
+                                 </div>
                                </div>
-                               <p className="text-[12px] text-fb-text-secondary font-bold">Añade contenido multimedia para ver ejemplos de anuncios.</p>
+                            </div>
+
+                            <div className={`border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-center bg-slate-50/30 overflow-hidden ${formData.ad.mediaUrl ? 'p-0 h-[300px]' : 'p-12 space-y-4'}`}>
+                               {formData.ad.mediaUrl ? (
+                                 <div className="relative w-full h-full group">
+                                   <img src={formData.ad.mediaUrl} className="w-full h-full object-contain bg-slate-900/5" alt="Vista previa del anuncio" />
+                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                     <button 
+                                       className="bg-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform"
+                                       onClick={() => document.getElementById('ad-media-upload').click()}
+                                     >
+                                       <RotateCcw size={18} className="text-slate-700" />
+                                     </button>
+                                     <button 
+                                       className="bg-red-500 p-2 rounded-full shadow-lg hover:scale-110 transition-transform"
+                                       onClick={() => setFormData({...formData, ad: {...formData.ad, mediaUrl: null}})}
+                                     >
+                                       <Trash2 size={18} className="text-white" />
+                                     </button>
+                                   </div>
+                                 </div>
+                               ) : (
+                                 <>
+                                   <div className="w-20 h-20 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300">
+                                      {formData.ad.mediaType === 'image' ? <ImageIcon size={40} /> : <Video size={40} />}
+                                   </div>
+                                   <p className="text-[12px] text-fb-text-secondary font-bold">Añade contenido multimedia para ver ejemplos de anuncios.</p>
+                                   <button 
+                                     className="px-4 py-2 bg-fb-blue text-white rounded text-[12px] font-bold hover:bg-fb-blue/90 transition-colors"
+                                     onClick={() => document.getElementById('ad-media-upload').click()}
+                                   >
+                                     Añadir imagen
+                                   </button>
+                                 </>
+                               )}
                             </div>
                          </div>
                       </div>
