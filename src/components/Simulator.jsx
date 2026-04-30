@@ -131,7 +131,64 @@ const Simulator = ({ platform, onFinish, onBack }) => {
 
   const populationOptions = ['50 000','100 000','200 000','500 000','1 millón','2 millones','3 millones','+3 millones'];
 
-  const bidStrategies = [
+  const interactionConversionLocations = [
+  { id: 'messaging_apps', name: 'Aplicaciones de mensajería', desc: 'Consigue que las personas interactúen con tu marca en Messenger, WhatsApp o Instagram.' },
+  { id: 'on_ad', name: 'En tu anuncio', desc: 'Consigue que la gente interactúe con tu publicación o evento, o que vea un vídeo.' },
+  { id: 'calls', name: 'Llamadas', desc: 'Consigue que más personas se pongan en contacto contigo por teléfono, Messenger o WhatsApp.' },
+  { id: 'website', name: 'Sitio web', desc: 'Consigue que las personas interactúan con tu sitio web.' },
+  { id: 'app', name: 'Aplicación', desc: 'Consigue que las personas interactúen con tu aplicación.' },
+  { id: 'instagram_facebook', name: 'Instagram o Facebook', desc: 'Consigue que la gente interactúe con tu perfil de Instagram, tu página de Facebook o ambos.' }
+];
+
+const interactionPerformanceGoals = {
+  messaging_apps: [
+    { id: 'conversations', name: 'Maximizar el número de conversaciones', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de conversar contigo a través de mensajes.' }
+  ],
+  on_ad: [
+    { isHeader: true, name: 'Objetivos de interacción' },
+    { id: 'post_engagement', name: 'Maximizar las interacciones', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de reaccionar a tu publicación, comentarla, compartirla o indicar que les gusta.' }
+  ],
+  calls: [
+    { id: 'calls', name: 'Maximizar el número de llamadas', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de llamarte.' }
+  ],
+  website: [
+    { isHeader: true, name: 'Objetivos de interacción' },
+    { id: 'conversions', name: 'Maximizar el número de conversiones', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de realizar una acción concreta en tu sitio web.' },
+    { isHeader: true, name: 'Otros objetivos' },
+    { id: 'landing_page_views', name: 'Maximizar el número de visitas a la página de destino', desc: 'Intentaremos mostrar los anuncios a las personas con más probabilidades de ver el sitio web que has vinculado con tu anuncio.' },
+    { id: 'link_clicks', name: 'Maximizar el número de clics en el enlace', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de hacer clic en ellos.' },
+    { id: 'daily_unique_reach', name: 'Maximizar el alcance único diario', desc: 'Intentaremos mostrar tus anuncios a las personas hasta una vez al día.' },
+    { id: 'impressions', name: 'Maximizar el número de impresiones', desc: 'Intentaremos mostrar tus anuncios a las personas tantas veces como sea posible.' }
+  ],
+  app: [
+    { isHeader: true, name: 'Objetivos de interacción' },
+    { id: 'app_events', name: 'Maximizar el número de eventos de la aplicación', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de realizar una acción concreta en tu aplicación al menos una vez.' },
+    { isHeader: true, name: 'Otros objetivos' },
+    { id: 'link_clicks', name: 'Maximizar el número de clics en el enlace', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de hacer clic en ellos.' },
+    { id: 'daily_unique_reach', name: 'Maximizar el alcance único diario', desc: 'Intentaremos mostrar tus anuncios a las personas hasta una vez al día.' }
+  ],
+  instagram_facebook: [
+    { id: 'profile_visits', name: 'Maximizar el número de visitas al perfil de Instagram', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de visitar o seguir tu perfil.' },
+    { id: 'page_likes', name: 'Maximizar el número de Me gusta de la página', desc: 'Mostraremos tus anuncios a las personas adecuadas para que obtengas el mayor número de Me gusta al menor coste.' }
+  ]
+};
+
+const interactionTypes = [
+  { id: 'video_views', name: 'Visualizaciones de vídeo' },
+  { id: 'post_engagement', name: 'Interacciones' },
+  { id: 'event_responses', name: 'Respuestas al evento' },
+  { id: 'reminders', name: 'Recordatorios programados' }
+];
+
+const appStores = [
+  { id: 'all', name: 'Todas las tiendas de aplicaciones para Android y iOS' },
+  { id: 'google_play', name: 'Google Play Store' },
+  { id: 'apple_app_store', name: 'App Store de Apple' },
+  { id: 'games', name: 'Juegos' },
+  { id: 'meta_quest', name: 'Tienda de aplicaciones de Meta Quest' }
+];
+
+const bidStrategies = [
     { id: 'highest_volume', name: 'Volumen más alto', desc: 'Obtén el mayor volumen de resultados con tu presupuesto.' },
     { id: 'cost_per_result', name: 'Objetivo de coste por resultado', desc: 'Intenta conseguir un determinado coste por resultado a la vez que maximizas el volumen de resultados.' },
     { id: 'other', name: 'Otras opciones', desc: 'Límite de puja', isOther: true }
@@ -181,7 +238,9 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       platforms: ['facebook', 'instagram', 'messenger', 'audience'],
       adSetJustification: '',
       frequencyControlType: 'limit',
-      frequencyControl: { count: 2, days: 7 }
+      frequencyControl: { count: 2, days: 7 },
+      interactionType: 'post_engagement',
+      appStore: 'all'
     },
     ad: {
       name: 'Nuevo anuncio',
@@ -961,10 +1020,20 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                   <button className="px-3 border border-fb-border rounded-md hover:bg-fb-header"><Plus size={18} /></button>
                                 </div>
                                 {formData.adSet.conversionLocation === 'instagram_facebook' && (
-                                  <div className="space-y-2">
+                                  <div className="space-y-4">
                                     <div className="flex items-center gap-3 p-3 border border-fb-border rounded-lg bg-slate-50/50">
                                       <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Camera size={16} /></div>
                                       <span className="text-[13px] font-bold">Cuenta de Instagram</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 pl-2">
+                                       <label className="flex items-center gap-2 cursor-pointer">
+                                          <input type="radio" name="engagement_platform" checked className="accent-fb-blue" />
+                                          <span className="text-[12px] font-bold text-slate-700">Perfil de Instagram</span>
+                                       </label>
+                                       <label className="flex items-center gap-2 cursor-pointer">
+                                          <input type="radio" name="engagement_platform" className="accent-fb-blue" />
+                                          <span className="text-[12px] font-bold text-slate-700">Página de Facebook</span>
+                                       </label>
                                     </div>
                                   </div>
                                 )}
@@ -984,6 +1053,144 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                               </select>
                               <p className="text-[11px] text-fb-text-secondary mt-1.5 leading-relaxed">
                                 {trafficPerformanceGoals[formData.adSet.conversionLocation]?.find(g => g.id === formData.adSet.performanceGoal)?.desc}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : formData.objective === 'engagement' ? (
+                        <div className="meta-editor-card p-0">
+                          <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Conversión</span>
+                          </div>
+                          <div className="p-6 space-y-6">
+                            <div>
+                              <label className="text-[12px] font-bold text-slate-800 block mb-1">Ubicación de la conversión</label>
+                              <p className="text-[11px] text-fb-text-secondary mb-4">Elige dónde quieres aumentar la interacción.</p>
+                              <div className="space-y-3">
+                                {interactionConversionLocations.map(loc => (
+                                  <div 
+                                    key={loc.id} 
+                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.conversionLocation === loc.id ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                    onClick={() => {
+                                      const defaultGoal = interactionPerformanceGoals[loc.id]?.find(g => !g.isHeader)?.id || '';
+                                      setFormData({
+                                        ...formData, 
+                                        adSet: {
+                                          ...formData.adSet, 
+                                          conversionLocation: loc.id,
+                                          performanceGoal: defaultGoal
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.conversionLocation === loc.id ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                      {formData.adSet.conversionLocation === loc.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                    </div>
+                                    <div>
+                                      <div className="text-[13px] font-bold">{loc.name}</div>
+                                      <div className="text-[11px] text-fb-text-secondary">{loc.desc}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {formData.adSet.conversionLocation === 'messaging_apps' && (
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1">Destinos del mensaje <HelpCircle size={14} className="text-slate-400" /></label>
+                                <div className="space-y-2">
+                                  {[
+                                    { name: 'Messenger', icon: <Send size={16} /> },
+                                    { name: 'Instagram', icon: <Camera size={16} /> },
+                                    { name: 'WhatsApp', icon: <MessageCircle size={16} /> }
+                                  ].map(app => (
+                                    <div key={app.name} className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-fb-blue">
+                                          {app.icon}
+                                        </div>
+                                        <span className="text-[13px] font-bold">{app.name}</span>
+                                      </div>
+                                      <input 
+                                        type="checkbox" 
+                                        className="w-5 h-5 rounded border-slate-300 text-fb-blue" 
+                                        checked={formData.ad.messagingApps[app.name.toLowerCase()]} 
+                                        onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, [app.name.toLowerCase()]: e.target.checked}}})} 
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {formData.adSet.conversionLocation === 'on_ad' && (
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 block mb-1">Tipo de interacción</label>
+                                <select 
+                                  className="meta-editor-input font-bold" 
+                                  value={formData.adSet.interactionType} 
+                                  onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, interactionType: e.target.value}})}
+                                >
+                                  {interactionTypes.map(type => (
+                                    <option key={type.id} value={type.id}>{type.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {formData.adSet.conversionLocation === 'app' && (
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 block mb-1">Tienda de aplicaciones</label>
+                                <select 
+                                  className="meta-editor-input font-bold" 
+                                  value={formData.adSet.appStore} 
+                                  onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, appStore: e.target.value}})}
+                                >
+                                  {appStores.map(store => (
+                                    <option key={store.id} value={store.id}>{store.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {formData.adSet.conversionLocation === 'website' && (
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 block mb-1">Conjunto de datos</label>
+                                <div className="p-3 border border-fb-border rounded-lg bg-slate-50/50 flex items-center justify-between">
+                                  <span className="text-[13px] font-bold">API Profe Nico</span>
+                                  <div className="text-[11px] text-green-600 font-bold flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full" /> Activo
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {(formData.adSet.conversionLocation === 'instagram_facebook' || formData.adSet.conversionLocation === 'calls') && (
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1">Página de Facebook <HelpCircle size={14} className="text-slate-400" /></label>
+                                <div className="flex gap-2">
+                                  <select className="meta-editor-input font-bold flex-grow" value={formData.adSet.pageName} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, pageName: e.target.value}})}>
+                                    <option value={formData.adSet.pageName}>{formData.adSet.pageName}</option>
+                                  </select>
+                                  <button className="px-3 border border-fb-border rounded-md hover:bg-fb-header"><Plus size={18} /></button>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="pt-4 border-t border-fb-border">
+                              <label className="text-[12px] font-bold text-slate-800 block mb-1">Objetivo de rendimiento</label>
+                              <select 
+                                className="meta-editor-input font-bold" 
+                                value={formData.adSet.performanceGoal} 
+                                onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, performanceGoal: e.target.value}})}
+                              >
+                                {interactionPerformanceGoals[formData.adSet.conversionLocation]?.map((goal, idx) => (
+                                  goal.isHeader ? <optgroup key={idx} label={goal.name} /> : <option key={goal.id} value={goal.id}>{goal.name}</option>
+                                ))}
+                              </select>
+                              <p className="text-[11px] text-fb-text-secondary mt-1.5 leading-relaxed">
+                                {interactionPerformanceGoals[formData.adSet.conversionLocation]?.find(g => g.id === formData.adSet.performanceGoal)?.desc}
                               </p>
                             </div>
                           </div>
