@@ -57,6 +57,46 @@ const performanceGoals = [
   { id: 'video_2s', name: 'Maximizar las reproducciones de vídeo continuas de 2 segundos', desc: 'Intentaremos mostrar tus anuncios con vídeo a las personas con más probabilidades de reproducirlos durante dos segundos seguidos o más.' }
 ];
 
+const trafficConversionLocations = [
+  { id: 'website', name: 'Sitio web', desc: 'Dirige el tráfico a tu sitio web.' },
+  { id: 'app', name: 'Aplicación', desc: 'Dirige el tráfico a tu aplicación.' },
+  { id: 'messaging_apps', name: 'Destinos del mensaje', desc: 'Dirige el tráfico a Messenger, Instagram y WhatsApp.' },
+  { id: 'instagram_facebook', name: 'Instagram o Facebook', desc: 'Envía tráfico a un perfil de Instagram, a una página de Facebook o a ambos sitios.' },
+  { id: 'calls', name: 'Llamadas', desc: 'Consigue que más personas se pongan en contacto contigo por teléfono, Messenger o WhatsApp.' },
+  { id: 'website_calls', name: 'Sitio web y llamadas', desc: 'Envía tráfico a tu sitio web y consigue que las personas llamen a tu empresa.' }
+];
+
+const trafficPerformanceGoals = {
+  website: [
+    { isHeader: true, name: 'Objetivos de tráfico' },
+    { id: 'landing_page_views', name: 'Maximizar el número de visitas a la página de destino', desc: 'Intentaremos mostrar los anuncios a las personas con más probabilidades de ver el sitio web que has vinculado con tu anuncio.' },
+    { id: 'link_clicks', name: 'Maximizar el número de clics en el enlace', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de hacer clic en ellos.' },
+    { isHeader: true, name: 'Otros objetivos' },
+    { id: 'daily_unique_reach', name: 'Maximizar el alcance único diario', desc: 'Intentaremos mostrar tus anuncios a las personas hasta una vez al día.' },
+    { id: 'conversations', name: 'Maximizar el número de conversaciones', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de conversar contigo a través de mensajes.' },
+    { id: 'impressions', name: 'Maximizar el número de impresiones', desc: 'Intentaremos mostrar tus anuncios a las personas tantas veces como sea posible.' }
+  ],
+  app: [
+    { isHeader: true, name: 'Objetivos de tráfico' },
+    { id: 'link_clicks', name: 'Maximizar el número de clics en el enlace', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de hacer clic en ellos.' },
+    { isHeader: true, name: 'Otros objetivos' },
+    { id: 'daily_unique_reach', name: 'Maximizar el alcance único diario', desc: 'Intentaremos mostrar tus anuncios a las personas hasta una vez al día.' }
+  ],
+  messaging_apps: [
+    { id: 'link_clicks', name: 'Maximizar el número de clics en el enlace', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de hacer clic en ellos.' },
+    { id: 'daily_unique_reach', name: 'Maximizar el alcance único diario', desc: 'Intentaremos mostrar tus anuncios a las personas hasta una vez al día.' }
+  ],
+  instagram_facebook: [
+    { id: 'profile_visits', name: 'Maximizar el número de visitas al perfil de Instagram', desc: 'Mostraremos tus anuncios a las personas con más probabilidades de visitar tu perfil de Instagram.' }
+  ],
+  calls: [
+    { id: 'calls', name: 'Maximizar el número de llamadas', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de llamarte.' }
+  ],
+  website_calls: [
+    { id: 'landing_page_views', name: 'Maximizar el número de visitas a la página de destino', desc: 'Intentaremos mostrar los anuncios a las personas con más probabilidades de ver el sitio web que has vinculado con tu anuncio.' }
+  ]
+};
+
 const metaObjectives = [
   { id: 'awareness', name: 'Reconocimiento', icon: <Megaphone size={20} />, description: 'Muestra tus anuncios a las personas que tengan más probabilidades de recordarlos.', idealFor: ['Alcance', 'Reconocimiento de marca', 'Visualizaciones de vídeo'], illustration: '/meta_objective_illustration_1777446648999.png' },
   { id: 'traffic', name: 'Tráfico', icon: <MousePointer2 size={20} />, description: 'Dirige a las personas a un destino, como tu sitio web, app o evento de Facebook.', idealFor: ['Clics en el enlace', 'Visitas a la página de destino', 'Messenger y WhatsApp'], illustration: '/meta_objective_illustration_1777446648999.png' },
@@ -112,8 +152,9 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     campaignSpendingLimitAmount: '',
     testAB: false,
     adSet: {
-      name: 'Nuevo conjunto de anuncios de Reconocimiento',
-      performanceGoal: 'reach',
+      name: 'Nuevo conjunto de anuncios',
+      conversionLocation: 'website', // website, app, messaging_apps, instagram_facebook, calls, website_calls
+      performanceGoal: 'landing_page_views',
       dynamicCreative: false,
       pageName: currentUser?.role === 'admin' ? 'Admin' : `Grupo ${currentUser?.group_id || 'X'}`,
       budget: '2500',
@@ -143,12 +184,12 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       frequencyControl: { count: 2, days: 7 }
     },
     ad: {
-      name: 'Nuevo anuncio de Reconocimiento',
+      name: 'Nuevo anuncio',
       partnerAd: false,
       adConfig: 'create', // create, existing, creative_hub
       format: 'single', // single, carousel
       multiAd: false,
-      destination: 'messaging_apps', // instant_experience, website, call, messaging_apps
+      destination: 'website', // instant_experience, website, call, messaging_apps
       messagingApps: { messenger: true, instagram: true, whatsapp: false },
       mediaType: 'image', // image, video
       mediaUrl: null,
@@ -157,6 +198,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       description: '',
       cta: 'LEARN_MORE',
       destinationUrl: '',
+      displayLink: '',
       phoneNumber: '',
       creativeStrategyJustification: '',
       languagesEnabled: false,
@@ -169,6 +211,11 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       utmBuilder: {
         source: '',
         medium: '',
+        name: '',
+        content: '',
+        term: ''
+      }
+    }
         campaign: '',
         content: ''
       }
@@ -790,55 +837,164 @@ const Simulator = ({ platform, onFinish, onBack }) => {
 
                   {currentStep === 2 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                      <div className="meta-editor-card p-0">
-                         <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold uppercase tracking-tight">Reconocimiento</span></div>
-                         <div className="p-6 space-y-6">
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Objetivo de rendimiento</label><select className="meta-editor-input font-bold" value={formData.adSet.performanceGoal} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, performanceGoal: e.target.value}})}>{performanceGoals.map((goal, idx) => goal.isHeader ? <optgroup key={idx} label={goal.name} /> : <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select><p className="text-[11px] text-fb-text-secondary mt-1.5 leading-relaxed">{performanceGoals.find(g => g.id === formData.adSet.performanceGoal)?.desc}</p></div>
-                            <div><label className="text-[12px] font-bold text-slate-800 block mb-1 flex items-center gap-1">Página de Facebook <HelpCircle size={14} className="text-slate-400" /></label><div className="flex gap-2"><select className="meta-editor-input font-bold flex-grow" value={formData.adSet.pageName} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, pageName: e.target.value}})}><option value="Seleccionar página">Seleccionar página</option><option value={formData.adSet.pageName}>{formData.adSet.pageName}</option></select><button className="px-3 border border-fb-border rounded-md hover:bg-fb-header"><Plus size={18} /></button></div></div>
-                            <div className="pt-4 border-t border-fb-border space-y-4">
-                              <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1">Control de frecuencia <HelpCircle size={14} className="text-slate-400" /></label>
-                              <div className="space-y-2">
-                                {/* Segmentación option */}
-                                <div 
-                                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.frequencyControlType === 'segmentation' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
-                                  onClick={() => setFormData({...formData, adSet: {...formData.adSet, frequencyControlType: 'segmentation'}})}
-                                >
-                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.frequencyControlType === 'segmentation' ? 'border-fb-blue' : 'border-slate-300'}`}>
-                                    {formData.adSet.frequencyControlType === 'segmentation' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                      {/* --- CONVERSION / GOAL CARD --- */}
+                      {formData.objective === 'awareness' ? (
+                        <div className="meta-editor-card p-0">
+                           <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold uppercase tracking-tight">Reconocimiento</span></div>
+                           <div className="p-6 space-y-6">
+                              <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Objetivo de rendimiento</label><select className="meta-editor-input font-bold" value={formData.adSet.performanceGoal} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, performanceGoal: e.target.value}})}>{performanceGoals.map((goal, idx) => goal.isHeader ? <optgroup key={idx} label={goal.name} /> : <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select><p className="text-[11px] text-fb-text-secondary mt-1.5 leading-relaxed">{performanceGoals.find(g => g.id === formData.adSet.performanceGoal)?.desc}</p></div>
+                              <div><label className="text-[12px] font-bold text-slate-800 block mb-1 flex items-center gap-1">Página de Facebook <HelpCircle size={14} className="text-slate-400" /></label><div className="flex gap-2"><select className="meta-editor-input font-bold flex-grow" value={formData.adSet.pageName} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, pageName: e.target.value}})}><option value="Seleccionar página">Seleccionar página</option><option value={formData.adSet.pageName}>{formData.adSet.pageName}</option></select><button className="px-3 border border-fb-border rounded-md hover:bg-fb-header"><Plus size={18} /></button></div></div>
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1">Control de frecuencia <HelpCircle size={14} className="text-slate-400" /></label>
+                                <div className="space-y-2">
+                                  {/* Segmentación option */}
+                                  <div 
+                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.frequencyControlType === 'segmentation' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                    onClick={() => setFormData({...formData, adSet: {...formData.adSet, frequencyControlType: 'segmentation'}})}
+                                  >
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.frequencyControlType === 'segmentation' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                      {formData.adSet.frequencyControlType === 'segmentation' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                    </div>
+                                    <div>
+                                      <div className="text-[13px] font-bold">Segmentación</div>
+                                      <div className="text-[11px] text-fb-text-secondary">Número medio de veces que quieres que las personas vean tus anuncios.</div>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <div className="text-[13px] font-bold">Segmentación</div>
-                                    <div className="text-[11px] text-fb-text-secondary">Número medio de veces que quieres que las personas vean tus anuncios.</div>
+                                  {/* Límite option */}
+                                  <div 
+                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.frequencyControlType === 'limit' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                    onClick={() => setFormData({...formData, adSet: {...formData.adSet, frequencyControlType: 'limit'}})}
+                                  >
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.frequencyControlType === 'limit' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                      {formData.adSet.frequencyControlType === 'limit' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                    </div>
+                                    <div>
+                                      <div className="text-[13px] font-bold">Límite</div>
+                                      <div className="text-[11px] text-fb-text-secondary">Número máximo de veces que quieres que las personas vean tus anuncios.</div>
+                                    </div>
                                   </div>
                                 </div>
-                                {/* Límite option */}
-                                <div 
-                                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.frequencyControlType === 'limit' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
-                                  onClick={() => setFormData({...formData, adSet: {...formData.adSet, frequencyControlType: 'limit'}})}
-                                >
-                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.frequencyControlType === 'limit' ? 'border-fb-blue' : 'border-slate-300'}`}>
-                                    {formData.adSet.frequencyControlType === 'limit' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                {formData.adSet.frequencyControlType === 'limit' && (
+                                  <div className="pl-8 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                      <input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold text-[13px]" value={formData.adSet.frequencyControl.count} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, count: e.target.value}}})} />
+                                      <span className="text-[12px] text-slate-600">veces cada</span>
+                                      <input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold text-[13px]" value={formData.adSet.frequencyControl.days} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, days: e.target.value}}})} />
+                                      <span className="text-[12px] text-slate-600">días</span>
+                                    </div>
+                                    <p className="text-[11px] text-fb-text-secondary">Intentaremos mantener la frecuencia por debajo de {formData.adSet.frequencyControl.count} impresiones cada {formData.adSet.frequencyControl.days} días como máximo.</p>
                                   </div>
-                                  <div>
-                                    <div className="text-[13px] font-bold">Límite</div>
-                                    <div className="text-[11px] text-fb-text-secondary">Número máximo de veces que quieres que las personas vean tus anuncios.</div>
+                                )}
+                              </div>
+                           </div>
+                        </div>
+                      ) : formData.objective === 'traffic' && (
+                        <div className="meta-editor-card p-0">
+                          <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                            <span className="text-[13px] font-bold">Conversión</span>
+                          </div>
+                          <div className="p-6 space-y-6">
+                            <div>
+                              <label className="text-[12px] font-bold text-slate-800 block mb-1">Ubicación de la conversión</label>
+                              <p className="text-[11px] text-fb-text-secondary mb-4">Elige dónde quieres aumentar el tráfico.</p>
+                              <div className="space-y-3">
+                                {trafficConversionLocations.map(loc => (
+                                  <div 
+                                    key={loc.id} 
+                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.conversionLocation === loc.id ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                    onClick={() => {
+                                      const defaultGoal = trafficPerformanceGoals[loc.id]?.find(g => !g.isHeader)?.id || '';
+                                      setFormData({
+                                        ...formData, 
+                                        adSet: {
+                                          ...formData.adSet, 
+                                          conversionLocation: loc.id,
+                                          performanceGoal: defaultGoal
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.conversionLocation === loc.id ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                      {formData.adSet.conversionLocation === loc.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                    </div>
+                                    <div>
+                                      <div className="text-[13px] font-bold">{loc.name}</div>
+                                      <div className="text-[11px] text-fb-text-secondary">{loc.desc}</div>
+                                    </div>
                                   </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {formData.adSet.conversionLocation === 'messaging_apps' && (
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1">Destinos del mensaje <HelpCircle size={14} className="text-slate-400" /></label>
+                                <div className="space-y-2">
+                                  {[
+                                    { name: 'Messenger', icon: <Send size={16} /> },
+                                    { name: 'Instagram', icon: <Camera size={16} /> },
+                                    { name: 'WhatsApp', icon: <MessageCircle size={16} /> }
+                                  ].map(app => (
+                                    <div key={app.name} className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-fb-blue">
+                                          {app.icon}
+                                        </div>
+                                        <span className="text-[13px] font-bold">{app.name}</span>
+                                      </div>
+                                      <input 
+                                        type="checkbox" 
+                                        className="w-5 h-5 rounded border-slate-300 text-fb-blue" 
+                                        checked={formData.ad.messagingApps[app.name.toLowerCase()]} 
+                                        onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, [app.name.toLowerCase()]: e.target.checked}}})} 
+                                      />
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                              {formData.adSet.frequencyControlType === 'limit' && (
-                                <div className="pl-8 space-y-2">
-                                  <div className="flex items-center gap-3">
-                                    <input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold text-[13px]" value={formData.adSet.frequencyControl.count} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, count: e.target.value}}})} />
-                                    <span className="text-[12px] text-slate-600">veces cada</span>
-                                    <input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold text-[13px]" value={formData.adSet.frequencyControl.days} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, days: e.target.value}}})} />
-                                    <span className="text-[12px] text-slate-600">días</span>
-                                  </div>
-                                  <p className="text-[11px] text-fb-text-secondary">Intentaremos mantener la frecuencia por debajo de {formData.adSet.frequencyControl.count} impresiones cada {formData.adSet.frequencyControl.days} días como máximo.</p>
+                            )}
+
+                            {(formData.adSet.conversionLocation === 'instagram_facebook' || formData.adSet.conversionLocation === 'calls') && (
+                              <div className="pt-4 border-t border-fb-border space-y-4">
+                                <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1">Página de Facebook <HelpCircle size={14} className="text-slate-400" /></label>
+                                <div className="flex gap-2">
+                                  <select className="meta-editor-input font-bold flex-grow" value={formData.adSet.pageName} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, pageName: e.target.value}})}>
+                                    <option value={formData.adSet.pageName}>{formData.adSet.pageName}</option>
+                                  </select>
+                                  <button className="px-3 border border-fb-border rounded-md hover:bg-fb-header"><Plus size={18} /></button>
                                 </div>
-                              )}
+                                {formData.adSet.conversionLocation === 'instagram_facebook' && (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-3 p-3 border border-fb-border rounded-lg bg-slate-50/50">
+                                      <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Camera size={16} /></div>
+                                      <span className="text-[13px] font-bold">Cuenta de Instagram</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="pt-4 border-t border-fb-border">
+                              <label className="text-[12px] font-bold text-slate-800 block mb-1">Objetivo de rendimiento</label>
+                              <select 
+                                className="meta-editor-input font-bold" 
+                                value={formData.adSet.performanceGoal} 
+                                onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, performanceGoal: e.target.value}})}
+                              >
+                                {trafficPerformanceGoals[formData.adSet.conversionLocation]?.map((goal, idx) => (
+                                  goal.isHeader ? <optgroup key={idx} label={goal.name} /> : <option key={goal.id} value={goal.id}>{goal.name}</option>
+                                ))}
+                              </select>
+                              <p className="text-[11px] text-fb-text-secondary mt-1.5 leading-relaxed">
+                                {trafficPerformanceGoals[formData.adSet.conversionLocation]?.find(g => g.id === formData.adSet.performanceGoal)?.desc}
+                              </p>
                             </div>
-                         </div>
-                      </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="meta-editor-card p-4 text-[12px] text-fb-text-secondary italic">Configuración de conversión para {formData.objective} próximamente...</div>
+                      )}
                       <div className="meta-editor-card p-0"><div className="p-4 border-b border-fb-border flex items-center justify-between"><span className="text-[13px] font-bold">Contenido dinámico</span><div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.adSet.dynamicCreative ? 'bg-fb-blue' : 'bg-fb-border'}`} onClick={() => setFormData({...formData, adSet: {...formData.adSet, dynamicCreative: !formData.adSet.dynamicCreative}})}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${formData.adSet.dynamicCreative ? 'left-6' : 'left-1'}`} /></div></div></div>
                       <div className="meta-editor-card p-0">
                          <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold uppercase tracking-tight">Presupuesto y programación</span></div>
@@ -1440,12 +1596,17 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <p className="text-[11px] text-fb-text-secondary leading-relaxed">Dinos dónde quieres que se dirija a las personas inmediatamente después de que toquen tu anuncio o hagan clic en él. <span className="text-fb-blue cursor-pointer">Más información</span></p>
                             
                             <div className="space-y-4">
-                               {[
+                               {(formData.objective === 'traffic' ? [
+                                 { id: 'website', name: 'Sitio web', desc: 'Dirige a las personas a tu sitio web.', icon: <LinkIcon size={16} /> },
+                                 { id: 'app', name: 'App', desc: 'Dirige a las personas a tu aplicación.', icon: <Smartphone size={16} /> },
+                                 { id: 'messaging_apps', name: 'Aplicaciones de mensajería', desc: 'Dirige a la gente a Messenger, Instagram y WhatsApp.', icon: <MessageCircle size={16} /> },
+                                 { id: 'call', name: 'Llamada', desc: 'Permite que las personas te llamen directamente.', icon: <Phone size={16} /> }
+                               ] : [
                                  { id: 'instant_experience', name: 'Experiencia instantánea', desc: 'Dirige a las personas a una experiencia de carga rápida optimizada para móviles.', icon: <Smartphone size={16} /> },
                                  { id: 'website', name: 'Sitio web', desc: 'Dirige a las personas a tu sitio web.', icon: <LinkIcon size={16} /> },
                                  { id: 'call', name: 'Llamada', desc: 'Permite que las personas te llamen directamente.', icon: <Phone size={16} /> },
                                  { id: 'messaging_apps', name: 'Aplicaciones de mensajería', desc: 'Dirige a la gente a Messenger, Instagram y WhatsApp.', icon: <MessageCircle size={16} /> }
-                               ].map(opt => (
+                               ]).map(opt => (
                                  <div key={opt.id} className="space-y-3">
                                    <label className="flex items-start gap-3 cursor-pointer group" onClick={() => setFormData({...formData, ad: {...formData.ad, destination: opt.id}})}>
                                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${formData.ad.destination === opt.id ? 'border-fb-blue' : 'border-slate-300'}`}>
@@ -1461,15 +1622,27 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                    </label>
                                    
                                    {opt.id === 'website' && formData.ad.destination === 'website' && (
-                                     <div className="pl-8 pb-2">
-                                       <label className="text-[11px] font-bold text-slate-600 block mb-1">URL del sitio web</label>
-                                       <input 
-                                         type="text" 
-                                         className="meta-editor-input text-[13px]" 
-                                         placeholder="https://ejemplo.com"
-                                         value={formData.ad.destinationUrl}
-                                         onChange={(e) => setFormData({...formData, ad: {...formData.ad, destinationUrl: e.target.value}})}
-                                       />
+                                     <div className="pl-8 space-y-4 pb-2">
+                                       <div>
+                                         <label className="text-[11px] font-bold text-slate-600 block mb-1">URL del sitio web</label>
+                                         <input 
+                                           type="text" 
+                                           className="meta-editor-input text-[13px]" 
+                                           placeholder="https://ejemplo.com"
+                                           value={formData.ad.destinationUrl}
+                                           onChange={(e) => setFormData({...formData, ad: {...formData.ad, destinationUrl: e.target.value}})}
+                                         />
+                                       </div>
+                                       <div>
+                                         <label className="text-[11px] font-bold text-slate-600 block mb-1 flex items-center gap-1">Enlace visible <HelpCircle size={12} /></label>
+                                         <input 
+                                           type="text" 
+                                           className="meta-editor-input text-[13px]" 
+                                           placeholder="ejemplo.com"
+                                           value={formData.ad.displayLink}
+                                           onChange={(e) => setFormData({...formData, ad: {...formData.ad, displayLink: e.target.value}})}
+                                         />
+                                       </div>
                                      </div>
                                    )}
 
@@ -1494,30 +1667,22 @@ const Simulator = ({ platform, onFinish, onBack }) => {
 
                             {formData.ad.destination === 'messaging_apps' && (
                                <div className="pl-8 space-y-4 pt-2">
-                                  <div className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
-                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-fb-blue rounded-full flex items-center justify-center text-white text-[12px] font-bold">T</div>
-                                        <div><div className="text-[13px] font-bold">Messenger</div><div className="text-[11px] text-fb-text-secondary">{formData.adSet.pageName}</div></div>
-                                     </div>
-                                     <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps.messenger} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, messenger: e.target.checked}}})} />
-                                  </div>
-                                  <div className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
-                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Camera size={16} /></div>
-                                        <div><div className="text-[13px] font-bold">Instagram</div><div className="text-[11px] text-fb-text-secondary">@{formData.adSet.pageName.toLowerCase().replace(' ', '.')}</div></div>
-                                     </div>
-                                     <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps.instagram} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, instagram: e.target.checked}}})} />
-                                  </div>
-                                  <div className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
-                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600"><MessageCircle size={16} /></div>
-                                        <div><div className="text-[13px] font-bold">WhatsApp</div><div className="text-[11px] text-fb-text-secondary">Conectar perfil</div></div>
-                                     </div>
-                                     <div className="flex gap-2">
-                                        <button className="px-3 py-1 border border-fb-border rounded text-[11px] font-bold hover:bg-white">Conectar perfil</button>
-                                        <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps.whatsapp} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, whatsapp: e.target.checked}}})} />
-                                     </div>
-                                  </div>
+                                  {[
+                                    { id: 'messenger', name: 'Messenger', icon: <div className="w-8 h-8 bg-fb-blue rounded-full flex items-center justify-center text-white text-[12px] font-bold">M</div>, sub: formData.adSet.pageName },
+                                    { id: 'instagram', name: 'Instagram', icon: <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600"><Camera size={16} /></div>, sub: `@${formData.adSet.pageName.toLowerCase().replace(' ', '.')}` },
+                                    { id: 'whatsapp', name: 'WhatsApp', icon: <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600"><MessageCircle size={16} /></div>, sub: 'Conectar perfil', action: true }
+                                  ].map(app => (
+                                    <div key={app.id} className="flex items-center justify-between p-3 border border-fb-border rounded-lg bg-slate-50/50">
+                                      <div className="flex items-center gap-3">
+                                         {app.icon}
+                                         <div><div className="text-[13px] font-bold">{app.name}</div><div className="text-[11px] text-fb-text-secondary">{app.sub}</div></div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                         {app.action && <button className="px-3 py-1 border border-fb-border rounded text-[11px] font-bold hover:bg-white">Conectar</button>}
+                                         <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps[app.id]} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, [app.id]: e.target.checked}}})} />
+                                      </div>
+                                    </div>
+                                  ))}
                                </div>
                             )}
                          </div>
