@@ -933,8 +933,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                                 )}
                                               </div>
                                            </div>
-                                           {/* Right-side action menu */}
-                                           <div className="relative">
+                                           <div className="relative flex items-center gap-1">
                                              <button 
                                                onClick={() => setLocationMenuOpen(locationMenuOpen === loc.name ? null : loc.name)}
                                                className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
@@ -948,6 +947,12 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                                  <button className="w-full text-left px-4 py-2.5 text-[12px] text-slate-700 hover:bg-fb-header/50 transition-colors border-t border-fb-border/50">Informar de un problema</button>
                                                </div>
                                              )}
+                                             <button 
+                                               onClick={() => removeLocation(loc.name)} 
+                                               className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
+                                             >
+                                               <X size={16} />
+                                             </button>
                                            </div>
                                         </div>
                                      ))}
@@ -991,7 +996,6 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                                         )}
                                      </div>
                                   </div>
-                                  <button className="text-fb-blue text-[11px] font-bold hover:underline">Añadir lugares de forma masiva</button>
                                </div>
                             </div>
 
@@ -1141,6 +1145,144 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             </div>
                          </div>
                       </div>
+
+                       {/* --- UBICACIONES --- */}
+                       <div className="meta-editor-card p-0">
+                          <div className="p-4 border-b border-fb-border flex items-center gap-2">
+                             <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
+                             <span className="text-[13px] font-bold">Ubicaciones</span>
+                          </div>
+                          <div className="p-6 space-y-6">
+                             <p className="text-[11px] text-fb-text-secondary leading-relaxed">
+                                Elige dónde aparecerá tu anuncio en las tecnologías de Meta. <span className="text-fb-blue cursor-pointer">Más información</span>
+                             </p>
+
+                             <div className="space-y-4">
+                                {/* Advantage+ Placements */}
+                                <div 
+                                  className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${formData.adSet.placements === 'advantage' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                  onClick={() => setFormData({...formData, adSet: {...formData.adSet, placements: 'advantage'}})}
+                                >
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.placements === 'advantage' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                    {formData.adSet.placements === 'advantage' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                  </div>
+                                  <div>
+                                    <div className="text-[13px] font-bold flex items-center gap-1">Ubicaciones de Advantage+ (recomendado) <Zap size={14} className="text-fb-blue" /></div>
+                                    <div className="text-[11px] text-fb-text-secondary leading-relaxed mt-1">
+                                      Usa las ubicaciones de Advantage+ para maximizar tu presupuesto y mostrar tus anuncios a más personas. El sistema de entrega de Facebook distribuirá el presupuesto de tu conjunto de anuncios entre varias ubicaciones según donde sea más probable obtener un mejor rendimiento.
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Manual Placements */}
+                                <div 
+                                  className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${formData.adSet.placements === 'manual' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                  onClick={() => setFormData({...formData, adSet: {...formData.adSet, placements: 'manual'}})}
+                                >
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.placements === 'manual' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                    {formData.adSet.placements === 'manual' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                  </div>
+                                  <div>
+                                    <div className="text-[13px] font-bold">Ubicaciones manuales</div>
+                                    <div className="text-[11px] text-fb-text-secondary leading-relaxed mt-1">
+                                      Elige manualmente los lugares donde quieres mostrar tu anuncio. Cuantas más ubicaciones selecciones, más oportunidades tendrás de llegar a tu audiencia objetivo y de conseguir tus objetivos de negocio.
+                                    </div>
+                                  </div>
+                                </div>
+                             </div>
+
+                             {formData.adSet.placements === 'manual' && (
+                               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pt-6 border-t border-fb-border space-y-8">
+                                 {/* Plataformas */}
+                                 <div>
+                                   <label className="text-[13px] font-bold text-slate-800 block mb-4">Plataformas</label>
+                                   <div className="grid grid-cols-2 gap-4">
+                                     {['Facebook', 'Instagram', 'Audience Network', 'Messenger', 'Threads', 'WhatsApp'].map(platform => (
+                                       <label key={platform} className="flex items-center gap-3 cursor-pointer group">
+                                         <input 
+                                           type="checkbox" 
+                                           className="w-5 h-5 rounded border-slate-300 text-fb-blue focus:ring-fb-blue" 
+                                           defaultChecked={platform !== 'Threads'}
+                                         />
+                                         <span className="text-[13px] text-slate-700">{platform}</span>
+                                       </label>
+                                     ))}
+                                   </div>
+                                 </div>
+
+                                 {/* Ubicaciones (Categories) */}
+                                 <div>
+                                   <div className="flex items-center justify-between mb-4">
+                                     <label className="text-[13px] font-bold text-slate-800">Ubicaciones</label>
+                                     <span className="text-[11px] text-fb-text-secondary">18 de 18 ubicaciones admiten la personalización de activos</span>
+                                   </div>
+
+                                   <div className="space-y-4">
+                                     {/* Feeds */}
+                                     <div className="border border-fb-border rounded-lg overflow-hidden">
+                                       <div className="bg-fb-header p-3 flex items-center justify-between border-b border-fb-border">
+                                         <div className="flex items-center gap-2">
+                                           <ChevronDown size={16} className="text-slate-400" />
+                                           <span className="text-[12px] font-bold">Feeds</span>
+                                         </div>
+                                         <input type="checkbox" className="w-4 h-4 rounded" defaultChecked />
+                                       </div>
+                                       <div className="p-3 space-y-3 bg-white">
+                                         <p className="text-[11px] text-fb-text-secondary">Aumenta la visibilidad de tu empresa con anuncios en los feeds</p>
+                                         {['Feed de Facebook', 'Feed del perfil de Facebook', 'Feed de Instagram', 'Feed del perfil de Instagram', 'Facebook Marketplace', 'Columna derecha de Facebook'].map(item => (
+                                           <label key={item} className="flex items-center justify-between group cursor-pointer">
+                                             <span className="text-[11px] text-slate-700 group-hover:text-fb-blue">{item}</span>
+                                             <input type="checkbox" className="w-4 h-4 rounded" defaultChecked={item !== 'Columna derecha de Facebook'} />
+                                           </label>
+                                         ))}
+                                       </div>
+                                     </div>
+
+                                     {/* Historias y Reels */}
+                                     <div className="border border-fb-border rounded-lg overflow-hidden">
+                                       <div className="bg-fb-header p-3 flex items-center justify-between border-b border-fb-border">
+                                         <div className="flex items-center gap-2">
+                                           <ChevronDown size={16} className="text-slate-400" />
+                                           <span className="text-[12px] font-bold">Historias, estado y reels</span>
+                                         </div>
+                                         <input type="checkbox" className="w-4 h-4 rounded" defaultChecked />
+                                       </div>
+                                       <div className="p-3 space-y-3 bg-white">
+                                         <p className="text-[11px] text-fb-text-secondary">Cuenta una historia más visual y atractiva mediante anuncios verticales</p>
+                                         {['Instagram Stories', 'Facebook Stories', 'Messenger Stories', 'Instagram Reels', 'Facebook Reels', 'Estado de WhatsApp'].map(item => (
+                                           <label key={item} className="flex items-center justify-between group cursor-pointer">
+                                             <span className="text-[11px] text-slate-700 group-hover:text-fb-blue">{item}</span>
+                                             <input type="checkbox" className="w-4 h-4 rounded" defaultChecked />
+                                           </label>
+                                         ))}
+                                       </div>
+                                     </div>
+
+                                     {/* Resultados de búsqueda */}
+                                     <div className="border border-fb-border rounded-lg overflow-hidden">
+                                       <div className="bg-fb-header p-3 flex items-center justify-between border-b border-fb-border">
+                                         <div className="flex items-center gap-2">
+                                           <ChevronDown size={16} className="text-slate-400" />
+                                           <span className="text-[12px] font-bold">Resultados de la búsqueda</span>
+                                         </div>
+                                         <input type="checkbox" className="w-4 h-4 rounded" defaultChecked />
+                                       </div>
+                                       <div className="p-3 space-y-3 bg-white">
+                                         <p className="text-[11px] text-fb-text-secondary">Aprovecha las búsquedas que hacen las personas para dar a conocer tu empresa</p>
+                                         {['Resultados de búsqueda en Facebook', 'Resultados de búsqueda en Instagram'].map(item => (
+                                           <label key={item} className="flex items-center justify-between group cursor-pointer">
+                                             <span className="text-[11px] text-slate-700 group-hover:text-fb-blue">{item}</span>
+                                             <input type="checkbox" className="w-4 h-4 rounded" defaultChecked />
+                                           </label>
+                                         ))}
+                                       </div>
+                                     </div>
+                                   </div>
+                                 </div>
+                               </motion.div>
+                             )}
+                          </div>
+                       </div>
 
                       <div className="meta-editor-card p-6"><div className="justification-box"><span className="justification-title">Justificación</span><textarea className="justification-input" placeholder="Justificación estratégica del conjunto de anuncios..." value={formData.adSet.adSetJustification} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, adSetJustification: e.target.value}})} /></div></div>
                     </motion.div>
