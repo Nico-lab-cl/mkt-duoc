@@ -77,6 +77,17 @@ const Simulator = ({ platform, onFinish, onBack }) => {
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [showBuyingTypeDropdown, setShowBuyingTypeDropdown] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
+  // UI state for editor dropdowns
+  const [showEditorBuyingType, setShowEditorBuyingType] = useState(false);
+  const [showEditorObjective, setShowEditorObjective] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showBidStrategyDropdown, setShowBidStrategyDropdown] = useState(false);
+
+  const bidStrategies = [
+    { id: 'highest_volume', name: 'Volumen más alto', desc: 'Obtén el mayor volumen de resultados con tu presupuesto.' },
+    { id: 'cost_per_result', name: 'Objetivo de coste por resultado', desc: 'Intenta conseguir un determinado coste por resultado a la vez que maximizas el volumen de resultados.' },
+    { id: 'other', name: 'Otras opciones', desc: 'Límite de puja', isOther: true }
+  ];
 
   const initialFormState = {
     objective: 'awareness',
@@ -87,7 +98,10 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     advantageBudget: false,
     shareBudget: true,
     campaignBudget: '25000',
-    bidStrategy: 'Volumen más alto',
+    bidStrategy: 'highest_volume',
+    bidLimitAmount: '',
+    campaignSpendingLimitEnabled: false,
+    campaignSpendingLimitAmount: '',
     testAB: false,
     adSet: {
       name: 'Nuevo conjunto de anuncios de Reconocimiento',
@@ -495,19 +509,193 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                          <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Nombre de la campaña</span></div>
                          <div className="p-6 flex items-center gap-4"><input type="text" className="meta-editor-input flex-grow" value={formData.campaignName} onChange={(e) => setFormData({...formData, campaignName: e.target.value})} /><button className="px-4 py-2 border border-fb-border rounded-md text-[12px] font-bold hover:bg-fb-header transition-colors">Crear plantilla</button></div>
                       </div>
+                      {/* === DETALLES DE LA CAMPAÑA === */}
                       <div className="meta-editor-card p-0">
                          <div className="p-4 border-b border-fb-border flex items-center gap-2"><div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div><span className="text-[13px] font-bold">Detalles de la campaña</span></div>
                          <div className="p-6 space-y-6">
-                            <div><label className="text-[11px] font-black text-slate-800 uppercase block mb-1">Tipo de compra</label><div className="text-[13px] font-bold text-fb-text-primary">{formData.buyingType}</div></div>
-                            <div><label className="text-[11px] font-black text-slate-800 uppercase block mb-1 flex items-center gap-1">Objetivo de la campaña <HelpCircle size={12} className="text-fb-text-secondary" /></label><div className="text-[13px] font-bold text-fb-text-primary uppercase">{metaObjectives.find(o => o.id === formData.objective)?.name}</div><button className="text-fb-blue text-[12px] font-bold mt-1 flex items-center">Mostrar más opciones <ChevronDown size={14} /></button></div>
+                            {/* Tipo de compra - dropdown */}
+                            <div>
+                              <label className="text-[12px] font-bold text-slate-800 block mb-2">Tipo de compra</label>
+                              <div className="relative">
+                                <button 
+                                  onClick={() => setShowEditorBuyingType(!showEditorBuyingType)} 
+                                  className="w-full text-left border border-fb-border rounded-md p-3 flex items-center justify-between text-[13px] font-bold hover:border-fb-blue transition-colors bg-white"
+                                >
+                                  {formData.buyingType} <ChevronDown size={16} className="text-slate-400" />
+                                </button>
+                                {showEditorBuyingType && (
+                                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-fb-border rounded-md shadow-xl z-50">
+                                    {[{ id: 'Subasta', desc: 'Compra en tiempo real con pujas rentables.' }, { id: 'Reserva', desc: 'Compra por adelantado con resultados más predecibles.' }].map(type => (
+                                      <div key={type.id} onClick={() => { setFormData({...formData, buyingType: type.id}); setShowEditorBuyingType(false); }} className={`p-3 flex items-start gap-3 cursor-pointer hover:bg-fb-header/50 transition-colors ${formData.buyingType === type.id ? 'bg-blue-50/50' : ''}`}>
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.buyingType === type.id ? 'border-fb-blue' : 'border-slate-300'}`}>{formData.buyingType === type.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}</div>
+                                        <div><div className="text-[13px] font-bold">{type.id}</div><div className="text-[11px] text-fb-text-secondary leading-tight">{type.desc}</div></div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Objetivo de la campaña - radio list */}
+                            <div>
+                              <label className="text-[12px] font-bold text-slate-800 mb-2 flex items-center gap-1">Objetivo de la campaña <HelpCircle size={14} className="text-fb-text-secondary" /></label>
+                              <div className="relative">
+                                <button 
+                                  onClick={() => setShowEditorObjective(!showEditorObjective)} 
+                                  className="w-full text-left border border-fb-border rounded-md p-3 flex items-center justify-between text-[13px] font-bold hover:border-fb-blue transition-colors bg-white"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded bg-fb-blue text-white">{metaObjectives.find(o => o.id === formData.objective)?.icon}</div>
+                                    {metaObjectives.find(o => o.id === formData.objective)?.name}
+                                  </div>
+                                  <ChevronDown size={16} className={`text-slate-400 transition-transform ${showEditorObjective ? 'rotate-180' : ''}`} />
+                                </button>
+                                {showEditorObjective && (
+                                  <div className="mt-1 bg-white border border-fb-border rounded-md shadow-xl z-50 overflow-hidden">
+                                    {metaObjectives.map(obj => (
+                                      <div 
+                                        key={obj.id} 
+                                        onClick={() => { 
+                                          setFormData({...formData, objective: obj.id, campaignName: `Nueva campaña de ${obj.name}`, adSet: {...formData.adSet, name: `Nuevo conjunto de anuncios de ${obj.name}`}, ad: {...formData.ad, name: `Nuevo anuncio de ${obj.name}`}});
+                                          setShowEditorObjective(false);
+                                        }} 
+                                        className={`px-4 py-3 flex items-center gap-3 cursor-pointer transition-all border-b border-fb-border/50 last:border-0 ${formData.objective === obj.id ? 'bg-blue-50/70' : 'hover:bg-fb-header/50'}`}
+                                      >
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${formData.objective === obj.id ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                          {formData.objective === obj.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                        </div>
+                                        <div className={`p-1.5 rounded ${formData.objective === obj.id ? 'bg-fb-blue text-white' : 'bg-slate-100 text-slate-500'}`}>{obj.icon}</div>
+                                        <span className={`text-[13px] ${formData.objective === obj.id ? 'font-bold text-fb-blue' : 'font-medium text-slate-700'}`}>{obj.name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Mostrar más opciones - toggle */}
+                            <button 
+                              onClick={() => setShowMoreOptions(!showMoreOptions)} 
+                              className="text-fb-blue text-[12px] font-bold flex items-center gap-1 hover:underline"
+                            >
+                              {showMoreOptions ? 'Ocultar opciones' : 'Mostrar más opciones'} <ChevronDown size={14} className={`transition-transform ${showMoreOptions ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Expanded options: Spending Limit */}
+                            {showMoreOptions && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3 border-t border-fb-border pt-4">
+                                <div>
+                                  <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1 mb-2">Límite de gasto de la campaña · Opcional <HelpCircle size={14} className="text-fb-text-secondary" /></label>
+                                  <div 
+                                    className="flex items-center gap-2 cursor-pointer mb-3" 
+                                    onClick={() => setFormData({...formData, campaignSpendingLimitEnabled: !formData.campaignSpendingLimitEnabled})}
+                                  >
+                                    <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${formData.campaignSpendingLimitEnabled ? 'bg-fb-blue border-fb-blue' : 'border-slate-300 bg-white'}`}>
+                                      {formData.campaignSpendingLimitEnabled && <Check size={12} className="text-white" strokeWidth={3} />}
+                                    </div>
+                                    <span className="text-[12px] font-bold text-slate-700">Añadir límite de gasto de la campaña</span>
+                                  </div>
+                                  {formData.campaignSpendingLimitEnabled && (
+                                    <div>
+                                      <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">$</span>
+                                        <input 
+                                          type="text" 
+                                          className="meta-editor-input pl-7 font-bold" 
+                                          placeholder="Ningún límite establecido" 
+                                          value={formData.campaignSpendingLimitAmount} 
+                                          onChange={(e) => setFormData({...formData, campaignSpendingLimitAmount: e.target.value})} 
+                                        />
+                                      </div>
+                                      <p className="text-[11px] text-fb-text-secondary mt-1">Gasto total: {formData.campaignSpendingLimitAmount ? `$${formData.campaignSpendingLimitAmount}` : '0 $'}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
                          </div>
                       </div>
+
+                      {/* === PRESUPUESTO DE CAMPAÑA ADVANTAGE+ === */}
                       <div className="meta-editor-card p-0">
                          <div className="p-4 border-b border-fb-border flex items-center justify-between"><div className="flex items-center gap-2"><span className="text-[13px] font-bold">Presupuesto de campaña de Advantage+ ✨</span></div><div className="flex items-center gap-2"><span className="text-[11px] font-bold text-slate-400">{formData.advantageBudget ? 'Activado' : 'Desactivado'}</span><div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.advantageBudget ? 'bg-fb-blue' : 'bg-fb-border'}`} onClick={() => setFormData({...formData, advantageBudget: !formData.advantageBudget})}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${formData.advantageBudget ? 'left-6' : 'left-1'}`} /></div></div></div>
                          <div className="p-6 space-y-4">
                             <p className="text-[11px] text-fb-text-secondary leading-relaxed">Distribuye tu presupuesto entre conjuntos de anuncios para conseguir más resultados. <span className="text-fb-blue cursor-pointer">Información sobre el presupuesto de campaña de Advantage+</span></p>
-                            <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100 cursor-pointer" onClick={() => setFormData({...formData, shareBudget: !formData.shareBudget})}><input type="checkbox" className="rounded cursor-pointer" checked={formData.shareBudget} onChange={() => {}} /><span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">Comparte hasta el 20 % de tu presupuesto con otros conjuntos de anuncios <HelpCircle size={12} /></span></div>
-                            <div><label className="text-[11px] font-black text-slate-800 uppercase block mb-1 flex items-center gap-1">Estrategia de puja de la campaña <HelpCircle size={12} /></label><div className="text-[13px] font-bold text-fb-text-primary">{formData.bidStrategy}</div></div>
+                            <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100 cursor-pointer" onClick={() => setFormData({...formData, shareBudget: !formData.shareBudget})}>
+                              <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${formData.shareBudget ? 'bg-fb-blue border-fb-blue' : 'border-slate-300 bg-white'}`}>
+                                {formData.shareBudget && <Check size={12} className="text-white" strokeWidth={3} />}
+                              </div>
+                              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">Comparte hasta el 20 % de tu presupuesto con otros conjuntos de anuncios <HelpCircle size={12} className="text-fb-text-secondary" /></span>
+                            </div>
+
+                            {/* Estrategia de puja - dropdown with definitions */}
+                            <div className="border-t border-fb-border pt-4">
+                              <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1 mb-2">Estrategia de puja de la campaña <HelpCircle size={14} className="text-fb-text-secondary" /></label>
+                              <p className="text-[11px] text-fb-text-secondary mb-3">Cómo pujaremos en las subastas de anuncios.</p>
+                              <div className="relative">
+                                <button 
+                                  onClick={() => setShowBidStrategyDropdown(!showBidStrategyDropdown)} 
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-fb-header border border-fb-border rounded-md text-[13px] font-bold hover:bg-slate-200 transition-colors"
+                                >
+                                  {bidStrategies.find(b => b.id === formData.bidStrategy)?.name || 'Volumen más alto'} <ChevronDown size={14} className={`text-slate-500 transition-transform ${showBidStrategyDropdown ? 'rotate-180' : ''}`} />
+                                </button>
+                                {showBidStrategyDropdown && (
+                                  <div className="absolute top-full left-0 mt-1 w-[480px] bg-white border border-fb-border rounded-md shadow-2xl z-50 overflow-hidden">
+                                    {bidStrategies.map(strategy => (
+                                      <div 
+                                        key={strategy.id} 
+                                        onClick={() => { setFormData({...formData, bidStrategy: strategy.id}); setShowBidStrategyDropdown(false); }} 
+                                        className={`px-4 py-3 cursor-pointer transition-all border-b border-fb-border/50 last:border-0 flex items-start gap-3 ${formData.bidStrategy === strategy.id ? 'bg-blue-50/50' : 'hover:bg-fb-header/50'}`}
+                                      >
+                                        {!strategy.isOther ? (
+                                          <>
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.bidStrategy === strategy.id ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                              {formData.bidStrategy === strategy.id && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                            </div>
+                                            <div>
+                                              <div className="text-[13px] font-bold">{strategy.name}</div>
+                                              <div className="text-[11px] text-fb-text-secondary leading-relaxed">{strategy.desc}</div>
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <div className="flex-grow">
+                                              <div className="text-[13px] font-bold text-slate-600">{strategy.name}</div>
+                                              <div className="text-[11px] text-fb-text-secondary">{strategy.desc}</div>
+                                            </div>
+                                            <ChevronRight size={16} className="text-slate-400 mt-1" />
+                                          </>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Bid limit input when applicable */}
+                              {(formData.bidStrategy === 'cost_per_result' || formData.bidStrategy === 'other') && (
+                                <div className="mt-4 p-4 bg-fb-header/30 rounded-lg border border-fb-border">
+                                  <label className="text-[11px] font-bold text-slate-800 block mb-1">
+                                    {formData.bidStrategy === 'cost_per_result' ? 'Objetivo de coste por resultado (CLP)' : 'Límite de puja (CLP)'}
+                                  </label>
+                                  <p className="text-[11px] text-fb-text-secondary mb-2">
+                                    {formData.bidStrategy === 'cost_per_result' 
+                                      ? 'Define el importe máximo que quieres pagar por resultado.'
+                                      : 'Define el importe máximo que quieras pujar en las subastas.'}
+                                  </p>
+                                  <div className="relative w-48">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">$</span>
+                                    <input 
+                                      type="text" 
+                                      className="meta-editor-input pl-7 font-bold" 
+                                      placeholder="0" 
+                                      value={formData.bidLimitAmount} 
+                                      onChange={(e) => setFormData({...formData, bidLimitAmount: e.target.value})} 
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                          </div>
                       </div>
                       {/* --- TEST A/B --- */}
