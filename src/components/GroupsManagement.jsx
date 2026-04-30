@@ -11,7 +11,8 @@ import {
   User as UserIcon,
   Trash2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Search
 } from 'lucide-react';
 
 const GroupsManagement = () => {
