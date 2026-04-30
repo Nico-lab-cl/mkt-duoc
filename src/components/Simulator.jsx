@@ -82,6 +82,14 @@ const Simulator = ({ platform, onFinish, onBack }) => {
   const [showEditorObjective, setShowEditorObjective] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showBidStrategyDropdown, setShowBidStrategyDropdown] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [locationMenuOpen, setLocationMenuOpen] = useState(null);
+  const [locationIncludeOpen, setLocationIncludeOpen] = useState(null);
+
+  const allCountries = ['Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita','Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bangladés','Barbados','Baréin','Bélgica','Belice','Benín','Bielorrusia','Birmania','Bolivia','Bosnia y Herzegovina','Botsuana','Brasil','Brunéi','Bulgaria','Burkina Faso','Burundi','Bután','Cabo Verde','Camboya','Camerún','Canadá','Catar','Chad','Chile','China','Chipre','Colombia','Comoras','Corea del Norte','Corea del Sur','Costa de Marfil','Costa Rica','Croacia','Cuba','Dinamarca','Dominica','Ecuador','Egipto','El Salvador','Emiratos Árabes Unidos','Eritrea','Eslovaquia','Eslovenia','España','Estados Unidos','Estonia','Etiopía','Filipinas','Finlandia','Fiyi','Francia','Gabón','Gambia','Georgia','Ghana','Granada','Grecia','Guatemala','Guinea','Guinea-Bisáu','Guinea Ecuatorial','Guyana','Haití','Honduras','Hungría','India','Indonesia','Irak','Irán','Irlanda','Islandia','Islas Marshall','Islas Salomón','Israel','Italia','Jamaica','Japón','Jordania','Kazajistán','Kenia','Kirguistán','Kiribati','Kuwait','Laos','Lesoto','Letonia','Líbano','Liberia','Libia','Liechtenstein','Lituania','Luxemburgo','Madagascar','Malasia','Malaui','Maldivas','Malí','Malta','Marruecos','Mauricio','Mauritania','México','Micronesia','Moldavia','Mónaco','Mongolia','Montenegro','Mozambique','Namibia','Nauru','Nepal','Nicaragua','Níger','Nigeria','Noruega','Nueva Zelanda','Omán','Países Bajos','Pakistán','Palaos','Panamá','Papúa Nueva Guinea','Paraguay','Perú','Polonia','Portugal','Reino Unido','República Centroafricana','República Checa','República del Congo','República Democrática del Congo','República Dominicana','Ruanda','Rumanía','Rusia','Samoa','San Cristóbal y Nieves','San Marino','San Vicente y las Granadinas','Santa Lucía','Santo Tomé y Príncipe','Senegal','Serbia','Seychelles','Sierra Leona','Singapur','Siria','Somalia','Sri Lanka','Suazilandia','Sudáfrica','Sudán','Sudán del Sur','Suecia','Suiza','Surinam','Tailandia','Tanzania','Tayikistán','Timor Oriental','Togo','Tonga','Trinidad y Tobago','Túnez','Turkmenistán','Turquía','Tuvalu','Ucrania','Uganda','Uruguay','Uzbekistán','Vanuatu','Vaticano','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue'];
+
+  const populationOptions = ['50 000','100 000','200 000','500 000','1 millón','2 millones','3 millones','+3 millones'];
 
   const bidStrategies = [
     { id: 'highest_volume', name: 'Volumen más alto', desc: 'Obtén el mayor volumen de resultados con tu presupuesto.' },
@@ -115,7 +123,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       endDateEnabled: false,
       endDate: '',
       endTime: '09:00',
-      locations: ['Chile'],
+      locations: [{ name: 'Chile', includeMode: 'all', popMin: '500 000', popMax: '+3 millones' }],
       locationRadius: '40',
       locationSearch: '',
       includeUnknownAgeWhatsApp: true,
@@ -131,6 +139,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
       placements: 'advantage',
       platforms: ['facebook', 'instagram', 'messenger', 'audience'],
       adSetJustification: '',
+      frequencyControlType: 'limit',
       frequencyControl: { count: 2, days: 7 }
     },
     ad: {
@@ -187,12 +196,12 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     if (e.key === 'Enter' && formData.adSet.locationSearch.trim()) {
       e.preventDefault();
       const newLoc = formData.adSet.locationSearch.trim();
-      if (!formData.adSet.locations.includes(newLoc)) {
+      if (!formData.adSet.locations.find(l => l.name === newLoc)) {
         setFormData({
           ...formData,
           adSet: {
             ...formData.adSet,
-            locations: [...formData.adSet.locations, newLoc],
+            locations: [...formData.adSet.locations, { name: newLoc, includeMode: 'all', popMin: '500 000', popMax: '+3 millones' }],
             locationSearch: ''
           }
         });
@@ -200,12 +209,36 @@ const Simulator = ({ platform, onFinish, onBack }) => {
     }
   };
 
-  const removeLocation = (loc) => {
+  const addLocationFromDropdown = (countryName) => {
+    if (!formData.adSet.locations.find(l => l.name === countryName)) {
+      setFormData({
+        ...formData,
+        adSet: {
+          ...formData.adSet,
+          locations: [...formData.adSet.locations, { name: countryName, includeMode: 'all', popMin: '500 000', popMax: '+3 millones' }],
+        }
+      });
+    }
+    setLocationSearchQuery('');
+    setShowLocationDropdown(false);
+  };
+
+  const removeLocation = (locName) => {
     setFormData({
       ...formData,
       adSet: {
         ...formData.adSet,
-        locations: formData.adSet.locations.filter(l => l !== loc)
+        locations: formData.adSet.locations.filter(l => l.name !== locName)
+      }
+    });
+  };
+
+  const updateLocationField = (locName, field, value) => {
+    setFormData({
+      ...formData,
+      adSet: {
+        ...formData.adSet,
+        locations: formData.adSet.locations.map(l => l.name === locName ? { ...l, [field]: value } : l)
       }
     });
   };
@@ -761,7 +794,48 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                          <div className="p-6 space-y-6">
                             <div><label className="text-[12px] font-bold text-slate-800 block mb-1">Objetivo de rendimiento</label><select className="meta-editor-input font-bold" value={formData.adSet.performanceGoal} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, performanceGoal: e.target.value}})}>{performanceGoals.map((goal, idx) => goal.isHeader ? <optgroup key={idx} label={goal.name} /> : <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select><p className="text-[11px] text-fb-text-secondary mt-1.5 leading-relaxed">{performanceGoals.find(g => g.id === formData.adSet.performanceGoal)?.desc}</p></div>
                             <div><label className="text-[12px] font-bold text-slate-800 block mb-1 flex items-center gap-1">Página de Facebook <HelpCircle size={14} className="text-slate-400" /></label><div className="flex gap-2"><select className="meta-editor-input font-bold flex-grow" value={formData.adSet.pageName} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, pageName: e.target.value}})}><option value="Seleccionar página">Seleccionar página</option><option value={formData.adSet.pageName}>{formData.adSet.pageName}</option></select><button className="px-3 border border-fb-border rounded-md hover:bg-fb-header"><Plus size={18} /></button></div></div>
-                            <div className="pt-4 border-t border-fb-border space-y-4"><label className="text-[12px] font-bold text-slate-800 block">Control de frecuencia <HelpCircle size={14} className="inline text-slate-400 ml-1" /></label><div className="space-y-3"><div className="flex items-start gap-3 p-3 border border-fb-border rounded-lg bg-fb-header/20"><div className="w-5 h-5 rounded-full border-2 border-fb-blue flex items-center justify-center mt-0.5"><div className="w-2.5 h-2.5 bg-fb-blue rounded-full" /></div><div><div className="text-[13px] font-bold">Límite</div><div className="text-[11px] text-fb-text-secondary">Número máximo de veces que quieres que las personas vean tus anuncios.</div></div></div><div className="flex items-center gap-3 pl-8"><input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold" value={formData.adSet.frequencyControl.count} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, count: e.target.value}}})} /><span className="text-[12px] text-slate-600">veces cada</span><input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold" value={formData.adSet.frequencyControl.days} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, days: e.target.value}}})} /><span className="text-[12px] text-slate-600">días</span></div></div></div>
+                            <div className="pt-4 border-t border-fb-border space-y-4">
+                              <label className="text-[12px] font-bold text-slate-800 flex items-center gap-1">Control de frecuencia <HelpCircle size={14} className="text-slate-400" /></label>
+                              <div className="space-y-2">
+                                {/* Segmentación option */}
+                                <div 
+                                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.frequencyControlType === 'segmentation' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                  onClick={() => setFormData({...formData, adSet: {...formData.adSet, frequencyControlType: 'segmentation'}})}
+                                >
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.frequencyControlType === 'segmentation' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                    {formData.adSet.frequencyControlType === 'segmentation' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                  </div>
+                                  <div>
+                                    <div className="text-[13px] font-bold">Segmentación</div>
+                                    <div className="text-[11px] text-fb-text-secondary">Número medio de veces que quieres que las personas vean tus anuncios.</div>
+                                  </div>
+                                </div>
+                                {/* Límite option */}
+                                <div 
+                                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.adSet.frequencyControlType === 'limit' ? 'border-fb-blue bg-blue-50/30' : 'border-fb-border hover:bg-fb-header/20'}`}
+                                  onClick={() => setFormData({...formData, adSet: {...formData.adSet, frequencyControlType: 'limit'}})}
+                                >
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${formData.adSet.frequencyControlType === 'limit' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                    {formData.adSet.frequencyControlType === 'limit' && <div className="w-2.5 h-2.5 bg-fb-blue rounded-full" />}
+                                  </div>
+                                  <div>
+                                    <div className="text-[13px] font-bold">Límite</div>
+                                    <div className="text-[11px] text-fb-text-secondary">Número máximo de veces que quieres que las personas vean tus anuncios.</div>
+                                  </div>
+                                </div>
+                              </div>
+                              {formData.adSet.frequencyControlType === 'limit' && (
+                                <div className="pl-8 space-y-2">
+                                  <div className="flex items-center gap-3">
+                                    <input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold text-[13px]" value={formData.adSet.frequencyControl.count} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, count: e.target.value}}})} />
+                                    <span className="text-[12px] text-slate-600">veces cada</span>
+                                    <input type="number" className="w-16 p-2 border border-fb-border rounded text-center font-bold text-[13px]" value={formData.adSet.frequencyControl.days} onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, frequencyControl: {...formData.adSet.frequencyControl, days: e.target.value}}})} />
+                                    <span className="text-[12px] text-slate-600">días</span>
+                                  </div>
+                                  <p className="text-[11px] text-fb-text-secondary">Intentaremos mantener la frecuencia por debajo de {formData.adSet.frequencyControl.count} impresiones cada {formData.adSet.frequencyControl.days} días como máximo.</p>
+                                </div>
+                              )}
+                            </div>
                          </div>
                       </div>
                       <div className="meta-editor-card p-0"><div className="p-4 border-b border-fb-border flex items-center justify-between"><span className="text-[13px] font-bold">Contenido dinámico</span><div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.adSet.dynamicCreative ? 'bg-fb-blue' : 'bg-fb-border'}`} onClick={() => setFormData({...formData, adSet: {...formData.adSet, dynamicCreative: !formData.adSet.dynamicCreative}})}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${formData.adSet.dynamicCreative ? 'left-6' : 'left-1'}`} /></div></div></div>
@@ -804,43 +878,118 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                             <div className="space-y-4 pt-4 border-t border-fb-border">
                                <label className="text-[12px] font-bold text-slate-800 block">* Lugares <Info size={12} className="inline text-slate-400 ml-1" /></label>
                                <div className="border border-fb-border rounded-lg p-4 space-y-4">
+                                  {/* Selected locations list */}
                                   <div className="space-y-2">
                                      {formData.adSet.locations.map(loc => (
-                                        <div key={loc} className="bg-slate-50 p-3 rounded flex items-center justify-between border border-fb-border/50">
+                                        <div key={loc.name} className="bg-slate-50 p-3 rounded-lg flex items-center justify-between border border-fb-border/50">
                                            <div className="flex items-center gap-3">
-                                              <div className="w-8 h-8 bg-green-100 text-green-600 rounded flex items-center justify-center"><MapPin size={16} /></div>
-                                              <div>
-                                                 <div className="text-[13px] font-bold">{loc}</div>
-                                                 <div className="text-[11px] text-fb-text-secondary">País/Región</div>
+                                              <div className="w-7 h-7 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0"><MapPin size={14} /></div>
+                                              {/* Country name with include dropdown */}
+                                              <div className="relative">
+                                                <button 
+                                                  onClick={() => setLocationIncludeOpen(locationIncludeOpen === loc.name ? null : loc.name)}
+                                                  className="text-[13px] font-bold flex items-center gap-1 hover:text-fb-blue transition-colors"
+                                                >
+                                                  {loc.name} <ChevronDown size={12} />
+                                                </button>
+                                                {locationIncludeOpen === loc.name && (
+                                                  <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-fb-border rounded-lg shadow-2xl z-50 p-4 space-y-3">
+                                                    <div className="text-[12px] font-bold text-slate-800 mb-2">Incluir</div>
+                                                    <div 
+                                                      className={`flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-fb-header/50 ${loc.includeMode === 'all' ? 'text-fb-blue' : ''}`}
+                                                      onClick={() => { updateLocationField(loc.name, 'includeMode', 'all'); setLocationIncludeOpen(null); }}
+                                                    >
+                                                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${loc.includeMode === 'all' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                                        {loc.includeMode === 'all' && <div className="w-2 h-2 bg-fb-blue rounded-full" />}
+                                                      </div>
+                                                      <span className="text-[12px] font-bold">Incluir todas las áreas</span>
+                                                    </div>
+                                                    <div>
+                                                      <div 
+                                                        className={`flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-fb-header/50 ${loc.includeMode === 'cities' ? 'text-fb-blue' : ''}`}
+                                                        onClick={() => updateLocationField(loc.name, 'includeMode', 'cities')}
+                                                      >
+                                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${loc.includeMode === 'cities' ? 'border-fb-blue' : 'border-slate-300'}`}>
+                                                          {loc.includeMode === 'cities' && <div className="w-2 h-2 bg-fb-blue rounded-full" />}
+                                                        </div>
+                                                        <span className="text-[12px] font-bold">Incluir solo ciudades</span>
+                                                      </div>
+                                                      {loc.includeMode === 'cities' && (
+                                                        <div className="ml-6 mt-2 space-y-2">
+                                                          <span className="text-[11px] text-fb-text-secondary flex items-center gap-1">Con la siguiente población <HelpCircle size={10} /></span>
+                                                          <div className="flex items-center gap-2">
+                                                            <select className="meta-editor-input text-[11px] font-bold w-28" value={loc.popMin} onChange={(e) => updateLocationField(loc.name, 'popMin', e.target.value)}>
+                                                              {populationOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                                                            </select>
+                                                            <span className="text-[11px] text-slate-400">-</span>
+                                                            <select className="meta-editor-input text-[11px] font-bold w-28" value={loc.popMax} onChange={(e) => updateLocationField(loc.name, 'popMax', e.target.value)}>
+                                                              {populationOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                                                            </select>
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                )}
                                               </div>
                                            </div>
-                                           <button 
-                                             onClick={() => removeLocation(loc)} 
-                                             className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
-                                           >
-                                              <X size={14} />
-                                           </button>
+                                           {/* Right-side action menu */}
+                                           <div className="relative">
+                                             <button 
+                                               onClick={() => setLocationMenuOpen(locationMenuOpen === loc.name ? null : loc.name)}
+                                               className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
+                                             >
+                                               <MoreHorizontal size={16} />
+                                             </button>
+                                             {locationMenuOpen === loc.name && (
+                                               <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-fb-border rounded-lg shadow-2xl z-50 py-1 overflow-hidden">
+                                                 <button onClick={() => { removeLocation(loc.name); setLocationMenuOpen(null); }} className="w-full text-left px-4 py-2.5 text-[12px] text-slate-700 hover:bg-fb-header/50 transition-colors">Excluir ubicación</button>
+                                                 <button className="w-full text-left px-4 py-2.5 text-[12px] text-slate-700 hover:bg-fb-header/50 transition-colors">Excluir ciudades</button>
+                                                 <button className="w-full text-left px-4 py-2.5 text-[12px] text-slate-700 hover:bg-fb-header/50 transition-colors border-t border-fb-border/50">Informar de un problema</button>
+                                               </div>
+                                             )}
+                                           </div>
                                         </div>
                                      ))}
                                   </div>
                                   
+                                  {/* Search bar with country dropdown */}
                                   <div className="flex gap-2">
-                                     <select className="meta-editor-input w-24 font-bold"><option>Incluir</option><option>Excluir</option></select>
+                                     <select className="meta-editor-input w-24 font-bold text-[12px]"><option>Incluir</option><option>Excluir</option></select>
                                      <div className="relative flex-grow">
                                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input 
                                           type="text" 
-                                          className="meta-editor-input pl-10 w-full" 
-                                          placeholder="Escribe un país y presiona Enter" 
-                                          value={formData.adSet.locationSearch}
-                                          onChange={(e) => setFormData({...formData, adSet: {...formData.adSet, locationSearch: e.target.value}})}
-                                          onKeyDown={handleAddLocation}
+                                          className="meta-editor-input pl-10 w-full text-[12px]" 
+                                          placeholder="Buscar lugares..." 
+                                          value={locationSearchQuery}
+                                          onChange={(e) => { setLocationSearchQuery(e.target.value); setShowLocationDropdown(e.target.value.length > 0); }}
+                                          onFocus={() => { if (locationSearchQuery.length > 0) setShowLocationDropdown(true); }}
                                         />
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                                            <span className="text-[11px] font-bold text-slate-500 hover:text-fb-blue cursor-pointer flex items-center gap-1">Explorar <ChevronDown size={12} /></span>
                                         </div>
+                                        {showLocationDropdown && (
+                                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-fb-border rounded-lg shadow-2xl z-50 max-h-60 overflow-y-auto">
+                                            {allCountries
+                                              .filter(c => c.toLowerCase().includes(locationSearchQuery.toLowerCase()) && !formData.adSet.locations.find(l => l.name === c))
+                                              .slice(0, 15)
+                                              .map(country => (
+                                                <div 
+                                                  key={country} 
+                                                  onClick={() => addLocationFromDropdown(country)}
+                                                  className="px-4 py-2.5 text-[12px] font-medium text-slate-700 hover:bg-fb-header/50 cursor-pointer flex items-center gap-3 transition-colors"
+                                                >
+                                                  <MapPin size={14} className="text-green-500 flex-shrink-0" />
+                                                  {country}
+                                                </div>
+                                              ))}
+                                            {allCountries.filter(c => c.toLowerCase().includes(locationSearchQuery.toLowerCase()) && !formData.adSet.locations.find(l => l.name === c)).length === 0 && (
+                                              <div className="px-4 py-3 text-[11px] text-fb-text-secondary text-center">No se encontraron resultados</div>
+                                            )}
+                                          </div>
+                                        )}
                                      </div>
-                                     <button className="p-2 border border-fb-border rounded hover:bg-slate-50"><ChevronDown size={16} /></button>
                                   </div>
                                   <button className="text-fb-blue text-[11px] font-bold hover:underline">Añadir lugares de forma masiva</button>
                                </div>
