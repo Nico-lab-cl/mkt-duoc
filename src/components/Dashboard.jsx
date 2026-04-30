@@ -59,11 +59,16 @@ const platforms = [
 import GroupsManagement from './GroupsManagement';
 
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
-  const { projectData, updateProjectData, currentUser } = useProject();
+  const { projectData, updateProjectData, currentUser, setCurrentUser } = useProject();
   const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
   const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [] });
   const [loading, setLoading] = useState(false);
   const [showProfileConfig, setShowProfileConfig] = useState(false);
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    window.location.reload(); // Recargar para limpiar todo el estado
+  };
 
   useEffect(() => {
     if (currentUser?.role === 'admin' && activeView === 'admin') {
@@ -128,7 +133,10 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                  <span className="text-[10px] text-slate-400 font-bold uppercase truncate">{currentUser?.role}</span>
               </div>
            </div>
-           <button className="w-full flex items-center gap-2 px-4 py-2 text-red-500 font-bold text-xs hover:bg-red-50 rounded-lg transition-colors">
+           <button 
+             onClick={handleLogout}
+             className="w-full flex items-center gap-2 px-4 py-2 text-red-500 font-bold text-xs hover:bg-red-50 rounded-lg transition-colors"
+           >
               <LogOut size={16} /> Salir
            </button>
         </div>
