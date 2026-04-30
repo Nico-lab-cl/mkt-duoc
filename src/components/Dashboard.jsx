@@ -18,7 +18,9 @@ import {
   LogOut,
   Bell,
   Menu,
-  X
+  X,
+  User,
+  AlertCircle
 } from 'lucide-react';
 
 const platforms = [
