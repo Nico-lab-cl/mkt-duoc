@@ -133,14 +133,6 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
     </button>
   );
 
-  const themes = [
-    { id: 'default', name: 'Original', color: 'bg-blue-600' },
-    { id: 'dark', name: 'Dark Mode', color: 'bg-slate-800' },
-    { id: 'midnight', name: 'Midnight', color: 'bg-indigo-900' },
-    { id: 'emerald', name: 'Emerald', color: 'bg-emerald-600' },
-    { id: 'cyberpunk', name: 'Cyberpunk', color: 'bg-pink-600' },
-  ];
-
   return (
     <div className="min-h-screen flex overflow-hidden transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
       {/* --- SIDEBAR --- */}
@@ -381,36 +373,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                   </div>
                </div>
 
-               {/* Selección de Temas Premium */}
-               <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
-                  <div className="flex items-center gap-4 mb-10">
-                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: 'var(--primary)' }}>
-                        <Monitor size={24} />
-                     </div>
-                     <div>
-                        <h3 className="text-xl font-black tracking-tighter uppercase italic">Temas Premium</h3>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cambia el aspecto visual de tu entorno</p>
-                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                    {themes.map((t) => (
-                      <button 
-                        key={t.id}
-                        onClick={() => setTheme(t.id)}
-                        className={`group relative p-4 rounded-3xl border-2 transition-all ${theme === t.id ? 'border-[var(--primary)] bg-slate-50' : 'border-slate-100 hover:border-slate-300'}`}
-                      >
-                         <div className={`w-full aspect-video rounded-xl mb-3 ${t.color} shadow-lg`} />
-                         <span className="text-[10px] font-black uppercase tracking-widest block text-center" style={{ color: theme === t.id ? 'var(--primary)' : 'inherit' }}>{t.name}</span>
-                         {theme === t.id && (
-                           <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                             <ShieldCheck size={12} />
-                           </div>
-                         )}
-                      </button>
-                    ))}
-                  </div>
-               </div>
 
                {configMessage && (
                   <motion.div 
