@@ -884,7 +884,7 @@ const Simulator = ({ platform, onFinish, onBack }) => {
                               </div>
                            </div>
                         </div>
-                      ) : formData.objective === 'traffic' && (
+                      ) : formData.objective === 'traffic' ? (
                         <div className="meta-editor-card p-0">
                           <div className="p-4 border-b border-fb-border flex items-center gap-2">
                             <div className="w-5 h-5 rounded-full border border-green-500 flex items-center justify-center text-green-500"><Check size={12} strokeWidth={3} /></div>
