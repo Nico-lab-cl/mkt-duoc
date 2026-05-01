@@ -152,7 +152,7 @@ app.post('/api/chatflows', async (req, res) => {
     res.json({ success: true, chatflow: result.rows[0] });
   } catch (err) {
     console.error('DATABASE ERROR (Chatflow Save):', err);
-    res.status(500).json({ error: 'Error al guardar chatflow: ' + err.message });
+    res.status(500).json({ error: 'DB_ERROR_V4: ' + err.message });
   }
 });
 
