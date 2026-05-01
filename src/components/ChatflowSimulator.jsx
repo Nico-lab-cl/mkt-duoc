@@ -349,6 +349,41 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
             <Smartphone size={18} /> Previsualizar
           </button>
           <button 
+            onClick={async () => {
+              setSaveStatus('saving');
+              try {
+                const response = await fetch('/api/chatflows', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    id: selectedChatflowId,
+                    name: `Chatflow - ${trigger}`,
+                    userId: currentUser.id,
+                    groupId: currentUser.group_id,
+                    data: nodes
+                  })
+                });
+                const result = await response.json();
+                if (result.success) {
+                  setSaveStatus('saved');
+                  alert('¡Estrategia guardada exitosamente en la base de datos!');
+                  if (!selectedChatflowId) {
+                    setSelectedChatflowId(result.chatflow.id);
+                  }
+                } else {
+                  setSaveStatus('error');
+                  alert('Error al guardar: ' + result.error);
+                }
+              } catch (err) {
+                setSaveStatus('error');
+                alert('Error de conexión al guardar');
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-green-100"
+          >
+            <Database size={18} /> Guardar Progreso
+          </button>
+          <button 
             onClick={() => setShowExport(true)}
             className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm shadow-lg shadow-blue-200 transition-all active:scale-95"
           >
@@ -715,7 +750,7 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
                    <button 
                     onClick={async () => {
                       try {
-                        await fetch('/api/chatflows', {
+                        const response = await fetch('/api/chatflows', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -726,10 +761,17 @@ const ChatflowSimulator = ({ onBack, onFinish }) => {
                             data: nodes
                           })
                         });
-                        localStorage.removeItem('simulador_chatflow_progress');
-                        setView('manager');
+                        const resData = await response.json();
+                        if (resData.success) {
+                          alert('¡Estrategia guardada en la base de datos!');
+                          localStorage.removeItem('simulador_chatflow_progress');
+                          setView('manager');
+                        } else {
+                          alert('Error al guardar: ' + resData.error);
+                        }
                       } catch (err) {
                         console.error('Error saving chatflow');
+                        alert('Error al conectar con el servidor');
                       }
                       setShowExport(false);
                     }}
