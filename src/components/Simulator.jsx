@@ -44,7 +44,8 @@ import {
   Phone,
   Link as LinkIcon,
   MessageCircle,
-  Video
+  Video,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -278,6 +279,45 @@ const bidStrategies = [
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [saveStatus, setSaveStatus] = useState('saved');
+
+  // Cargar progreso desde localStorage al iniciar
+  useEffect(() => {
+    const savedCampaign = localStorage.getItem('simulador_meta_progress');
+    if (savedCampaign) {
+      try {
+        setFormData(JSON.parse(savedCampaign));
+      } catch (e) {
+        console.error('Error loading saved campaign', e);
+      }
+    }
+  }, []);
+
+  // Guardar progreso en localStorage automáticamente
+  useEffect(() => {
+    localStorage.setItem('simulador_meta_progress', JSON.stringify(formData));
+    setSaveStatus('saving');
+    const timer = setTimeout(() => setSaveStatus('saved'), 1000);
+    return () => clearTimeout(timer);
+  }, [formData]);
+
+  const downloadCampaignJSON = () => {
+    const campaignData = {
+      agencyName: projectData.agencyName,
+      projectName: projectData.projectName,
+      platform,
+      formData,
+      exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(campaignData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `campaña-${formData.campaignName || 'sin-nombre'}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showUtmModal, setShowUtmModal] = useState(false);
@@ -425,6 +465,7 @@ const bidStrategies = [
         })
       });
     } catch (err) { console.error('Error saving campaign'); }
+    localStorage.removeItem('simulador_meta_progress');
     onFinish();
   };
 
@@ -628,13 +669,21 @@ const bidStrategies = [
               <div className="h-8 w-px bg-fb-border mx-1" />
               <span className="text-[13px] font-bold truncate max-w-[250px]">{formData.campaignName}</span>
            </div>
-           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full text-[10px] font-black text-green-600 border border-green-200">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> API PROFE NICO: CONECTADA
+                <div className={`w-2 h-2 rounded-full animate-pulse ${saveStatus === 'saving' ? 'bg-amber-500' : 'bg-green-500'}`} /> 
+                {saveStatus === 'saving' ? 'GUARDANDO...' : 'API PROFE NICO: CONECTADA'}
               </div>
               <div className="flex bg-fb-header rounded-md p-1 border border-fb-border">
                  {[1, 2, 3].map(s => <button key={s} onClick={() => setCurrentStep(s)} className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${currentStep === s ? 'bg-white shadow-sm text-fb-blue' : 'text-fb-text-secondary hover:bg-white/50'}`}>{s}. {s === 1 ? 'Campaña' : s === 2 ? 'Conjunto' : 'Anuncio'}</button>)}
               </div>
+              <button 
+                onClick={downloadCampaignJSON}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-bold text-sm border border-fb-border transition-all"
+                title="Descargar configuración"
+              >
+                <Download size={16} />
+              </button>
               <button onClick={handleFinish} className="bg-fb-blue text-white px-6 py-2 rounded-md font-bold text-sm shadow-md hover:bg-blue-700">Finalizar y Guardar</button>
            </div>
         </header>
