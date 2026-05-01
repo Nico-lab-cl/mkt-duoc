@@ -27,13 +27,38 @@ const pool = new Pool({
   ssl: false
 });
 
-// Probar conexión a la base de datos al iniciar
-pool.connect((err, client, release) => {
+// Probar conexión e inicializar tablas
+pool.connect(async (err, client, release) => {
   if (err) {
     return console.error('❌ Error de conexión a la base de datos:', err.stack);
   }
   console.log('✅ Conexión a PostgreSQL exitosa');
-  release();
+  
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS campaigns (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        user_id INTEGER,
+        group_id INTEGER,
+        data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS chatflows (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        user_id INTEGER,
+        group_id INTEGER,
+        data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('🚀 Tablas de base de datos verificadas/creadas');
+  } catch (dbErr) {
+    console.error('❌ Error inicializando tablas:', dbErr);
+  } finally {
+    release();
+  }
 });
 
 // --- API ENDPOINTS ---
@@ -126,8 +151,8 @@ app.post('/api/chatflows', async (req, res) => {
     }
     res.json({ success: true, chatflow: result.rows[0] });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al guardar chatflow' });
+    console.error('DATABASE ERROR (Chatflow Save):', err);
+    res.status(500).json({ error: 'Error al guardar chatflow: ' + err.message });
   }
 });
 
