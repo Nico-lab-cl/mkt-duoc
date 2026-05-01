@@ -106,15 +106,16 @@ app.post('/api/campaigns', async (req, res) => {
   const { id, name, userId, groupId, data } = req.body;
   try {
     let result;
+    const jsonData = JSON.stringify(data);
     if (id) {
       result = await pool.query(
         'UPDATE campaigns SET name = $1, data = $2 WHERE id = $3 RETURNING *',
-        [name, data, id]
+        [name, jsonData, id]
       );
     } else {
       result = await pool.query(
         'INSERT INTO campaigns (name, user_id, group_id, data) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, userId, groupId, data]
+        [name, userId, groupId, jsonData]
       );
     }
     res.json({ success: true, campaign: result.rows[0] });
@@ -138,15 +139,16 @@ app.post('/api/chatflows', async (req, res) => {
   const { id, name, userId, groupId, data } = req.body;
   try {
     let result;
+    const jsonData = JSON.stringify(data);
     if (id) {
       result = await pool.query(
         'UPDATE chatflows SET name = $1, data = $2 WHERE id = $3 RETURNING *',
-        [name, data, id]
+        [name, jsonData, id]
       );
     } else {
       result = await pool.query(
         'INSERT INTO chatflows (name, user_id, group_id, data) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, userId, groupId, data]
+        [name, userId, groupId, jsonData]
       );
     }
     res.json({ success: true, chatflow: result.rows[0] });
