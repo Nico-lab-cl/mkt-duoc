@@ -127,6 +127,8 @@ const Simulator = ({ platform, onFinish, onBack }) => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [locationMenuOpen, setLocationMenuOpen] = useState(null);
   const [locationIncludeOpen, setLocationIncludeOpen] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   const allCountries = ['Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita','Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bangladés','Barbados','Baréin','Bélgica','Belice','Benín','Bielorrusia','Birmania','Bolivia','Bosnia y Herzegovina','Botsuana','Brasil','Brunéi','Bulgaria','Burkina Faso','Burundi','Bután','Cabo Verde','Camboya','Camerún','Canadá','Catar','Chad','Chile','China','Chipre','Colombia','Comoras','Corea del Norte','Corea del Sur','Costa de Marfil','Costa Rica','Croacia','Cuba','Dinamarca','Dominica','Ecuador','Egipto','El Salvador','Emiratos Árabes Unidos','Eritrea','Eslovaquia','Eslovenia','España','Estados Unidos','Estonia','Etiopía','Filipinas','Finlandia','Fiyi','Francia','Gabón','Gambia','Georgia','Ghana','Granada','Grecia','Guatemala','Guinea','Guinea-Bisáu','Guinea Ecuatorial','Guyana','Haití','Honduras','Hungría','India','Indonesia','Irak','Irán','Irlanda','Islandia','Islas Marshall','Islas Salomón','Israel','Italia','Jamaica','Japón','Jordania','Kazajistán','Kenia','Kirguistán','Kiribati','Kuwait','Laos','Lesoto','Letonia','Líbano','Liberia','Libia','Liechtenstein','Lituania','Luxemburgo','Madagascar','Malasia','Malaui','Maldivas','Malí','Malta','Marruecos','Mauricio','Mauritania','México','Micronesia','Moldavia','Mónaco','Mongolia','Montenegro','Mozambique','Namibia','Nauru','Nepal','Nicaragua','Níger','Nigeria','Noruega','Nueva Zelanda','Omán','Países Bajos','Pakistán','Palaos','Panamá','Papúa Nueva Guinea','Paraguay','Perú','Polonia','Portugal','Reino Unido','República Centroafricana','República Checa','República del Congo','República Democrática del Congo','República Dominicana','Ruanda','Rumanía','Rusia','Samoa','San Cristóbal y Nieves','San Marino','San Vicente y las Granadinas','Santa Lucía','Santo Tomé y Príncipe','Senegal','Serbia','Seychelles','Sierra Leona','Singapur','Siria','Somalia','Sri Lanka','Suazilandia','Sudáfrica','Sudán','Sudán del Sur','Suecia','Suiza','Surinam','Tailandia','Tanzania','Tayikistán','Timor Oriental','Togo','Tonga','Trinidad y Tobago','Túnez','Turkmenistán','Turquía','Tuvalu','Ucrania','Uganda','Uruguay','Uzbekistán','Vanuatu','Vaticano','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue'];
 
@@ -450,23 +452,47 @@ const bidStrategies = [
     }
   };
 
-  const handleFinish = async () => {
-    updateProjectData({ platform, ...formData });
+  const handleSaveToDB = async () => {
+    setIsSaving(true);
     try {
-      await fetch('/api/campaigns', {
+      const res = await fetch('/api/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          id: selectedCampaignId, // Enviar ID si estamos editando
+          id: selectedCampaignId,
           name: formData.campaignName, 
           userId: currentUser.id, 
           groupId: currentUser.group_id, 
           data: formData 
         })
       });
-    } catch (err) { console.error('Error saving campaign'); }
-    localStorage.removeItem('simulador_meta_progress');
-    onFinish();
+      if (res.ok) {
+        const result = await res.json();
+        if (!selectedCampaignId && result.campaign?.id) {
+          setSelectedCampaignId(result.campaign.id);
+        }
+        setShowSaveSuccess(true);
+        setTimeout(() => setShowSaveSuccess(false), 3000);
+        return true;
+      }
+      return false;
+    } catch (err) { 
+      console.error('Error saving campaign:', err); 
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleFinish = async () => {
+    updateProjectData({ platform, ...formData });
+    const success = await handleSaveToDB();
+    if (success) {
+      localStorage.removeItem('simulador_meta_progress');
+      onFinish();
+    } else {
+      alert('Hubo un error al guardar. Por favor, inténtalo de nuevo.');
+    }
   };
 
   if (view === 'manager') {
@@ -1608,7 +1634,20 @@ const bidStrategies = [
                             </div>
 
                             <div className="pt-4 border-t border-fb-border flex items-center justify-between">
-                               <button className="px-6 py-2 border border-fb-border rounded-md font-bold text-[13px] hover:bg-slate-50">Guardar audiencia</button>
+                                <button 
+                                  onClick={handleSaveToDB}
+                                  disabled={isSaving}
+                                  className={`px-6 py-2 border border-fb-border rounded-md font-bold text-[13px] transition-all flex items-center gap-2 ${isSaving ? 'opacity-50 cursor-wait' : 'hover:bg-slate-50'}`}
+                                >
+                                  {isSaving ? (
+                                    <>
+                                      <div className="w-3 h-3 border-2 border-fb-blue border-t-transparent rounded-full animate-spin" />
+                                      Guardando...
+                                    </>
+                                  ) : (
+                                    <>Guardar audiencia</>
+                                  )}
+                                </button>
                                <button className="text-fb-blue font-bold text-[12px] hover:underline">Cambiar a las opciones de audiencia originales</button>
                             </div>
                          </div>
@@ -2253,6 +2292,23 @@ const bidStrategies = [
               </motion.div>
             </div>
           )}
+
+          {/* Success Notification Toast */}
+          <AnimatePresence>
+            {showSaveSuccess && (
+              <motion.div 
+                initial={{ opacity: 0, y: 50, x: '-50%' }}
+                animate={{ opacity: 1, y: 0, x: '-50%' }}
+                exit={{ opacity: 0, y: 20, x: '-50%' }}
+                className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200] bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3"
+              >
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <Check size={14} strokeWidth={3} />
+                </div>
+                <span className="text-sm font-bold">¡Campaña guardada correctamente!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
