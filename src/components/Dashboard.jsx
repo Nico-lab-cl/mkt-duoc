@@ -76,6 +76,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme } = useProject();
   const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
   const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [], evaluations: [] });
+  const [selectedEvaluation, setSelectedEvaluation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileForm, setProfileForm] = useState({
     full_name: currentUser?.full_name || '',
@@ -286,7 +287,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                           ))}
                           <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Evaluaciones de Métricas</h5>
                           {adminData.evaluations?.filter(ev => ev.group_id === groupId).map(ev => (
-                            <div key={ev.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-purple-200 transition-all cursor-pointer">
+                            <div key={ev.id} onClick={() => setSelectedEvaluation(ev)} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-purple-200 transition-all cursor-pointer">
                                <p className="text-sm font-bold text-slate-800 mb-1">Evaluación: {ev.score}/10</p>
                                <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-bold text-purple-600 uppercase italic">{ev.student_name}</span>
@@ -407,6 +408,53 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
             </motion.div>
           )}
         </div>
+
+        {/* EVALUATION MODAL */}
+        <AnimatePresence>
+          {selectedEvaluation && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+                className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+              >
+                <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                  <div>
+                    <h3 className="text-xl font-black uppercase italic">Evaluación de {selectedEvaluation.student_name}</h3>
+                    <p className="text-sm font-bold text-slate-500">Puntaje Total: {selectedEvaluation.score} / 10</p>
+                  </div>
+                  <button onClick={() => setSelectedEvaluation(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-grow space-y-6">
+                  {selectedEvaluation.data?.answers?.map((ans, idx) => (
+                    <div key={idx} className={`p-5 rounded-2xl border ${ans.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                      <p className="font-bold text-slate-800 mb-3">{idx + 1}. {ans.text}</p>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                         <div>
+                           <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Respuesta Alumno</span>
+                           <span className={`font-bold ${ans.isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>Opción {ans.selectedOption || 'N/A'}</span>
+                         </div>
+                         <div>
+                           <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Respuesta Correcta</span>
+                           <span className="font-bold text-emerald-600">Opción {ans.correctOption}</span>
+                         </div>
+                      </div>
+                      <div className="bg-white p-4 rounded-xl border border-slate-200">
+                         <span className="text-[10px] uppercase font-bold text-slate-400 block mb-2">Justificación Técnica</span>
+                         <p className="text-sm text-slate-700 italic">{ans.justification || 'Sin justificación...'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </main>
     </div>
   );

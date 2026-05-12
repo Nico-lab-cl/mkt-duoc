@@ -177,12 +177,12 @@ app.delete('/api/chatflows/:id', async (req, res) => {
 });
 
 app.post('/api/submit-evaluation', async (req, res) => {
-  const { userId, studentName, groupId, answers, justifications } = req.body;
+  const { userId, studentName, groupId, score, answers, justifications } = req.body;
   try {
     const jsonData = JSON.stringify({ answers, justifications });
     const result = await pool.query(
       'INSERT INTO evaluations (user_id, group_id, score, data) VALUES ($1, $2, $3, $4) RETURNING *',
-      [userId, groupId, 0, jsonData]
+      [userId, groupId, score || 0, jsonData]
     );
     res.json({ success: true, evaluation: result.rows[0] });
   } catch (err) {
