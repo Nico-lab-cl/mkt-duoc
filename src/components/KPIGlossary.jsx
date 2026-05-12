@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { kpiData } from '../data/kpis';
-import { Search, Filter, BookOpen } from 'lucide-react';
+import { Search, Filter, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const KPIGlossary = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todas');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const categories = ['Todas', 'Atracción', 'Interacción', 'Conversión'];
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeCategory]);
 
   const filteredKPIs = kpiData.filter(kpi => {
     const matchesSearch = kpi.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -14,6 +21,9 @@ const KPIGlossary = () => {
     const matchesCategory = activeCategory === 'Todas' || kpi.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const totalPages = Math.ceil(filteredKPIs.length / itemsPerPage);
+  const currentItems = filteredKPIs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const getCategoryColor = (category) => {
     switch(category) {
@@ -25,7 +35,7 @@ const KPIGlossary = () => {
   };
 
   return (
-    <div className="bg-[#0B1120] min-h-screen p-8 font-sans">
+    <div className="bg-[#0B1120] min-h-full p-8 font-sans">
       <div className="max-w-7xl mx-auto">
         <header className="mb-10 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center justify-center p-3 bg-blue-500/10 rounded-2xl mb-4 text-blue-400">
@@ -67,8 +77,8 @@ const KPIGlossary = () => {
         </div>
 
         {/* Grilla de Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-          {filteredKPIs.map(kpi => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          {currentItems.map(kpi => (
             <div key={kpi.id} className="group bg-slate-900/80 backdrop-blur-xl border border-slate-800 hover:border-slate-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
               
               <div className="flex justify-between items-start mb-4">
@@ -109,7 +119,6 @@ const KPIGlossary = () => {
                   </div>
                 </div>
               </div>
-
             </div>
           ))}
 
@@ -123,6 +132,44 @@ const KPIGlossary = () => {
             </div>
           )}
         </div>
+
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 pb-12">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <div className="flex gap-2">
+              {Array.from({ length: totalPages }).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentPage(idx + 1)}
+                  className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${
+                    currentPage === idx + 1 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

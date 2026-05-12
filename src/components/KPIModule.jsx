@@ -7,9 +7,9 @@ const KPIModule = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('glossary');
 
   return (
-    <div className="bg-slate-900 min-h-screen flex flex-col font-sans">
+    <div className="bg-slate-900 h-screen flex flex-col font-sans overflow-hidden">
       {/* Navbar Superior */}
-      <div className="bg-slate-900 border-b border-slate-700/50 sticky top-0 z-50">
+      <div className="bg-slate-900 border-b border-slate-700/50 flex-shrink-0 z-50">
         <div className="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
           <button 
             onClick={onBack}
@@ -46,8 +46,8 @@ const KPIModule = ({ onBack }) => {
         </div>
       </div>
       
-      {/* Contenido principal (Ocupa el resto del alto, se permite scroll interno en cada componente si es necesario) */}
-      <div className="flex-grow">
+      {/* Contenido principal con scroll interno */}
+      <div className="flex-grow overflow-y-auto custom-scrollbar">
         {activeTab === 'glossary' && (
           <div className="animate-fade-in">
             <KPIGlossary />
