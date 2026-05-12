@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { kpiData } from '../data/kpis';
+import { Search, Filter, BookOpen } from 'lucide-react';
 
 const KPIGlossary = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todas');
+
+  const categories = ['Todas', 'Atracción', 'Interacción', 'Conversión'];
 
   const filteredKPIs = kpiData.filter(kpi => {
     const matchesSearch = kpi.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -12,74 +15,111 @@ const KPIGlossary = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const getCategoryColor = (category) => {
+    switch(category) {
+      case 'Atracción': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      case 'Interacción': return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
+      case 'Conversión': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+      default: return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+    }
+  };
+
   return (
-    <div className="bg-slate-900 min-h-screen p-8 text-slate-200 font-sans">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8 border-b border-slate-700 pb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Glosario Interactivo de KPIs</h1>
-          <p className="text-slate-400">Domina las métricas de Meta Ads para tomar decisiones estratégicas.</p>
+    <div className="bg-[#0B1120] min-h-screen p-8 font-sans">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-10 text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center justify-center p-3 bg-blue-500/10 rounded-2xl mb-4 text-blue-400">
+             <BookOpen size={32} />
+          </div>
+          <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Diccionario de Métricas</h1>
+          <p className="text-slate-400 text-lg">Domina los KPIs de Meta Ads, Google Ads y analítica financiera para tomar decisiones respaldadas por datos.</p>
         </header>
 
-        <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
-          <div className="flex gap-2">
-            {['Todas', 'Atracción', 'Conversión'].map(cat => (
+        {/* Filtros y Búsqueda */}
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-10 gap-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <Filter size={18} className="text-slate-500 mr-2" />
+            {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${
                   activeCategory === cat 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                 }`}
               >
                 {cat}
               </button>
             ))}
           </div>
-          <input 
-            type="text" 
-            placeholder="Buscar KPI..." 
-            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          
+          <div className="relative w-full lg:w-80">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input 
+              type="text" 
+              placeholder="Buscar métrica (ej. CTR)..." 
+              className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium placeholder:text-slate-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Grilla de Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
           {filteredKPIs.map(kpi => (
-            <div key={kpi.id} className="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-lg hover:shadow-blue-900/20 transition-all flex flex-col h-full">
-              <div className="mb-4">
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                  kpi.category === 'Atracción' 
-                    ? 'bg-purple-900/50 text-purple-300 border border-purple-700/50' 
-                    : 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'
-                }`}>
+            <div key={kpi.id} className="group bg-slate-900/80 backdrop-blur-xl border border-slate-800 hover:border-slate-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
+              
+              <div className="flex justify-between items-start mb-4">
+                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border ${getCategoryColor(kpi.category)}`}>
                   {kpi.category}
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{kpi.name}</h3>
-              <p className="text-sm text-slate-400 mb-4 flex-grow">{kpi.definition}</p>
               
-              <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 mb-4">
-                <p className="text-xs text-slate-500 mb-1">Fórmula</p>
-                <code className="text-sm font-mono text-blue-400">{kpi.formula}</code>
-              </div>
+              <h3 className="text-xl font-black text-white mb-3 group-hover:text-blue-400 transition-colors">{kpi.name}</h3>
               
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase">Contexto de Aplicación</p>
-                  <p className="text-sm text-slate-300">{kpi.application_context}</p>
+              <p className="text-sm text-slate-400 mb-6 flex-grow leading-relaxed">
+                {kpi.definition}
+              </p>
+              
+              <div className="space-y-4">
+                {/* Caja de Fórmula */}
+                <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800/80">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Fórmula Matemática</span>
+                  <code className="text-sm font-mono text-blue-300 break-words">{kpi.formula}</code>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase">¿Bueno o Malo?</p>
-                  <p className="text-sm text-slate-300 border-l-2 border-blue-500 pl-2">{kpi.good_vs_bad}</p>
+                
+                {/* Contexto y Decisión */}
+                <div className="grid grid-cols-1 gap-3 pt-2">
+                  <div className="flex items-start gap-3 bg-slate-800/30 p-3 rounded-lg">
+                    <span className="text-blue-500 text-lg">👀</span>
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cuándo mirarla</span>
+                      <p className="text-xs text-slate-300 leading-relaxed">{kpi.application_context}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 bg-slate-800/30 p-3 rounded-lg border-l-2 border-emerald-500/50">
+                    <span className="text-emerald-500 text-lg">💡</span>
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Criterio de Decisión</span>
+                      <p className="text-xs text-slate-300 leading-relaxed">{kpi.good_vs_bad}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
+
             </div>
           ))}
+
           {filteredKPIs.length === 0 && (
-            <div className="col-span-full text-center py-12 text-slate-500">
-              No se encontraron KPIs que coincidan con tu búsqueda.
+            <div className="col-span-full py-20 text-center">
+              <div className="inline-flex items-center justify-center p-4 bg-slate-800 rounded-full mb-4">
+                 <Search size={32} className="text-slate-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">No encontramos esa métrica</h3>
+              <p className="text-slate-500">Intenta buscar con otros términos o cambia la categoría de filtrado.</p>
             </div>
           )}
         </div>
