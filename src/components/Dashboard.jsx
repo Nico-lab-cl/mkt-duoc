@@ -20,7 +20,8 @@ import {
   Menu,
   X,
   User as UserIcon,
-  AlertCircle
+  AlertCircle,
+  BarChart
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
@@ -58,6 +59,14 @@ const platforms = [
     icon: <Video size={24} />,
     color: 'bg-black',
     status: 'coming-soon'
+  },
+  {
+    id: 'kpi',
+    name: 'Laboratorio Analítica y KPIs',
+    description: 'Glosario y Gimnasio de Métricas para Inbound',
+    icon: <BarChart size={24} />,
+    color: 'bg-[#8b5cf6]',
+    status: 'active'
   }
 ];
 

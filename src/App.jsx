@@ -6,6 +6,7 @@ import Simulator from './components/Simulator';
 import Success from './components/Success';
 import ChatflowSimulator from './components/ChatflowSimulator';
 import GroupSelection from './components/GroupSelection';
+import KPIModule from './components/KPIModule';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser } = useProject();
@@ -27,6 +28,8 @@ const AppContent = () => {
     setSelectedPlatform(platform);
     if (platform === 'chatflow') {
       setView('chatflow');
+    } else if (platform === 'kpi') {
+      setView('kpi');
     } else {
       setView('simulator');
     }
@@ -61,6 +64,12 @@ const AppContent = () => {
         <ChatflowSimulator 
           onBack={() => setView('dashboard')}
           onFinish={() => setView('success')}
+        />
+      )}
+
+      {view === 'kpi' && (
+        <KPIModule 
+          onBack={() => setView('dashboard')}
         />
       )}
 
