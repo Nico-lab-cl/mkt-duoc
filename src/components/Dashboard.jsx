@@ -220,7 +220,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
 
         <div className="p-10">
           {activeView === 'home' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-12 pb-24">
                <div className="bg-blue-600 p-8 rounded-[2rem] text-white flex items-center justify-between shadow-2xl shadow-blue-200 relative overflow-hidden">
                   <div className="relative z-10">
                     <h3 className="text-3xl font-black tracking-tighter mb-2 italic">ESTADO DEL PROYECTO: {projectData.projectName.toUpperCase()}</h3>
@@ -229,7 +229,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                   <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
                 {platforms.map((platform, index) => (
                   <motion.button
                     key={platform.id}
