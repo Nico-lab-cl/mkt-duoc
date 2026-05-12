@@ -292,6 +292,8 @@ const KPIGym = () => {
         text: q.text,
         selectedOption: answers[q.id],
         correctOption: q.correctOption,
+        selectedOptionText: q.options.find(o => o.id === answers[q.id])?.text || '',
+        correctOptionText: q.options.find(o => o.id === q.correctOption)?.text || '',
         isCorrect,
         justification: justifications[q.id] || ''
       };

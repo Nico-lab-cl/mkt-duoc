@@ -436,11 +436,15 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                       <div className="grid grid-cols-2 gap-4 mb-4">
                          <div>
                            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Respuesta Alumno</span>
-                           <span className={`font-bold ${ans.isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>Opción {ans.selectedOption || 'N/A'}</span>
+                           <span className={`font-bold ${ans.isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>
+                             {ans.selectedOptionText ? `Opción ${ans.selectedOption}: ${ans.selectedOptionText}` : `Opción ${ans.selectedOption || 'N/A'}`}
+                           </span>
                          </div>
                          <div>
                            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Respuesta Correcta</span>
-                           <span className="font-bold text-emerald-600">Opción {ans.correctOption}</span>
+                           <span className="font-bold text-emerald-600">
+                             {ans.correctOptionText ? `Opción ${ans.correctOption}: ${ans.correctOptionText}` : `Opción ${ans.correctOption}`}
+                           </span>
                          </div>
                       </div>
                       <div className="bg-white p-4 rounded-xl border border-slate-200">
