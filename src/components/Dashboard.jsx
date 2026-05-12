@@ -63,7 +63,7 @@ const platforms = [
   {
     id: 'kpi',
     name: 'Laboratorio Analítica y KPIs',
-    description: 'Glosario y Gimnasio de Métricas para Inbound',
+    description: 'Glosario y Práctica de Métricas para Inbound',
     icon: <BarChart size={24} />,
     color: 'bg-[#8b5cf6]',
     status: 'active'
@@ -75,7 +75,7 @@ const platforms = [
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme } = useProject();
   const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
-  const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [] });
+  const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [], evaluations: [] });
   const [loading, setLoading] = useState(false);
   const [profileForm, setProfileForm] = useState({
     full_name: currentUser?.full_name || '',
@@ -281,6 +281,16 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                                <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-bold text-green-600 uppercase italic">{flow.student_name}</span>
                                   <ExternalLink size={14} className="text-slate-300 group-hover:text-green-500" />
+                               </div>
+                            </div>
+                          ))}
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Evaluaciones de Métricas</h5>
+                          {adminData.evaluations?.filter(ev => ev.group_id === groupId).map(ev => (
+                            <div key={ev.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-purple-200 transition-all cursor-pointer">
+                               <p className="text-sm font-bold text-slate-800 mb-1">Evaluación: {ev.score}/10</p>
+                               <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-purple-600 uppercase italic">{ev.student_name}</span>
+                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-purple-500" />
                                </div>
                             </div>
                           ))}

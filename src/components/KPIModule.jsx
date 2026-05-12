@@ -40,7 +40,7 @@ const KPIModule = ({ onBack }) => {
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
               }`}
             >
-              <Dumbbell size={16} /> Gimnasio Práctico
+              <Dumbbell size={16} /> Práctica
             </button>
           </div>
         </div>

@@ -1,251 +1,228 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { kpiData } from '../data/kpis';
+import React, { useState } from 'react';
+import { useProject } from '../context/ProjectContext';
 
-const generateCase = () => {
-  const inversion = Math.floor(Math.random() * 900) + 100; // 100 to 1000
-  const impresiones = Math.floor(Math.random() * 90000) + 10000; // 10000 to 100000
-  const clics = Math.floor(Math.random() * (impresiones * 0.05)) + 50; // Max 5% CTR
-  const leads = Math.floor(Math.random() * (clics * 0.2)) + 5; // Max 20% CR
-  const productPrice = Math.floor(Math.random() * 80) + 20; // 20 to 100
-  
-  return { inversion, impresiones, clics, leads, productPrice };
-};
-
-const roundToTwo = (num) => Math.round(num * 100) / 100;
+const questions = [
+  {
+    id: 1,
+    text: '¿Cuál es la fórmula del CTR (Click-Through Rate)?',
+    options: [
+      { id: 'A', text: '(Clics / Impresiones) * 100' },
+      { id: 'B', text: '(Impresiones / Clics) * 100' },
+      { id: 'C', text: 'Clics / Inversión' },
+      { id: 'D', text: 'Leads / Clics' }
+    ]
+  },
+  {
+    id: 2,
+    text: '¿Qué mide el CPM?',
+    options: [
+      { id: 'A', text: 'Costo por cada mil impresiones' },
+      { id: 'B', text: 'Costo por cada mil clics' },
+      { id: 'C', text: 'Costo por minuto' },
+      { id: 'D', text: 'Conversiones por mes' }
+    ]
+  },
+  {
+    id: 3,
+    text: 'Si inviertes $1000 y obtienes 50 leads, ¿cuál es tu CPL (Costo por Lead)?',
+    options: [
+      { id: 'A', text: '$20' },
+      { id: 'B', text: '$50' },
+      { id: 'C', text: '$0.05' },
+      { id: 'D', text: '$200' }
+    ]
+  },
+  {
+    id: 4,
+    text: '¿Cuál de los siguientes es el principal indicador de que el anuncio visualmente llama la atención?',
+    options: [
+      { id: 'A', text: 'CTR (Click-Through Rate)' },
+      { id: 'B', text: 'CR (Tasa de Conversión)' },
+      { id: 'C', text: 'CPA (Costo por Adquisición)' },
+      { id: 'D', text: 'ROAS' }
+    ]
+  },
+  {
+    id: 5,
+    text: 'Si tu Tasa de Conversión (CR) de landing page es baja, pero tu CTR es alto, ¿dónde está probablemente el problema principal?',
+    options: [
+      { id: 'A', text: 'La Landing Page o la Oferta' },
+      { id: 'B', text: 'El Anuncio' },
+      { id: 'C', text: 'El Presupuesto' },
+      { id: 'D', text: 'El Costo por Clic' }
+    ]
+  },
+  {
+    id: 6,
+    text: '¿Cuál es la fórmula del ROI (Retorno sobre Inversión)?',
+    options: [
+      { id: 'A', text: '((Ingresos - Inversión) / Inversión) * 100' },
+      { id: 'B', text: 'Ingresos / Inversión' },
+      { id: 'C', text: 'Inversión / Ingresos' },
+      { id: 'D', text: '(Ingresos / Clics) * 100' }
+    ]
+  },
+  {
+    id: 7,
+    text: '¿Qué significa CPC?',
+    options: [
+      { id: 'A', text: 'Costo por Clic' },
+      { id: 'B', text: 'Clics por Costo' },
+      { id: 'C', text: 'Conversiones por Clic' },
+      { id: 'D', text: 'Costo por Compra' }
+    ]
+  },
+  {
+    id: 8,
+    text: 'Si tu anuncio tuvo 10,000 impresiones y 200 clics, ¿Cuál es el CTR?',
+    options: [
+      { id: 'A', text: '2%' },
+      { id: 'B', text: '20%' },
+      { id: 'C', text: '0.2%' },
+      { id: 'D', text: '50%' }
+    ]
+  },
+  {
+    id: 9,
+    text: '¿Qué KPI utilizarías para medir el retorno específico generado por tus campañas publicitarias (Ingresos generados por anuncios)?',
+    options: [
+      { id: 'A', text: 'ROAS (Return on Ad Spend)' },
+      { id: 'B', text: 'ROI (Retorno sobre Inversión)' },
+      { id: 'C', text: 'CPM' },
+      { id: 'D', text: 'LTV' }
+    ]
+  },
+  {
+    id: 10,
+    text: '¿Cuál es el cálculo correcto para el CAC (Costo de Adquisición de Cliente) si invertiste $5000 y conseguiste 10 clientes nuevos?',
+    options: [
+      { id: 'A', text: '$500' },
+      { id: 'B', text: '$50' },
+      { id: 'C', text: '$5' },
+      { id: 'D', text: '$5000' }
+    ]
+  }
+];
 
 const KPIGym = () => {
-  const [businessCase, setBusinessCase] = useState(null);
-  const [answers, setAnswers] = useState({
-    cpm: '',
-    ctr: '',
-    cpc: '',
-    cr: '',
-    cpl: ''
-  });
-  
-  const [validation, setValidation] = useState({
-    cpm: null,
-    ctr: null,
-    cpc: null,
-    cr: null,
-    cpl: null
-  });
+  const { currentUser, projectData } = useProject();
+  const [answers, setAnswers] = useState({});
+  const [justifications, setJustifications] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [allCorrect, setAllCorrect] = useState(false);
-  const [strategyAnswer, setStrategyAnswer] = useState(null);
-
-  useEffect(() => {
-    setBusinessCase(generateCase());
-  }, []);
-
-  const correctValues = useMemo(() => {
-    if (!businessCase) return {};
-    return {
-      cpm: roundToTwo((businessCase.inversion / businessCase.impresiones) * 1000),
-      ctr: roundToTwo((businessCase.clics / businessCase.impresiones) * 100),
-      cpc: roundToTwo(businessCase.inversion / businessCase.clics),
-      cr: roundToTwo((businessCase.leads / businessCase.clics) * 100),
-      cpl: roundToTwo(businessCase.inversion / businessCase.leads)
-    };
-  }, [businessCase]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setAnswers(prev => ({ ...prev, [name]: value }));
-    // Reset validation when user types
-    setValidation(prev => ({ ...prev, [name]: null }));
+  const handleOptionSelect = (questionId, optionId) => {
+    setAnswers({ ...answers, [questionId]: optionId });
   };
 
-  const checkAnswers = () => {
-    let newValidation = { ...validation };
-    let correctCount = 0;
+  const handleJustificationChange = (questionId, value) => {
+    setJustifications({ ...justifications, [questionId]: value });
+  };
 
-    Object.keys(answers).forEach(key => {
-      const userAnswer = parseFloat(answers[key]);
-      if (isNaN(userAnswer)) {
-        newValidation[key] = false;
-      } else {
-        // Accept answers with a small margin of error (0.05) due to rounding
-        const isCorrect = Math.abs(userAnswer - correctValues[key]) <= 0.05;
-        newValidation[key] = isCorrect;
-        if (isCorrect) correctCount++;
-      }
-    });
-
-    setValidation(newValidation);
-
-    if (correctCount === 5) {
-      setAllCorrect(true);
+  const handleSubmit = async () => {
+    if (Object.keys(answers).length < 10) {
+      alert("Por favor, responde a todas las preguntas de selección múltiple.");
+      return;
+    }
+    
+    setLoading(true);
+    
+    // Simulate sending to backend
+    try {
+      const response = await fetch('/api/submit-evaluation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          studentName: currentUser?.full_name,
+          groupId: currentUser?.group_id || 1, // fallback to 1
+          answers,
+          justifications
+        })
+      });
+      await new Promise(r => setTimeout(r, 1500));
+      setSubmitted(true);
+    } catch (e) {
+      console.error(e);
+      await new Promise(r => setTimeout(r, 1500));
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTooltip = (key) => {
-    if (validation[key] === false) {
-      const kpiEntry = kpiData.find(k => k.id === key);
-      if (kpiEntry && kpiEntry.formula) {
-        return `Recuerda la fórmula: ${kpiEntry.formula}`;
-      }
-      return "Fórmula no encontrada. Vuelve a intentarlo.";
-    }
-    return null;
-  };
-
-  const renderInputCard = (title, key, prefix, suffix = '') => {
-    const isError = validation[key] === false;
-    const isSuccess = validation[key] === true;
-
+  if (submitted) {
     return (
-      <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 relative">
-        <label className="block text-sm font-bold text-slate-300 mb-2">{title}</label>
-        <div className="relative">
-          {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">{prefix}</span>}
-          <input
-            type="number"
-            step="0.01"
-            name={key}
-            value={answers[key]}
-            onChange={handleChange}
-            className={`w-full bg-slate-900 border ${
-              isError ? 'border-red-500 focus:ring-red-500' : isSuccess ? 'border-emerald-500 focus:ring-emerald-500' : 'border-slate-600 focus:ring-blue-500'
-            } rounded-lg py-3 ${prefix ? 'pl-8' : 'pl-4'} pr-8 text-white focus:outline-none focus:ring-2 font-mono text-lg transition-colors`}
-            placeholder="0.00"
-            disabled={allCorrect}
-          />
-          {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">{suffix}</span>}
+      <div className="bg-slate-900 min-h-screen p-8 text-slate-200 font-sans flex items-center justify-center">
+        <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-2xl p-10 text-center max-w-lg">
+          <div className="text-6xl mb-6">✅</div>
+          <h2 className="text-2xl font-bold text-emerald-400 mb-4">Evaluación Enviada</h2>
+          <p className="text-slate-300">
+            Tus respuestas y justificaciones han sido enviadas al profesor exitosamente. 
+            Podrás ver tus resultados en el panel cuando sean calificados.
+          </p>
         </div>
-        
-        {isError && (
-          <div className="mt-3 text-sm text-red-300 bg-red-900/40 p-3 rounded-lg border border-red-800/50 flex items-start gap-2">
-            <span className="text-xl">💡</span>
-            <p>{getTooltip(key)} Vuelve a intentarlo.</p>
-          </div>
-        )}
       </div>
     );
-  };
-
-  if (!businessCase) return <div className="p-8 text-white min-h-screen bg-slate-900 flex items-center justify-center">Generando caso...</div>;
+  }
 
   return (
     <div className="bg-slate-900 min-h-screen p-8 text-slate-200 font-sans">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 border-b border-slate-700 pb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Gimnasio de Métricas</h1>
-          <p className="text-slate-400">Pon a prueba tu conocimiento matemático y analítico con casos de negocio simulados.</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Práctica de Métricas</h1>
+          <p className="text-slate-400">Responde las siguientes 10 preguntas y justifica la fórmula o lógica utilizada.</p>
         </header>
 
-        <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-800/50 rounded-2xl p-8 mb-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-          
-          <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
-            📊 Caso de Negocio Activo
-          </h2>
-          
-          <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800">
-            <p className="text-lg text-slate-300 leading-relaxed">
-              Tu cliente invirtió <strong className="text-white bg-slate-800 px-2 py-1 rounded">${businessCase.inversion} USD</strong> en Meta Ads. 
-              El anuncio se mostró <strong className="text-white bg-slate-800 px-2 py-1 rounded">{businessCase.impresiones.toLocaleString()} veces</strong> y consiguió <strong className="text-white bg-slate-800 px-2 py-1 rounded">{businessCase.clics.toLocaleString()} clics</strong>. 
-              De esos clics, <strong className="text-white bg-slate-800 px-2 py-1 rounded">{businessCase.leads.toLocaleString()} personas</strong> llenaron el formulario.
-            </p>
-          </div>
-        </div>
+        <div className="space-y-8 mb-12">
+          {questions.map((q, index) => (
+            <div key={q.id} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+              <h3 className="text-xl font-bold text-white mb-4">
+                <span className="text-blue-500 mr-2">{index + 1}.</span> {q.text}
+              </h3>
+              
+              <div className="space-y-3 mb-6">
+                {q.options.map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => handleOptionSelect(q.id, opt.id)}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      answers[q.id] === opt.id 
+                        ? 'bg-blue-900/40 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                    }`}
+                  >
+                    <span className="font-bold mr-2">{opt.id}.</span> {opt.text}
+                  </button>
+                ))}
+              </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {renderInputCard('Calcula el CPM (Costo por 1000 Impresiones)', 'cpm', '$')}
-          {renderInputCard('Calcula el CTR (Porcentaje de Clics)', 'ctr', '', '%')}
-          {renderInputCard('Calcula el CPC (Costo por Clic)', 'cpc', '$')}
-          {renderInputCard('Calcula el CR (Tasa de Conversión)', 'cr', '', '%')}
-          {renderInputCard('Calcula el CPL (Costo por Lead)', 'cpl', '$')}
-        </div>
-
-        {!allCorrect && (
-          <div className="flex justify-end">
-            <button 
-              onClick={checkAnswers}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-blue-900/50 hover:shadow-blue-600/50 transition-all text-lg"
-            >
-              Validar Cálculos
-            </button>
-          </div>
-        )}
-
-        {allCorrect && (
-          <div className="mt-12 bg-slate-800 border-2 border-emerald-600/50 rounded-2xl p-8 shadow-2xl shadow-emerald-900/20">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center text-2xl border border-emerald-500/50">🏆</div>
               <div>
-                <h3 className="text-2xl font-bold text-emerald-400">¡Cálculos Excelentes!</h3>
-                <p className="text-slate-400">Ahora viene la decisión estratégica...</p>
+                <label className="block text-sm font-bold text-slate-400 mb-2">Justificación de la fórmula / Respuesta:</label>
+                <textarea
+                  value={justifications[q.id] || ''}
+                  onChange={(e) => handleJustificationChange(q.id, e.target.value)}
+                  placeholder="Escribe aquí tu justificación..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none h-24"
+                ></textarea>
               </div>
             </div>
-            
-            <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 mb-8">
-              <p className="text-lg leading-relaxed">
-                Sabiendo que la Tasa de Conversión (CR) en la Landing Page es de apenas <strong className="text-red-400 text-xl">{correctValues.cr}%</strong> y tu CPL es de <strong className="text-emerald-400 text-xl">${correctValues.cpl} USD</strong>... 
-                <br/><br/>
-                <span className="font-bold text-white">¿Dónde crees que está el cuello de botella de esta campaña?</span>
-              </p>
-            </div>
+          ))}
+        </div>
 
-            <div className="space-y-4">
-              <button 
-                onClick={() => setStrategyAnswer('A')}
-                className={`w-full text-left p-5 rounded-xl border-2 transition-all ${
-                  strategyAnswer === 'A' 
-                    ? 'bg-blue-900/30 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
-                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
-                }`}
-              >
-                <strong>A. El anuncio es malo.</strong> La creatividad gráfica no llama la atención.
-              </button>
-              <button 
-                onClick={() => setStrategyAnswer('B')}
-                className={`w-full text-left p-5 rounded-xl border-2 transition-all ${
-                  strategyAnswer === 'B' 
-                    ? 'bg-blue-900/30 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
-                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
-                }`}
-              >
-                <strong>B. La Landing Page no convence / El formulario es muy largo.</strong> Estamos perdiendo a los usuarios después de que hacen clic.
-              </button>
-            </div>
-
-            {strategyAnswer === 'A' && (
-              <div className="mt-6 p-5 bg-red-900/30 border border-red-500/50 rounded-xl">
-                <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">✗ Análisis Incorrecto</h4>
-                <p className="text-red-100/80">
-                  El CTR de la campaña es de {correctValues.ctr}%. Eso indica que el anuncio SÍ genera interés y clics. El cuello de botella real está ocurriendo después del clic (baja conversión).
-                </p>
-              </div>
-            )}
-            
-            {strategyAnswer === 'B' && (
-              <div className="mt-6 p-5 bg-emerald-900/30 border border-emerald-500/50 rounded-xl">
-                <h4 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">✓ Análisis Correcto</h4>
-                <p className="text-emerald-100/80">
-                  ¡Exacto! El CTR ({correctValues.ctr}%) demuestra que el anuncio cumple su función de atraer clics. Sin embargo, un CR del {correctValues.cr}% en la Landing Page indica fricción (sitio lento, mala oferta o un formulario interminable). Debes optimizar la web, no el anuncio. 🧠
-                </p>
-              </div>
-            )}
-            
-            {strategyAnswer && (
-              <div className="mt-8 flex justify-center border-t border-slate-700 pt-8">
-                <button 
-                  onClick={() => {
-                    setBusinessCase(generateCase());
-                    setAnswers({ cpm: '', ctr: '', cpc: '', cr: '', cpl: '' });
-                    setValidation({ cpm: null, ctr: null, cpc: null, cr: null, cpl: null });
-                    setAllCorrect(false);
-                    setStrategyAnswer(null);
-                  }}
-                  className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <span>🔄</span> Generar Nuevo Caso
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="flex justify-end sticky bottom-8">
+          <button 
+            onClick={handleSubmit}
+            disabled={loading}
+            className={`font-bold py-4 px-10 rounded-xl shadow-2xl transition-all text-lg ${
+              loading 
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/50 hover:shadow-blue-600/50'
+            }`}
+          >
+            {loading ? 'Enviando...' : 'Enviar Evaluación al Profesor'}
+          </button>
+        </div>
       </div>
     </div>
   );
