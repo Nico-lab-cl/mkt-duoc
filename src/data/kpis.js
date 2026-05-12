@@ -1,5 +1,25 @@
 export const kpiData = [
   {
+    "id": "cr",
+    "nombre": "Tasa de Conversión (CR)",
+    "categoria": "Conversión",
+    "definicion": "El porcentaje de personas que completaron la acción deseada (compra, lead) luego de hacer clic.",
+    "formula": "(Conversiones / Clics) * 100",
+    "ejemplo_practico": "Si tienes 1.000 clics y 20 personas llenan el formulario, tu CR es del 2%.",
+    "justificacion": "Fundamental para saber si tu landing page, oferta o formulario convence a la gente de realizar la acción.",
+    "good_vs_bad": "Si tienes muchos clics pero baja CR, el problema no es el anuncio, sino la página de destino (lenta, no convence o difícil de navegar)."
+  },
+  {
+    "id": "cpl",
+    "nombre": "Costo por Lead (CPL)",
+    "categoria": "Costos",
+    "definicion": "Lo que te cuesta conseguir un nuevo cliente potencial (datos de contacto).",
+    "formula": "Importe gastado / Leads",
+    "ejemplo_practico": "Si gastas $100 y consigues 4 leads, tu CPL es de $25.",
+    "justificacion": "Métrica vital para controlar el presupuesto en campañas B2B, inmobiliarias o servicios profesionales.",
+    "good_vs_bad": "Depende de la industria. Lo importante es que el CPL permita un CAC rentable tras el cierre de ventas."
+  },
+  {
     "id": "coste_por_resultado",
     "nombre": "Coste por resultado",
     "categoria": "Conversión",

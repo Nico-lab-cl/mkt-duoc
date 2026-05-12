@@ -19,6 +19,7 @@ const KPIGym = () => {
     cpm: '',
     ctr: '',
     cpc: '',
+    cr: '',
     cpl: ''
   });
   
@@ -26,6 +27,7 @@ const KPIGym = () => {
     cpm: null,
     ctr: null,
     cpc: null,
+    cr: null,
     cpl: null
   });
 
@@ -42,6 +44,7 @@ const KPIGym = () => {
       cpm: roundToTwo((businessCase.inversion / businessCase.impresiones) * 1000),
       ctr: roundToTwo((businessCase.clics / businessCase.impresiones) * 100),
       cpc: roundToTwo(businessCase.inversion / businessCase.clics),
+      cr: roundToTwo((businessCase.leads / businessCase.clics) * 100),
       cpl: roundToTwo(businessCase.inversion / businessCase.leads)
     };
   }, [businessCase]);
@@ -71,7 +74,7 @@ const KPIGym = () => {
 
     setValidation(newValidation);
 
-    if (correctCount === 4) {
+    if (correctCount === 5) {
       setAllCorrect(true);
     }
   };
@@ -147,10 +150,11 @@ const KPIGym = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {renderInputCard('Calcula el CPM (Costo por 1000 Impresiones)', 'cpm', '$')}
           {renderInputCard('Calcula el CTR (Porcentaje de Clics)', 'ctr', '', '%')}
           {renderInputCard('Calcula el CPC (Costo por Clic)', 'cpc', '$')}
+          {renderInputCard('Calcula el CR (Tasa de Conversión)', 'cr', '', '%')}
           {renderInputCard('Calcula el CPL (Costo por Lead)', 'cpl', '$')}
         </div>
 
@@ -177,11 +181,9 @@ const KPIGym = () => {
             
             <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 mb-8">
               <p className="text-lg leading-relaxed">
-                Viendo que el CPL es de <strong className="text-red-400 text-xl">${correctValues.cpl} USD</strong>, 
-                pero tu cliente vende el producto final a <strong className="text-emerald-400 text-xl">${businessCase.productPrice} USD</strong> y 
-                estadísticamente necesita <strong>3 leads</strong> para cerrar 1 venta... 
+                Sabiendo que la Tasa de Conversión (CR) en la Landing Page es de apenas <strong className="text-red-400 text-xl">{correctValues.cr}%</strong> y tu CPL es de <strong className="text-emerald-400 text-xl">${correctValues.cpl} USD</strong>... 
                 <br/><br/>
-                <span className="font-bold text-white">¿Cuál es tu decisión estratégica?</span>
+                <span className="font-bold text-white">¿Dónde crees que está el cuello de botella de esta campaña?</span>
               </p>
             </div>
 
@@ -194,7 +196,7 @@ const KPIGym = () => {
                     : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
                 }`}
               >
-                <strong>A. Apagar la campaña.</strong> El costo de adquisición (CAC) supera el precio del producto. El cliente está perdiendo dinero.
+                <strong>A. El anuncio es malo.</strong> La creatividad gráfica no llama la atención.
               </button>
               <button 
                 onClick={() => setStrategyAnswer('B')}
@@ -204,25 +206,24 @@ const KPIGym = () => {
                     : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
                 }`}
               >
-                <strong>B. Aumentar el presupuesto.</strong> Aunque el CPL parezca alto, si generamos más volumen, seremos rentables.
+                <strong>B. La Landing Page no convence / El formulario es muy largo.</strong> Estamos perdiendo a los usuarios después de que hacen clic.
               </button>
             </div>
 
             {strategyAnswer === 'A' && (
-              <div className="mt-6 p-5 bg-emerald-900/30 border border-emerald-500/50 rounded-xl">
-                <h4 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">✓ Análisis Correcto</h4>
-                <p className="text-emerald-100/80">
-                  El CAC es de <strong>${(correctValues.cpl * 3).toFixed(2)} USD</strong> (3 leads * ${correctValues.cpl}). 
-                  Como esto es mayor al valor de venta (${businessCase.productPrice}), el negocio no es rentable. Siempre debes cruzar marketing con finanzas. 🧠
+              <div className="mt-6 p-5 bg-red-900/30 border border-red-500/50 rounded-xl">
+                <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">✗ Análisis Incorrecto</h4>
+                <p className="text-red-100/80">
+                  El CTR de la campaña es de {correctValues.ctr}%. Eso indica que el anuncio SÍ genera interés y clics. El cuello de botella real está ocurriendo después del clic (baja conversión).
                 </p>
               </div>
             )}
             
             {strategyAnswer === 'B' && (
-              <div className="mt-6 p-5 bg-red-900/30 border border-red-500/50 rounded-xl">
-                <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">✗ Análisis Incorrecto</h4>
-                <p className="text-red-100/80">
-                  Calcular el CAC es vital: necesitas 3 leads (${correctValues.cpl} x 3 = <strong>${(correctValues.cpl * 3).toFixed(2)} USD</strong>) para lograr una venta de ${businessCase.productPrice} USD. Estarías multiplicando pérdidas si escalas esta campaña.
+              <div className="mt-6 p-5 bg-emerald-900/30 border border-emerald-500/50 rounded-xl">
+                <h4 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">✓ Análisis Correcto</h4>
+                <p className="text-emerald-100/80">
+                  ¡Exacto! El CTR ({correctValues.ctr}%) demuestra que el anuncio cumple su función de atraer clics. Sin embargo, un CR del {correctValues.cr}% en la Landing Page indica fricción (sitio lento, mala oferta o un formulario interminable). Debes optimizar la web, no el anuncio. 🧠
                 </p>
               </div>
             )}
@@ -232,8 +233,8 @@ const KPIGym = () => {
                 <button 
                   onClick={() => {
                     setBusinessCase(generateCase());
-                    setAnswers({ cpm: '', ctr: '', cpc: '', cpl: '' });
-                    setValidation({ cpm: null, ctr: null, cpc: null, cpl: null });
+                    setAnswers({ cpm: '', ctr: '', cpc: '', cr: '', cpl: '' });
+                    setValidation({ cpm: null, ctr: null, cpc: null, cr: null, cpl: null });
                     setAllCorrect(false);
                     setStrategyAnswer(null);
                   }}
