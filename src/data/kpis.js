@@ -54,7 +54,7 @@ export const kpiData = [
     "nombre": "Importe gastado",
     "categoria": "Costos",
     "definicion": "La cantidad total estimada de dinero que has gastado en tu campaña, conjunto de anuncios o anuncio.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Presupuesto total consumido)",
     "ejemplo_practico": "Si tu presupuesto diario es $10 y corrió por 5 días, tu importe gastado será aprox $50.",
     "justificacion": "Es fundamental para calcular todas las métricas de rentabilidad (CPA, CPC, CPM, etc) y controlar el pacing del presupuesto.",
     "good_vs_bad": "Revisa que se esté consumiendo el presupuesto según lo planeado. Si no se gasta, hay problemas de entrega o audiencias muy reducidas."
@@ -64,7 +64,7 @@ export const kpiData = [
     "nombre": "Alcance",
     "categoria": "Atracción",
     "definicion": "El número de personas únicas que han visto tus anuncios al menos una vez.",
-    "formula": "Métrica base entregada por la plataforma (Impresiones / Frecuencia)",
+    "formula": "Σ (Usuarios únicos impactados)",
     "ejemplo_practico": "Si tu anuncio se mostró 1.500 veces a 1.000 personas distintas, tu alcance es 1.000.",
     "justificacion": "Mide el tamaño real de la audiencia que estás logrando impactar. Vital para campañas de reconocimiento de marca.",
     "good_vs_bad": "Si el alcance es demasiado pequeño y el importe gastado alto, estás saturando a una audiencia minúscula."
@@ -94,7 +94,7 @@ export const kpiData = [
     "nombre": "Impresiones",
     "categoria": "Atracción",
     "definicion": "El número total de veces que tus anuncios aparecieron en la pantalla de un dispositivo.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Suma de apariciones en pantalla)",
     "ejemplo_practico": "Si un usuario ve tu anuncio 3 veces, cuenta como 3 impresiones.",
     "justificacion": "Es el volumen bruto de exposición de tu marca. Sin impresiones, no hay ninguna otra métrica subsecuente.",
     "good_vs_bad": "Necesitas volumen de impresiones para generar clics, pero siempre monitoreando que la frecuencia no se dispare."
@@ -104,7 +104,7 @@ export const kpiData = [
     "nombre": "Visualizaciones",
     "categoria": "Atracción",
     "definicion": "Cantidad de veces que un usuario visualizó una experiencia inmersiva o contenido dinámico.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Visualizaciones de experiencia inmersiva)",
     "ejemplo_practico": "Número de veces que alguien abrió tu experiencia instantánea (Canvas) a pantalla completa.",
     "justificacion": "Mide el nivel de atención primaria a formatos más complejos que una imagen estática.",
     "good_vs_bad": "Si es bajo en formatos inmersivos, tu primera imagen o miniatura no incita a abrir la experiencia completa."
@@ -114,7 +114,7 @@ export const kpiData = [
     "nombre": "Espectadores",
     "categoria": "Interacción",
     "definicion": "Personas que observaron tu video durante un lapso considerable o eventos en vivo.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Usuarios conectados al contenido en vivo/largo)",
     "ejemplo_practico": "En una campaña de Live Shopping, la cantidad de usuarios que se mantuvieron viendo la transmisión.",
     "justificacion": "Mide el enganche real con contenido largo y eventos.",
     "good_vs_bad": "Buscas aumentar la retención. Si los espectadores caen rápidamente, el contenido de inicio debe ser más magnético."
@@ -124,7 +124,7 @@ export const kpiData = [
     "nombre": "Thruplays",
     "categoria": "Interacción",
     "definicion": "Cantidad de veces que tu video se reprodujo completo o durante al menos 15 segundos.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Visualizaciones completas o ≥ 15 seg)",
     "ejemplo_practico": "De 1.000 vistas de video, 200 personas lo vieron completo (o 15 segundos). Tienes 200 Thruplays.",
     "justificacion": "Filtra a los usuarios que solo hicieron scroll rápido de aquellos que realmente consumieron el mensaje principal del video.",
     "good_vs_bad": "Si tienes muchísimas impresiones pero pocos Thruplays, tu video no atrapa la atención en los primeros 3 segundos (el gancho falla)."
@@ -134,7 +134,7 @@ export const kpiData = [
     "nombre": "Reproducciones de video",
     "categoria": "Interacción",
     "definicion": "Número de veces que tu video empezó a reproducirse. Meta suele medirlo a los 2 o 3 segundos continuos.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Visualizaciones ≥ 3 segundos)",
     "ejemplo_practico": "1.000 personas se detuvieron al menos 3 segundos en su feed para ver tu video.",
     "justificacion": "Es el indicador de 'parada de scroll'. Te dice si la primera imagen del video es llamativa.",
     "good_vs_bad": "Compara esto con las impresiones. Si nadie le da 'play' visual, cambia los colores o textos iniciales del video."
@@ -174,7 +174,7 @@ export const kpiData = [
     "nombre": "Clics",
     "categoria": "Atracción",
     "definicion": "El número total de clics en tu anuncio. Puede incluir clics en enlaces, en la página, en 'ver más', etc.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Suma total de clics registrados)",
     "ejemplo_practico": "Tu anuncio generó 300 clics totales a lo largo de la semana.",
     "justificacion": "Mide la capacidad de tu anuncio para incitar a la acción física del usuario en la pantalla.",
     "good_vs_bad": "A mayor cantidad de clics, más posibilidades de conversión, pero siempre enfócate en Clics en el Enlace Saliente para medir tráfico real."
@@ -184,7 +184,7 @@ export const kpiData = [
     "nombre": "Visitas al perfil de Instagram",
     "categoria": "Interacción",
     "definicion": "Número de veces que los usuarios visitaron tu perfil de Instagram tras ver tu anuncio.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Clics dirigidos al perfil de IG)",
     "ejemplo_practico": "150 personas tocaron el nombre de tu cuenta en el anuncio y fueron a ver tu feed.",
     "justificacion": "Esencial en campañas enfocadas en ganar seguidores o construir autoridad de marca en Instagram.",
     "good_vs_bad": "Si tienes muchas visitas pero no ganas seguidores, tu feed no está optimizado o no hay contenido de valor alineado al anuncio."
@@ -194,7 +194,7 @@ export const kpiData = [
     "nombre": "Visitas a la página de destino",
     "categoria": "Interacción",
     "definicion": "Número de veces que una persona hizo clic en el enlace y la página web cargó completamente (dispara el píxel).",
-    "formula": "Métrica base entregada por el Píxel de Meta",
+    "formula": "Σ (Cargas completas de la landing page)",
     "ejemplo_practico": "De 100 clics en el enlace, 85 usuarios esperaron a que la página cargara. Tienes 85 visitas a la página de destino.",
     "justificacion": "Esta es la métrica de tráfico real. Muchas personas hacen clic y cierran antes de que cargue la web.",
     "good_vs_bad": "Si la diferencia entre Clics y Visitas a la página es mayor al 30%, tu sitio web es muy lento. Optimiza la velocidad de carga."
@@ -224,7 +224,7 @@ export const kpiData = [
     "nombre": "Seguidores de Instagram",
     "categoria": "Conversión",
     "definicion": "Usuarios que comenzaron a seguir tu cuenta tras interactuar con un anuncio.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Nuevos follows atribuidos al anuncio)",
     "ejemplo_practico": "Hiciste una campaña de perfil de Instagram y ganaste 500 seguidores nuevos en 3 días.",
     "justificacion": "Métrica clave para construir comunidad a largo plazo y potenciar el alcance orgánico futuro.",
     "good_vs_bad": "Si inviertes mucho en alcance y no generas seguidores, tu cuenta carece de contenido atractivo o la promesa del anuncio fue falsa."
@@ -234,7 +234,7 @@ export const kpiData = [
     "nombre": "Me gusta de Facebook",
     "categoria": "Interacción",
     "definicion": "Cantidad de personas que dieron 'Like' a tu página de Facebook desde tu anuncio.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Nuevos likes atribuidos al anuncio)",
     "ejemplo_practico": "Tu anuncio generó 300 Me Gusta nuevos a tu Fanpage.",
     "justificacion": "Crea prueba social (social proof) para la marca.",
     "good_vs_bad": "Hoy en día los likes en Facebook no garantizan alcance. No es recomendable invertir demasiado presupuesto en esta métrica exclusivamente."
@@ -244,7 +244,7 @@ export const kpiData = [
     "nombre": "Comentarios de publicación",
     "categoria": "Interacción",
     "definicion": "El número de comentarios que las personas dejaron en tu anuncio.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Comentarios totales generados)",
     "ejemplo_practico": "Tu anuncio de zapatillas recibió 45 comentarios preguntando por tallas y precios.",
     "justificacion": "Es una señal fuerte de interés o intención de compra. El algoritmo premia los anuncios con muchos comentarios abaratando el CPM.",
     "good_vs_bad": "Un alto número de comentarios positivos ayuda enormemente. Si los comentarios son negativos, debes pausar el anuncio inmediatamente."
@@ -254,7 +254,7 @@ export const kpiData = [
     "nombre": "Reacciones a la publicación",
     "categoria": "Interacción",
     "definicion": "El número de reacciones (Me gusta, Me encanta, Me divierte, etc.) en tu anuncio.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Reacciones registradas)",
     "ejemplo_practico": "Un anuncio emocional recibió 500 'Me encanta' y 200 'Me importa'.",
     "justificacion": "Demuestra resonancia emocional. Las reacciones tienen más peso que los simples 'likes' en el algoritmo de Meta.",
     "good_vs_bad": "Generar reacciones diversas (ej. Me divierte) incrementa drásticamente la viralidad y reduce el costo de distribución del anuncio."
@@ -264,7 +264,7 @@ export const kpiData = [
     "nombre": "Respuestas a eventos",
     "categoria": "Interacción",
     "definicion": "Cantidad de personas que indicaron 'Asistiré' o 'Me interesa' en un evento de Facebook promocionado.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Asistiré + Me interesa)",
     "ejemplo_practico": "Para un webinar, 250 personas marcaron 'Asistiré' en Facebook.",
     "justificacion": "Sirve para campañas locales (bares, conciertos) o eventos online masivos.",
     "good_vs_bad": "Recuerda que en Facebook, un 'Asistiré' no garantiza asistencia real (suele ir solo el 10%). Si el número es bajo, replantea la oferta."
@@ -274,7 +274,7 @@ export const kpiData = [
     "nombre": "Veces que se ha guardado la publicación",
     "categoria": "Interacción",
     "definicion": "Cuántas veces las personas guardaron tu anuncio (muy común en Instagram).",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Veces guardado en colecciones)",
     "ejemplo_practico": "Un anuncio tipo carrusel con tips de marketing fue guardado 80 veces.",
     "justificacion": "Es la métrica de 'valor'. Si alguien guarda un post, es porque lo considera sumamente útil para el futuro.",
     "good_vs_bad": "Generar guardados le dice al algoritmo que tu contenido es Premium. Aumenta drásticamente la calidad percibida de la cuenta."
@@ -284,7 +284,7 @@ export const kpiData = [
     "nombre": "Visitas",
     "categoria": "Atracción",
     "definicion": "Agrupa métricas de tráfico genérico tanto dentro de la app (tiendas de Meta) como en sitios web.",
-    "formula": "Métrica base entregada por la plataforma",
+    "formula": "Σ (Sesiones en tiendas Meta/sitio web)",
     "ejemplo_practico": "Usuarios que visitaron tu catálogo en Instagram Shops.",
     "justificacion": "Indica el volumen de usuarios que pasaron a una segunda etapa de exploración comercial.",
     "good_vs_bad": "Si hay muchas visitas pero nulas compras, los precios o el catálogo no son competitivos."
@@ -314,7 +314,7 @@ export const kpiData = [
     "nombre": "Comentarios de publicaciones",
     "categoria": "Interacción",
     "definicion": "Específicamente el conteo de los comentarios orgánicos y pagados en el post promovido.",
-    "formula": "Métrica base",
+    "formula": "Σ (Conteo de comentarios orgánicos + pagados)",
     "ejemplo_practico": "Acumulación de respuestas de los usuarios debatiendo sobre el producto del anuncio.",
     "justificacion": "Genera comunidad. El texto en los comentarios también ayuda a indexar el anuncio algorítmicamente.",
     "good_vs_bad": "Si es alto y positivo, fomenta las ventas (Social Proof). Debes responder a todos los comentarios para multiplicar la métrica por 2."
