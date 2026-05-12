@@ -143,6 +143,17 @@ const Simulator = ({ platform, onFinish, onBack }) => {
   { id: 'instagram_facebook', name: 'Instagram o Facebook', desc: 'Consigue que la gente interactúe con tu perfil de Instagram, tu página de Facebook o ambos.' }
 ];
 
+const deepMerge = (target, source) => {
+  if (!target) return source;
+  const result = { ...source, ...target };
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      result[key] = deepMerge(target[key], source[key]);
+    }
+  }
+  return result;
+};
+
 const interactionPerformanceGoals = {
   messaging_apps: [
     { id: 'conversations', name: 'Maximizar el número de conversaciones', desc: 'Intentaremos mostrar tus anuncios a las personas con más probabilidades de conversar contigo a través de mensajes.' }
@@ -288,7 +299,8 @@ const bidStrategies = [
     const savedCampaign = localStorage.getItem('simulador_meta_progress');
     if (savedCampaign) {
       try {
-        setFormData(JSON.parse(savedCampaign));
+        const parsed = JSON.parse(savedCampaign);
+        setFormData(deepMerge(parsed, initialFormState));
       } catch (e) {
         console.error('Error loading saved campaign', e);
       }
@@ -355,12 +367,12 @@ const bidStrategies = [
   };
 
   const addLocationFromDropdown = (countryName) => {
-    if (!formData.adSet.locations.find(l => l.name === countryName)) {
+    if (!(formData.adSet.locations || []).find(l => l.name === countryName)) {
       setFormData({
         ...formData,
         adSet: {
           ...formData.adSet,
-          locations: [...formData.adSet.locations, { name: countryName, includeMode: 'all', popMin: '500 000', popMax: '+3 millones' }],
+          locations: [...(formData.adSet.locations || []), { name: countryName, includeMode: 'all', popMin: '500 000', popMax: '+3 millones' }],
         }
       });
     }
@@ -373,7 +385,7 @@ const bidStrategies = [
       ...formData,
       adSet: {
         ...formData.adSet,
-        locations: formData.adSet.locations.filter(l => l.name !== locName)
+        locations: (formData.adSet.locations || []).filter(l => l.name !== locName)
       }
     });
   };
@@ -383,13 +395,13 @@ const bidStrategies = [
       ...formData,
       adSet: {
         ...formData.adSet,
-        locations: formData.adSet.locations.map(l => l.name === locName ? { ...l, [field]: value } : l)
+        locations: (formData.adSet.locations || []).map(l => l.name === locName ? { ...l, [field]: value } : l)
       }
     });
   };
 
   const toggleLanguage = (lang) => {
-    let newLangs = [...formData.adSet.languages];
+    let newLangs = [...(formData.adSet.languages || [])];
     if (newLangs.includes('Todos los idiomas')) {
       newLangs = [lang];
     } else if (newLangs.includes(lang)) {
@@ -422,7 +434,7 @@ const bidStrategies = [
   }, [view, currentUser]);
 
   const handleEditCampaign = (camp) => {
-    setFormData(camp.data || initialFormState);
+    setFormData(deepMerge(camp.data, initialFormState));
     setSelectedCampaignId(camp.id);
     setView('editor');
     setCurrentStep(1);
@@ -1374,7 +1386,7 @@ const bidStrategies = [
                                <div className="border border-fb-border rounded-lg p-4 space-y-4">
                                   {/* Selected locations list */}
                                   <div className="space-y-2">
-                                     {formData.adSet.locations.map(loc => (
+                                     {(formData.adSet.locations || []).map(loc => (
                                         <div key={loc.name} className="bg-slate-50 p-3 rounded-lg flex items-center justify-between border border-fb-border/50">
                                            <div className="flex items-center gap-3">
                                               <div className="w-7 h-7 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0"><MapPin size={14} /></div>
@@ -1471,7 +1483,7 @@ const bidStrategies = [
                                         {showLocationDropdown && (
                                           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-fb-border rounded-lg shadow-2xl z-50 max-h-60 overflow-y-auto">
                                             {allCountries
-                                              .filter(c => c.toLowerCase().includes(locationSearchQuery.toLowerCase()) && !formData.adSet.locations.find(l => l.name === c))
+                                              .filter(c => c.toLowerCase().includes(locationSearchQuery.toLowerCase()) && !(formData.adSet.locations || []).find(l => l.name === c))
                                               .slice(0, 15)
                                               .map(country => (
                                                 <div 
@@ -1483,7 +1495,7 @@ const bidStrategies = [
                                                   {country}
                                                 </div>
                                               ))}
-                                            {allCountries.filter(c => c.toLowerCase().includes(locationSearchQuery.toLowerCase()) && !formData.adSet.locations.find(l => l.name === c)).length === 0 && (
+                                            {allCountries.filter(c => c.toLowerCase().includes(locationSearchQuery.toLowerCase()) && !(formData.adSet.locations || []).find(l => l.name === c)).length === 0 && (
                                               <div className="px-4 py-3 text-[11px] text-fb-text-secondary text-center">No se encontraron resultados</div>
                                             )}
                                           </div>
@@ -1543,7 +1555,7 @@ const bidStrategies = [
 
                             <div className="space-y-1 pt-4">
                                <label className="text-[12px] font-bold text-fb-text-primary flex items-center gap-1">Idiomas <Info size={12} className="text-slate-400" /></label>
-                               <p className="text-[12px] text-slate-600">{formData.adSet.languages.join(', ')}</p>
+                               <p className="text-[12px] text-slate-600">{(formData.adSet.languages || []).join(', ')}</p>
                                <button onClick={() => setShowLanguageModal(true)} className="text-fb-blue text-[11px] font-bold hover:underline">Editar</button>
                             </div>
                          </div>
@@ -2029,7 +2041,7 @@ const bidStrategies = [
                                       </div>
                                       <div className="flex gap-2">
                                          {app.action && <button className="px-3 py-1 border border-fb-border rounded text-[11px] font-bold hover:bg-white">Conectar</button>}
-                                         <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={formData.ad.messagingApps[app.id]} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...formData.ad.messagingApps, [app.id]: e.target.checked}}})} />
+                                         <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-fb-blue" checked={(formData.ad.messagingApps || {})[app.id]} onChange={(e) => setFormData({...formData, ad: {...formData.ad, messagingApps: {...(formData.ad.messagingApps || {}), [app.id]: e.target.checked}}})} />
                                       </div>
                                     </div>
                                   ))}
@@ -2279,7 +2291,7 @@ const bidStrategies = [
                       <input 
                         type="checkbox" 
                         className="w-5 h-5 rounded border-slate-300 text-fb-blue focus:ring-fb-blue" 
-                        checked={formData.adSet.languages.includes(lang)}
+                        checked={(formData.adSet.languages || []).includes(lang)}
                         onChange={() => toggleLanguage(lang)}
                       />
                       <span className="text-[13px] font-bold text-slate-700 group-hover:text-fb-blue">{lang}</span>
