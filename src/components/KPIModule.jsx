@@ -48,16 +48,12 @@ const KPIModule = ({ onBack }) => {
       
       {/* Contenido principal con scroll interno */}
       <div className="flex-grow overflow-y-auto custom-scrollbar">
-        {activeTab === 'glossary' && (
-          <div className="animate-fade-in">
-            <KPIGlossary />
-          </div>
-        )}
-        {activeTab === 'gym' && (
-          <div className="animate-fade-in">
-            <KPIGym />
-          </div>
-        )}
+        <div className={`animate-fade-in ${activeTab === 'glossary' ? 'block' : 'hidden'}`}>
+          <KPIGlossary />
+        </div>
+        <div className={`animate-fade-in ${activeTab === 'gym' ? 'block' : 'hidden'}`}>
+          <KPIGym />
+        </div>
       </div>
     </div>
   );

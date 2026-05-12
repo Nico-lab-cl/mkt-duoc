@@ -4,221 +4,221 @@ import { useProject } from '../context/ProjectContext';
 const questionPool = [
   {
     id: 1,
-    text: 'Si el CPA de tu campaña supera el ticket promedio de tu producto, ¿qué afirmación es estratégicamente correcta?',
+    text: '¿Cuál es la fórmula correcta para calcular el CTR (Click-Through Rate)?',
     options: [
-      { id: 'A', text: 'Estás perdiendo dinero por cada venta, por lo que debes pausar o pivotar la estrategia de inmediato.' },
-      { id: 'B', text: 'Debes aumentar el presupuesto para diluir el costo de adquisición.' },
-      { id: 'C', text: 'Significa que el ROAS es exactamente 1.0.' },
-      { id: 'D', text: 'Debes centrarte en aumentar el CTR para reducir el CPA directamente.' }
+      { id: 'A', text: '(Clics / Impresiones) x 100' },
+      { id: 'B', text: '(Impresiones / Clics) x 100' },
+      { id: 'C', text: 'Inversión / Clics' },
+      { id: 'D', text: 'Clics / Conversiones' }
     ],
     correctOption: 'A'
   },
   {
     id: 2,
-    text: 'Si tu campaña de Meta Ads tiene un CPM de $15 y un CTR de 0.5%, ¿cuál es tu Costo por Clic (CPC) estimado?',
+    text: '¿Qué significa la métrica CPM en marketing digital?',
     options: [
-      { id: 'A', text: '$0.30' },
-      { id: 'B', text: '$3.00' },
-      { id: 'C', text: '$0.075' },
-      { id: 'D', text: '$1.50' }
+      { id: 'A', text: 'Costo por cada Mil Impresiones' },
+      { id: 'B', text: 'Costo por Mensaje' },
+      { id: 'C', text: 'Clics Por Minuto' },
+      { id: 'D', text: 'Conversiones Por Mes' }
     ],
-    correctOption: 'B'
+    correctOption: 'A'
   },
   {
     id: 3,
-    text: 'Una landing page tiene 1,000 visitas y genera 20 leads. Si el Costo por Clic (CPC) fue de $1.20, ¿cuál es el Costo por Lead (CPL)?',
+    text: 'Si inviertes $500 en una campaña y consigues 50 leads (prospectos), ¿cuál es tu CPL (Costo por Lead)?',
     options: [
-      { id: 'A', text: '$24.00' },
-      { id: 'B', text: '$60.00' },
-      { id: 'C', text: '$50.00' },
-      { id: 'D', text: '$12.00' }
+      { id: 'A', text: '$10' },
+      { id: 'B', text: '$5' },
+      { id: 'C', text: '$50' },
+      { id: 'D', text: '$0.10' }
     ],
-    correctOption: 'B'
+    correctOption: 'A'
   },
   {
     id: 4,
-    text: 'Inviertes $5,000 en una campaña que genera $25,000 en ingresos. Sin embargo, el costo de producción y envío fue de $10,000. ¿Cuál es el ROI (Retorno de Inversión) real de la campaña publicitaria considerando costos operativos?',
+    text: 'Si un anuncio tiene muchas impresiones pero muy pocos clics, ¿qué métrica se verá más afectada negativamente?',
     options: [
-      { id: 'A', text: '400%' },
-      { id: 'B', text: '100%' },
-      { id: 'C', text: '500%' },
-      { id: 'D', text: '200%' }
+      { id: 'A', text: 'El CTR bajará considerablemente.' },
+      { id: 'B', text: 'El CPM subirá a niveles extremos.' },
+      { id: 'C', text: 'La Tasa de Conversión (CR) subirá.' },
+      { id: 'D', text: 'El Costo por Lead (CPL) bajará.' }
     ],
-    correctOption: 'B'
+    correctOption: 'A'
   },
   {
     id: 5,
-    text: 'El algoritmo de Meta Ads entra en "Fatiga de Anuncio" (Ad Fatigue). ¿Cuál es el síntoma analítico más claro de esto?',
+    text: '¿Cuál es la función principal del KPI "Tasa de Conversión" (CR)?',
     options: [
-      { id: 'A', text: 'La frecuencia sube, el CTR baja y el CPA aumenta.' },
-      { id: 'B', text: 'El CPM baja drásticamente y el CTR sube.' },
-      { id: 'C', text: 'El ROAS se mantiene estático mientras el CPC baja.' },
-      { id: 'D', text: 'La tasa de conversión de la landing page disminuye a 0%.' }
+      { id: 'A', text: 'Medir el porcentaje de usuarios que completan una acción deseada después de hacer clic.' },
+      { id: 'B', text: 'Medir cuántas veces se mostró el anuncio en la pantalla.' },
+      { id: 'C', text: 'Calcular el costo exacto de cada venta.' },
+      { id: 'D', text: 'Determinar el alcance total de una campaña en redes sociales.' }
     ],
     correctOption: 'A'
   },
   {
     id: 6,
-    text: 'Estás analizando un embudo SaaS. Obtuviste 500 leads a un CPL de $5. De esos leads, el 5% se convirtió en clientes de pago (CR de lead a venta). ¿Cuál es el CAC (Costo de Adquisición de Cliente)?',
+    text: 'Inviertes $1,000 en publicidad y generas $4,000 en ingresos totales. ¿Cuál es el ROAS (Retorno a la Inversión Publicitaria)?',
     options: [
-      { id: 'A', text: '$25' },
-      { id: 'B', text: '$100' },
-      { id: 'C', text: '$500' },
-      { id: 'D', text: '$50' }
+      { id: 'A', text: '4.0 (o 400%)' },
+      { id: 'B', text: '3.0 (o 300%)' },
+      { id: 'C', text: '0.25 (o 25%)' },
+      { id: 'D', text: '5.0 (o 500%)' }
     ],
-    correctOption: 'B'
+    correctOption: 'A'
   },
   {
     id: 7,
-    text: 'Tienes una campaña con un ROAS de 3.0. Si el margen de ganancia neta de tu producto es del 30%, ¿la campaña es rentable?',
+    text: '¿Qué mide el Costo de Adquisición de Cliente (CAC)?',
     options: [
-      { id: 'A', text: 'No, estás perdiendo dinero (ROAS Break-even es 3.33).' },
-      { id: 'B', text: 'Sí, estás ganando dinero porque el ROAS es mayor a 1.' },
-      { id: 'C', text: 'Estás exactamente en punto de equilibrio.' },
-      { id: 'D', text: 'Depende exclusivamente del CPM.' }
+      { id: 'A', text: 'Cuánto cuesta en promedio conseguir un cliente nuevo que realiza una compra.' },
+      { id: 'B', text: 'El costo de adquirir un nuevo clic en la campaña.' },
+      { id: 'C', text: 'El dinero necesario para que alguien llene un formulario.' },
+      { id: 'D', text: 'El costo total de la plataforma de marketing mensual.' }
     ],
     correctOption: 'A'
   },
   {
     id: 8,
-    text: 'Si aumentas tu presupuesto diario un 50% de golpe en una campaña de conversión en fase de aprendizaje, ¿qué es lo más probable que ocurra analíticamente?',
+    text: 'Si logras disminuir tu Costo por Clic (CPC) a la mitad sin perder calidad de tráfico, ¿qué pasará probablemente con tu campaña si mantienes la misma inversión?',
     options: [
-      { id: 'A', text: 'El algoritmo se reinicia, provocando temporalmente un aumento en el CPA y fluctuación en el CPM.' },
-      { id: 'B', text: 'El CPA bajará proporcionalmente un 50%.' },
-      { id: 'C', text: 'El CTR aumentará automáticamente.' },
-      { id: 'D', text: 'Nada, las métricas se mantendrán idénticas pero escalarás ventas.' }
+      { id: 'A', text: 'Obtendrás el doble de clics por el mismo presupuesto.' },
+      { id: 'B', text: 'Tus impresiones se reducirán a la mitad.' },
+      { id: 'C', text: 'Tu Costo por Lead (CPL) subirá al doble.' },
+      { id: 'D', text: 'Tu Tasa de Conversión (CR) bajará automáticamente al 50%.' }
     ],
     correctOption: 'A'
   },
   {
     id: 9,
-    text: 'Tu equipo debate sobre atribución. Un cliente hace clic en tu anuncio de Meta Ads, pero no compra. Al día siguiente busca la marca en Google y compra. ¿Cómo lo atribuyen por defecto los píxeles estándar?',
+    text: 'Un anuncio tiene un CTR muy alto, pero nadie compra en la Landing Page. ¿Dónde está probablemente el problema?',
     options: [
-      { id: 'A', text: 'Google Analytics se lo atribuye a Google (Last Click), Meta Ads se lo atribuye a sí mismo (Click/View Attribution).' },
-      { id: 'B', text: 'Solo Meta Ads lo registra porque fue el primer clic.' },
-      { id: 'C', text: 'Ambas plataformas dividen el valor de la compra al 50%.' },
-      { id: 'D', text: 'Ninguna plataforma lo registra.' }
+      { id: 'A', text: 'En la Landing Page (es lenta, confusa o la oferta no coincide con el anuncio).' },
+      { id: 'B', text: 'El diseño gráfico del anuncio es aburrido.' },
+      { id: 'C', text: 'El presupuesto asignado a la campaña es demasiado bajo.' },
+      { id: 'D', text: 'El CPM está demasiado alto.' }
     ],
     correctOption: 'A'
   },
   {
     id: 10,
-    text: 'Si el LTV (Life Time Value) de tu cliente es $300 y tu CAC es $150, ¿qué indica la relación LTV:CAC = 2:1?',
+    text: '¿Qué es el LTV (Life Time Value) de un cliente?',
     options: [
-      { id: 'A', text: 'Es un negocio sano, pero se considera óptimo llegar al menos a 3:1 para mayor margen y escalabilidad.' },
-      { id: 'B', text: 'Es excelente, el estándar de la industria es 1:1.' },
-      { id: 'C', text: 'El negocio está en quiebra inminente.' },
-      { id: 'D', text: 'Debes pausar todas las campañas publicitarias.' }
+      { id: 'A', text: 'El valor total o ganancia estimada que un cliente dejará en la empresa durante todo el tiempo que mantenga relación con ella.' },
+      { id: 'B', text: 'El tiempo promedio que un usuario pasa leyendo un artículo de tu blog.' },
+      { id: 'C', text: 'La cantidad de veces que una persona ve tu anuncio antes de morir.' },
+      { id: 'D', text: 'El costo de adquirir a un cliente que se queda de por vida.' }
     ],
     correctOption: 'A'
   },
   {
     id: 11,
-    text: '¿Cuál es la diferencia fundamental entre el ROAS y el ROI?',
+    text: 'Si quieres aumentar las visitas a tu sitio web sin aumentar el presupuesto diario, ¿qué métrica necesitas optimizar y mejorar en tus anuncios?',
     options: [
-      { id: 'A', text: 'El ROAS mide los ingresos brutos generados sobre la inversión publicitaria; el ROI mide la ganancia neta considerando costos operativos y de producto.' },
-      { id: 'B', text: 'Son exactamente lo mismo, solo cambian los términos por plataforma.' },
-      { id: 'C', text: 'El ROI se usa solo en Google Ads y el ROAS en Meta Ads.' },
-      { id: 'D', text: 'El ROAS se mide en porcentajes y el ROI en multiplicadores.' }
+      { id: 'A', text: 'El CTR (Hacer que los anuncios sean más atractivos para generar más clics).' },
+      { id: 'B', text: 'El CR (Tasa de Conversión de la página).' },
+      { id: 'C', text: 'El CPA (Costo por Adquisición).' },
+      { id: 'D', text: 'El LTV (Life Time Value).' }
     ],
     correctOption: 'A'
   },
   {
     id: 12,
-    text: 'Si una campaña tiene un CTR del 3% (muy alto) pero un CR de landing page del 0.1% (muy bajo), la principal recomendación técnica es:',
+    text: 'Si una landing page tiene 500 visitas y logra 25 ventas, ¿cuál es su Tasa de Conversión (CR)?',
     options: [
-      { id: 'A', text: 'Optimizar la Landing Page (velocidad de carga, mensaje, fricción del formulario) ya que el anuncio sí capta el interés adecuado.' },
-      { id: 'B', text: 'Cambiar el video del anuncio inmediatamente.' },
-      { id: 'C', text: 'Aumentar el presupuesto diario para forzar conversiones.' },
-      { id: 'D', text: 'Cambiar la puja a "Costo más bajo".' }
+      { id: 'A', text: '5%' },
+      { id: 'B', text: '20%' },
+      { id: 'C', text: '2.5%' },
+      { id: 'D', text: '50%' }
     ],
     correctOption: 'A'
   },
   {
     id: 13,
-    text: 'En un ecommerce, tienes un Costo por Añadir al Carrito (Cost per Add to Cart) de $5, y un CPA de compra de $50. ¿Qué significa esto?',
+    text: '¿Por qué es importante que el LTV (Life Time Value) sea siempre mayor que el CAC (Costo de Adquisición de Cliente)?',
     options: [
-      { id: 'A', text: 'Que necesitas 10 Add to Carts en promedio para lograr 1 Compra (Tasa de cierre del 10% desde el carrito).' },
-      { id: 'B', text: 'Que el pixel está mal instalado.' },
-      { id: 'C', text: 'Que tu producto es demasiado barato.' },
-      { id: 'D', text: 'Que el checkout carga demasiado rápido.' }
+      { id: 'A', text: 'Porque si cuesta más adquirir al cliente que el dinero que este aporta, la empresa pierde dinero.' },
+      { id: 'B', text: 'Porque Facebook penaliza las cuentas con un CAC mayor al LTV.' },
+      { id: 'C', text: 'Porque el CAC siempre define cuántos clics vas a obtener.' },
+      { id: 'D', text: 'No es importante, el CAC siempre debe ser mayor.' }
     ],
     correctOption: 'A'
   },
   {
     id: 14,
-    text: 'Si tu objetivo principal es reconocimiento de marca masivo con bajo presupuesto, ¿qué métrica debe ser tu KPI principal y por qué?',
+    text: 'En una campaña de alcance o reconocimiento de marca, ¿cuál es la métrica más importante a observar?',
     options: [
-      { id: 'A', text: 'CPM y Alcance, porque te interesa comprar inventario barato para maximizar la visibilidad.' },
-      { id: 'B', text: 'CPA, porque toda campaña debe vender.' },
-      { id: 'C', text: 'ROAS, porque define el retorno de inversión de la marca.' },
-      { id: 'D', text: 'Frecuencia sobre 10, para asegurar que te recuerden.' }
+      { id: 'A', text: 'Impresiones y Alcance (CPM bajo).' },
+      { id: 'B', text: 'Costo por Compra (CPA).' },
+      { id: 'C', text: 'Retorno de Inversión (ROAS).' },
+      { id: 'D', text: 'Tasa de Conversión en el carrito.' }
     ],
     correctOption: 'A'
   },
   {
     id: 15,
-    text: 'Un cliente se queja de que el "Costo por Resultado" subió hoy un 200%. Al revisar, notas que hoy hubo muy pocas ventas, pero ayer hubo un pico anormal. ¿Cuál es el error de análisis del cliente?',
+    text: 'Si el CPM de tu campaña es de $20 y consigues 5,000 impresiones, ¿cuánto has gastado en total?',
     options: [
-      { id: 'A', text: 'Evaluar métricas de conversión en ventanas diarias (micro-análisis) sin considerar el ciclo de conversión y la varianza estadística semanal.' },
-      { id: 'B', text: 'No haber apagado la campaña durante la noche.' },
-      { id: 'C', text: 'El algoritmo de Meta se rompió por completo hoy.' },
-      { id: 'D', text: 'Que el ROAS de ayer afectó el costo de hoy.' }
+      { id: 'A', text: '$100' },
+      { id: 'B', text: '$10' },
+      { id: 'C', text: '$200' },
+      { id: 'D', text: '$1,000' }
     ],
     correctOption: 'A'
   },
   {
     id: 16,
-    text: '¿Cómo afecta iOS 14+ y el bloqueo de cookies de terceros al CPA reportado en plataformas como Meta Ads?',
+    text: '¿Cuál es la relación principal entre el CPC, el CTR y el CPM?',
     options: [
-      { id: 'A', text: 'Provoca infra-reporte (underreporting); el CPA "real" suele ser más bajo que el CPA reportado en la plataforma por pérdida de seguimiento.' },
-      { id: 'B', text: 'Provoca sobre-reporte; inventa ventas que no existen, subiendo el ROAS.' },
-      { id: 'C', text: 'No afecta a Meta Ads, solo a Google Ads.' },
-      { id: 'D', text: 'Elimina completamente la posibilidad de medir CTR.' }
+      { id: 'A', text: 'Si el CPM se mantiene igual y el CTR sube, el CPC baja (los clics salen más baratos).' },
+      { id: 'B', text: 'Si el CTR sube, el CPM y el CPC también suben.' },
+      { id: 'C', text: 'No hay relación directa entre estas métricas.' },
+      { id: 'D', text: 'Si el CPC baja, el CPM sube drásticamente.' }
     ],
     correctOption: 'A'
   },
   {
     id: 17,
-    text: '¿Cuál es la fórmula para calcular el Break-even ROAS (ROAS de punto de equilibrio)?',
+    text: 'Tienes una Tasa de Conversión del 2% y un CPC de $1. ¿Cuánto te costará en promedio obtener una conversión (CPA)?',
     options: [
-      { id: 'A', text: '1 / Margen de Beneficio Bruto (%)' },
-      { id: 'B', text: 'Inversión / Ingresos' },
-      { id: 'C', text: 'CPA / Ticket Promedio' },
-      { id: 'D', text: 'Margen de Beneficio Netos * Inversión' }
+      { id: 'A', text: '$50 (Necesitas 100 clics para 2 conversiones, es decir 50 clics por 1 conversión).' },
+      { id: 'B', text: '$100' },
+      { id: 'C', text: '$2' },
+      { id: 'D', text: '$20' }
     ],
     correctOption: 'A'
   },
   {
     id: 18,
-    text: 'Si logras disminuir tu Costo por Clic (CPC) a la mitad, manteniendo constante tu Tasa de Conversión (CR), ¿qué le sucederá a tu CPA?',
+    text: '¿Qué mide exactamente la "Frecuencia" en una campaña publicitaria?',
     options: [
-      { id: 'A', text: 'El CPA se reducirá a la mitad también.' },
-      { id: 'B', text: 'El CPA se duplicará.' },
-      { id: 'C', text: 'El CPA se mantendrá igual porque dependen del embudo.' },
-      { id: 'D', text: 'El ROAS bajará al 50%.' }
+      { id: 'A', text: 'El promedio de veces que cada persona única ha visto el anuncio.' },
+      { id: 'B', text: 'La velocidad con la que se gastan los fondos del presupuesto.' },
+      { id: 'C', text: 'Cuántas veces por minuto se muestra el anuncio.' },
+      { id: 'D', text: 'El número de veces que alguien comparte tu anuncio.' }
     ],
     correctOption: 'A'
   },
   {
     id: 19,
-    text: 'Una métrica de Hook Rate (Tasa de Retención de 3 segundos) en videos de TikTok Ads es del 10%. ¿Qué diagnóstico darías?',
+    text: 'Si notas que tu Costo por Lead (CPL) ha subido mucho en los últimos 7 días y la Frecuencia del anuncio está en 4.5, ¿qué deberías hacer?',
     options: [
-      { id: 'A', text: 'El video es extremadamente aburrido al inicio. El Hook Rate debería estar idealmente entre el 25% y 40%.' },
-      { id: 'B', text: 'Es un resultado excelente, la industria promedia el 1%.' },
-      { id: 'C', text: 'Significa que el 10% de la gente compró.' },
-      { id: 'D', text: 'Indica que el CPM será muy bajo.' }
+      { id: 'A', text: 'Refrescar el anuncio o cambiar la creatividad gráfica porque el público ya se cansó de verlo.' },
+      { id: 'B', text: 'Aumentar el presupuesto al doble para llegar a más personas.' },
+      { id: 'C', text: 'Cambiar la Landing Page de inmediato.' },
+      { id: 'D', text: 'Ignorarlo, una frecuencia de 4.5 es el mínimo ideal en 7 días.' }
     ],
     correctOption: 'A'
   },
   {
     id: 20,
-    text: 'Tienes dos campañas: Campaña A con ROAS 4.0 pero escala de $50 diarios, y Campaña B con ROAS 2.0 pero escala de $1000 diarios. Si tu ROAS mínimo de rentabilidad es 1.5, ¿cuál campaña aporta más Beneficio Bruto Absoluto en dólares?',
+    text: '¿Para qué sirve principalmente realizar Tests A/B en anuncios?',
     options: [
-      { id: 'A', text: 'Campaña B. (Aporta $500 de ganancia marginal vs $150 de la Campaña A)' },
-      { id: 'B', text: 'Campaña A. Porque su ROAS es el doble de eficiente.' },
-      { id: 'C', text: 'Ambas aportan lo mismo.' },
-      { id: 'D', text: 'No se puede calcular sin conocer el CTR.' }
+      { id: 'A', text: 'Para identificar con datos qué versión de un anuncio o página genera mejores KPIs (como un CTR más alto o un menor CPA).' },
+      { id: 'B', text: 'Para que el equipo de diseño justifique su trabajo semanal.' },
+      { id: 'C', text: 'Para gastar el presupuesto sobrante de la campaña.' },
+      { id: 'D', text: 'Para evitar que el algoritmo de Meta apruebe los anuncios muy rápido.' }
     ],
     correctOption: 'A'
   }
