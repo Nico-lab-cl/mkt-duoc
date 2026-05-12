@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { kpiData } from '../data/kpis';
 
 const generateCase = () => {
   const inversion = Math.floor(Math.random() * 900) + 100; // 100 to 1000
@@ -77,13 +78,11 @@ const KPIGym = () => {
 
   const getTooltip = (key) => {
     if (validation[key] === false) {
-      switch (key) {
-        case 'cpm': return "Recuerda que la fórmula del CPM es (Inversión / Impresiones) * 1000.";
-        case 'ctr': return "Recuerda que la fórmula del CTR es (Clics / Impresiones) * 100.";
-        case 'cpc': return "Recuerda que la fórmula del CPC es Inversión / Clics.";
-        case 'cpl': return "Recuerda que la fórmula del CPL es Inversión / Leads.";
-        default: return "";
+      const kpiEntry = kpiData.find(k => k.id === key);
+      if (kpiEntry && kpiEntry.formula) {
+        return `Recuerda la fórmula: ${kpiEntry.formula}`;
       }
+      return "Fórmula no encontrada. Vuelve a intentarlo.";
     }
     return null;
   };

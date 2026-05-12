@@ -16,9 +16,9 @@ const KPIGlossary = () => {
   }, [searchTerm, activeCategory]);
 
   const filteredKPIs = kpiData.filter(kpi => {
-    const matchesSearch = kpi.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = kpi.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           kpi.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'Todas' || kpi.category === activeCategory;
+    const matchesCategory = activeCategory === 'Todas' || kpi.categoria === activeCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -82,15 +82,15 @@ const KPIGlossary = () => {
             <div key={kpi.id} className="group bg-slate-900/80 backdrop-blur-xl border border-slate-800 hover:border-slate-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
               
               <div className="flex justify-between items-start mb-4">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border ${getCategoryColor(kpi.category)}`}>
-                  {kpi.category}
+                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border ${getCategoryColor(kpi.categoria)}`}>
+                  {kpi.categoria}
                 </span>
               </div>
               
-              <h3 className="text-xl font-black text-white mb-3 group-hover:text-blue-400 transition-colors">{kpi.name}</h3>
+              <h3 className="text-xl font-black text-white mb-3 group-hover:text-blue-400 transition-colors">{kpi.nombre}</h3>
               
               <p className="text-sm text-slate-400 mb-6 flex-grow leading-relaxed">
-                {kpi.definition}
+                {kpi.definicion}
               </p>
               
               <div className="space-y-4">
@@ -103,10 +103,18 @@ const KPIGlossary = () => {
                 {/* Contexto y Decisión */}
                 <div className="grid grid-cols-1 gap-3 pt-2">
                   <div className="flex items-start gap-3 bg-slate-800/30 p-3 rounded-lg">
-                    <span className="text-blue-500 text-lg">👀</span>
+                    <span className="text-blue-500 text-lg">📈</span>
                     <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cuándo mirarla</span>
-                      <p className="text-xs text-slate-300 leading-relaxed">{kpi.application_context}</p>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Ejemplo Práctico</span>
+                      <p className="text-xs text-slate-300 leading-relaxed">{kpi.ejemplo_practico}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 bg-slate-800/30 p-3 rounded-lg">
+                    <span className="text-purple-500 text-lg">👀</span>
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Por qué importa</span>
+                      <p className="text-xs text-slate-300 leading-relaxed">{kpi.justificacion}</p>
                     </div>
                   </div>
                   
