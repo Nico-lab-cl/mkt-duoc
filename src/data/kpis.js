@@ -7,7 +7,7 @@ export const kpiData = [
     category: "Atracción",
     name: "Impresiones",
     definition: "El número total de veces que tu anuncio se mostró en pantalla (Meta y Google).",
-    formula: "N/A (Es un conteo directo)",
+    formula: "Σ (Suma total de veces que el anuncio aparece en pantalla)",
     application_context: "Mírala para entender el volumen total de exposición de tu anuncio.",
     good_vs_bad: "Un número alto es bueno, pero por sí solo no garantiza resultados. Debe cruzarse con otras métricas como CTR o Clics."
   },
@@ -16,7 +16,7 @@ export const kpiData = [
     category: "Atracción",
     name: "Alcance",
     definition: "El número de personas únicas que vieron tu anuncio al menos una vez (Principalmente Meta).",
-    formula: "N/A (Es un conteo directo)",
+    formula: "Σ (Usuarios únicos impactados)",
     application_context: "Mírala si quieres saber a cuántos individuos diferentes estás impactando.",
     good_vs_bad: "Si el alcance es muy bajo respecto a las impresiones, tu anuncio se está repitiendo mucho a las mismas personas (Alta frecuencia)."
   },
@@ -61,7 +61,7 @@ export const kpiData = [
     category: "Atracción",
     name: "Clics en el enlace (Outbound Clicks)",
     definition: "El número total de clics que sacaron a las personas de la red social hacia tu destino (sitio web).",
-    formula: "N/A (Conteo directo)",
+    formula: "Σ (Clics registrados hacia la URL de destino)",
     application_context: "Mírala para ver el volumen real de tráfico hacia tu web, descartando clics en 'ver más', perfil o likes.",
     good_vs_bad: "Buscas generar volumen, pero prestando atención a la calidad del clic y si esos clics realmente cargan la página."
   },
@@ -110,7 +110,7 @@ export const kpiData = [
     category: "Interacción",
     name: "ThruPlay / Vistas al 100%",
     definition: "Cantidad de veces que un video se reprodujo completo o al menos 15 segundos.",
-    formula: "N/A (Conteo)",
+    formula: "Σ (Visualizaciones completas o ≥ 15 segundos)",
     application_context: "Mírala para saber si tu video no solo llama la atención al inicio, sino que retiene a la audiencia hasta el mensaje final.",
     good_vs_bad: "Si tienes miles de visualizaciones de 3 segundos pero muy pocos ThruPlays, tu video es 'clickbait' pero no retiene."
   },
