@@ -52,6 +52,14 @@ pool.connect(async (err, client, release) => {
         data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS evaluations (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        group_id INTEGER,
+        score INTEGER DEFAULT 0,
+        data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
     console.log('🚀 Tablas de base de datos verificadas/creadas');
   } catch (dbErr) {
@@ -168,6 +176,21 @@ app.delete('/api/chatflows/:id', async (req, res) => {
   }
 });
 
+app.post('/api/submit-evaluation', async (req, res) => {
+  const { userId, studentName, groupId, answers, justifications } = req.body;
+  try {
+    const jsonData = JSON.stringify({ answers, justifications });
+    const result = await pool.query(
+      'INSERT INTO evaluations (user_id, group_id, score, data) VALUES ($1, $2, $3, $4) RETURNING *',
+      [userId, groupId, 0, jsonData]
+    );
+    res.json({ success: true, evaluation: result.rows[0] });
+  } catch (err) {
+    console.error('DATABASE ERROR (Evaluation Save):', err);
+    res.status(500).json({ error: 'DB_ERROR: ' + err.message });
+  }
+});
+
 app.get('/api/admin/all', async (req, res) => {
   try {
     const campaigns = await pool.query(`
@@ -182,7 +205,13 @@ app.get('/api/admin/all', async (req, res) => {
       LEFT JOIN users u ON ch.user_id = u.id 
       LEFT JOIN groups g ON ch.group_id = g.id
     `);
-    res.json({ campaigns: campaigns.rows, chatflows: chatflows.rows });
+    const evaluations = await pool.query(`
+      SELECT e.*, u.full_name as student_name, g.name as group_name 
+      FROM evaluations e
+      LEFT JOIN users u ON e.user_id = u.id 
+      LEFT JOIN groups g ON e.group_id = g.id
+    `);
+    res.json({ campaigns: campaigns.rows, chatflows: chatflows.rows, evaluations: evaluations.rows });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener datos de admin' });
   }
