@@ -7,7 +7,7 @@ import Success from './components/Success';
 import ChatflowSimulator from './components/ChatflowSimulator';
 import GroupSelection from './components/GroupSelection';
 import KPIModule from './components/KPIModule';
-import LeadMagnetStudio from './components/LeadMagnetStudio';
+import LeadMagnetStudio from './components/PageBuilder';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser } = useProject();
