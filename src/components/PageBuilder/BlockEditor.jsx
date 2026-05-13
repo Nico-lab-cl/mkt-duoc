@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, ChevronUp, ChevronDown, Upload, X } from 'lucide-react';
-import { BLOCK_DEFS, PALETTES, CALC_TYPES, createBlock, uid } from './blockTypes';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { BLOCK_DEFS, PALETTES, CALC_TYPES, createBlock, uid, getCustomPalette } from './blockTypes';
 
 // Editor for a specific block's data
 const BlockDataEditor = ({ block, onUpdate }) => {
@@ -214,16 +215,16 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 };
 
 // Block list + editor panel
-const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, setPalette, author, setAuthor }) => {
+const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, setPalette, customHex, setCustomHex, author, setAuthor }) => {
   const updateBlock = (id, newData) => {
     setBlocks(prev => prev.map(b => b.id === id ? { ...b, data: newData } : b));
   };
-  const moveBlock = (idx, dir) => {
-    const newBlocks = [...blocks];
-    const target = idx + dir;
-    if (target < 0 || target >= newBlocks.length) return;
-    [newBlocks[idx], newBlocks[target]] = [newBlocks[target], newBlocks[idx]];
-    setBlocks(newBlocks);
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const items = Array.from(blocks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setBlocks(items);
   };
   const removeBlock = (id) => {
     if (blocks.length <= 1) return;
@@ -244,15 +245,19 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
     <div className="h-full overflow-y-auto custom-scrollbar">
       {/* Global settings */}
       <div className="p-4 border-b border-slate-100">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta</label>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta de Colores</label>
         <div className="flex gap-1.5 flex-wrap mb-3">
           {PALETTES.map(p => (
             <button key={p.id} onClick={() => setPalette(p.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-[10px] font-bold transition-all ${palette === p.id ? 'border-slate-800 bg-slate-50' : 'border-slate-200 hover:border-slate-300'}`}>
-              <div className="w-3.5 h-3.5 rounded-full" style={{ background: p.gradient }} />
+              <div className={`w-3.5 h-3.5 rounded-full border border-slate-200 ${p.id === 'none' ? 'bg-white' : ''}`} style={p.id !== 'none' ? { background: p.gradient } : {}} />
               {p.name}
             </button>
           ))}
+          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border-2 border-slate-200 bg-slate-50">
+            <input type="color" value={customHex} onChange={(e) => { setCustomHex(e.target.value); setPalette('custom'); }} className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent" />
+            <span className="text-[10px] font-bold text-slate-600 uppercase">HEX</span>
+          </div>
         </div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Autor / Marca</label>
         <input type="text" value={author} onChange={e => setAuthor(e.target.value)} placeholder="Tu marca"
@@ -262,27 +267,41 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
       {/* Block list */}
       <div className="p-4">
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Bloques ({blocks.length})</label>
-        <div className="space-y-1.5">
-          {blocks.map((block, idx) => {
-            const def = BLOCK_DEFS[block.type];
-            const isSelected = selectedId === block.id;
-            return (
-              <div key={block.id}
-                onClick={() => setSelectedId(isSelected ? null : block.id)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all border-2 ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                <span className="text-sm">{def?.emoji || '📦'}</span>
-                <span className={`flex-grow text-xs font-bold truncate ${isSelected ? 'text-blue-700' : 'text-slate-600'}`}>
-                  {block.data?.title || block.data?.heading || def?.label || block.type}
-                </span>
-                <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => moveBlock(idx, -1)} disabled={idx === 0} className="p-0.5 text-slate-300 hover:text-slate-600 disabled:opacity-30"><ChevronUp size={12} /></button>
-                  <button onClick={() => moveBlock(idx, 1)} disabled={idx === blocks.length - 1} className="p-0.5 text-slate-300 hover:text-slate-600 disabled:opacity-30"><ChevronDown size={12} /></button>
-                  <button onClick={() => removeBlock(block.id)} className="p-0.5 text-slate-300 hover:text-red-500 ml-1"><Trash2 size={12} /></button>
-                </div>
+        
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="blocks-list">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1.5">
+                {blocks.map((block, idx) => {
+                  const def = BLOCK_DEFS[block.type];
+                  const isSelected = selectedId === block.id;
+                  return (
+                    <Draggable key={block.id} draggableId={block.id} index={idx}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          onClick={() => setSelectedId(isSelected ? null : block.id)}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing transition-all border-2 ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-100 hover:border-slate-200'} ${snapshot.isDragging ? 'shadow-lg border-blue-400 z-50' : ''}`}
+                        >
+                          <span className="text-sm">{def?.emoji || '📦'}</span>
+                          <span className={`flex-grow text-xs font-bold truncate ${isSelected ? 'text-blue-700' : 'text-slate-600'}`}>
+                            {block.data?.title || block.data?.heading || def?.label || block.type}
+                          </span>
+                          <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => removeBlock(block.id)} className="p-1 text-slate-300 hover:text-red-500 ml-1"><Trash2 size={14} /></button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
               </div>
-            );
-          })}
-        </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         {/* Add block */}
         <div className="relative mt-3">

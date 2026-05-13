@@ -193,10 +193,10 @@ const BlockPreview = ({ block, palette, isFirst }) => {
 };
 
 // Full page preview
-const LivePreview = React.forwardRef(({ blocks, palette, author }, ref) => {
-  const p = PALETTES.find(pl => pl.id === palette) || PALETTES[0];
+const LivePreview = React.forwardRef(({ blocks, palette, resolvedPalette, author }, ref) => {
+  const p = resolvedPalette || PALETTES.find(pl => pl.id === palette) || PALETTES[0];
   return (
-    <div ref={ref} style={{ width: '595px', minHeight: '842px', background: 'white', fontFamily: "'Inter','Segoe UI',sans-serif", overflow: 'hidden' }} className="shadow-2xl mx-auto">
+    <div ref={ref} style={{ width: '100%', minHeight: '842px', background: 'white', fontFamily: "'Inter','Segoe UI',sans-serif", overflow: 'hidden' }} className="shadow-2xl mx-auto">
       {blocks.map((block, i) => (
         <BlockPreview key={block.id} block={block} palette={p} isFirst={i === 0} />
       ))}

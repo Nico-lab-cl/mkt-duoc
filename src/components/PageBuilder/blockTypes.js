@@ -6,7 +6,13 @@ export const PALETTES = [
   { id: 'dark', name: 'Ejecutivo', primary: '#1e293b', secondary: '#0f172a', accent: '#64748b', bg: '#f8fafc', text: '#0f172a', light: '#e2e8f0', gradient: 'linear-gradient(135deg, #1e293b, #334155)' },
   { id: 'sunset', name: 'Atardecer', primary: '#f97316', secondary: '#ea580c', accent: '#fb923c', bg: '#fff7ed', text: '#7c2d12', light: '#ffedd5', gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
   { id: 'violet', name: 'Violeta', primary: '#8b5cf6', secondary: '#7c3aed', accent: '#a78bfa', bg: '#f5f3ff', text: '#4c1d95', light: '#ede9fe', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+  { id: 'none', name: 'Sin Color', primary: '#475569', secondary: '#334155', accent: '#94a3b8', bg: '#ffffff', text: '#1e293b', light: '#f1f5f9', gradient: 'linear-gradient(135deg, #f8fafc, #f1f5f9)' },
 ];
+
+export const getCustomPalette = (hex) => {
+  // simple shade generator
+  return { id: 'custom', name: 'Personalizado', primary: hex, secondary: hex, accent: hex, bg: '#ffffff', text: '#1e293b', light: `${hex}20`, gradient: `linear-gradient(135deg, ${hex}dd, ${hex})` };
+};
 
 export const BLOCK_DEFS = {
   hero: { label: 'Hero / Portada', emoji: '🎯' },
