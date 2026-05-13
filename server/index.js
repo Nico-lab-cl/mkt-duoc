@@ -64,6 +64,8 @@ pool.connect(async (err, client, release) => {
         id VARCHAR(12) PRIMARY KEY,
         title TEXT,
         type TEXT,
+        user_id INTEGER,
+        group_id INTEGER,
         data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -218,7 +220,18 @@ app.get('/api/admin/all', async (req, res) => {
       LEFT JOIN users u ON e.user_id = u.id 
       LEFT JOIN groups g ON e.group_id = g.id
     `);
-    res.json({ campaigns: campaigns.rows, chatflows: chatflows.rows, evaluations: evaluations.rows });
+    const lead_magnets = await pool.query(`
+      SELECT lm.*, u.full_name as student_name, g.name as group_name 
+      FROM lead_magnets lm
+      LEFT JOIN users u ON lm.user_id = u.id 
+      LEFT JOIN groups g ON lm.group_id = g.id
+    `);
+    res.json({ 
+      campaigns: campaigns.rows, 
+      chatflows: chatflows.rows, 
+      evaluations: evaluations.rows,
+      lead_magnets: lead_magnets.rows 
+    });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener datos de admin' });
   }
@@ -304,7 +317,12 @@ app.get('/api/group-data/:groupId', async (req, res) => {
   try {
     const campaigns = await pool.query('SELECT * FROM campaigns WHERE group_id = $1', [groupId]);
     const chatflows = await pool.query('SELECT * FROM chatflows WHERE group_id = $1', [groupId]);
-    res.json({ campaigns: campaigns.rows, chatflows: chatflows.rows });
+    const lead_magnets = await pool.query('SELECT * FROM lead_magnets WHERE group_id = $1', [groupId]);
+    res.json({ 
+      campaigns: campaigns.rows, 
+      chatflows: chatflows.rows,
+      lead_magnets: lead_magnets.rows
+    });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener datos del grupo' });
   }
@@ -313,13 +331,13 @@ app.get('/api/group-data/:groupId', async (req, res) => {
 // --- LEAD MAGNET ENDPOINTS ---
 
 app.post('/api/lead-magnets', async (req, res) => {
-  const { title, type, data } = req.body;
+  const { title, type, data, userId, groupId } = req.body;
   try {
     const id = Math.random().toString(36).substring(2, 10);
     const jsonData = JSON.stringify(data);
     await pool.query(
-      'INSERT INTO lead_magnets (id, title, type, data) VALUES ($1, $2, $3, $4)',
-      [id, title, type, jsonData]
+      'INSERT INTO lead_magnets (id, title, type, user_id, group_id, data) VALUES ($1, $2, $3, $4, $5, $6)',
+      [id, title, type, userId || null, groupId || null, jsonData]
     );
     res.json({ success: true, id });
   } catch (err) {

@@ -84,7 +84,7 @@ const platforms = [
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme } = useProject();
   const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
-  const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [], evaluations: [] });
+  const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [], evaluations: [], lead_magnets: [] });
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -136,6 +136,13 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
         .then(data => {
           setAdminData(data);
           setLoading(false);
+        });
+    } else if (currentUser?.role === 'student' && currentUser?.group_id) {
+      // Students fetch their group data to see their own progress
+      fetch(`/api/group-data/${currentUser.group_id}`)
+        .then(res => res.json())
+        .then(data => {
+          setAdminData(prev => ({ ...prev, ...data }));
         });
     }
   }, [currentUser, activeView]);
@@ -260,6 +267,33 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                   </motion.button>
                 ))}
                </div>
+
+               {/* Mis Entregas (Student specific) */}
+               {currentUser?.role === 'student' && adminData.lead_magnets?.filter(lm => lm.user_id === currentUser.id).length > 0 && (
+                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                   <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center">
+                       <History size={18} />
+                     </div>
+                     <h3 className="text-xl font-black tracking-tighter uppercase italic">Mis Publicaciones (Lead Magnets)</h3>
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                     {adminData.lead_magnets.filter(lm => lm.user_id === currentUser.id).map(lm => (
+                       <a key={lm.id} href={`/p/${lm.id}`} target="_blank" rel="noreferrer" 
+                         className="p-5 bg-white border border-slate-200 rounded-[1.5rem] shadow-sm hover:shadow-xl hover:border-violet-300 transition-all group">
+                         <div className="flex items-center justify-between mb-3">
+                           <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-violet-50 transition-colors">
+                             <Wand2 size={14} className="text-slate-400 group-hover:text-violet-500" />
+                           </div>
+                           <ExternalLink size={14} className="text-slate-300 group-hover:text-violet-500" />
+                         </div>
+                         <p className="font-bold text-slate-800 text-sm mb-1 truncate">{lm.title || 'Sin Título'}</p>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(lm.created_at).toLocaleDateString()}</p>
+                       </a>
+                     ))}
+                   </div>
+                 </motion.div>
+               )}
             </motion.div>
           )}
 
@@ -303,6 +337,16 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                                   <ExternalLink size={14} className="text-slate-300 group-hover:text-purple-500" />
                                </div>
                             </div>
+                          ))}
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Landings & Lead Magnets</h5>
+                          {(adminData.lead_magnets || []).filter(lm => lm.group_id === groupId).map(lm => (
+                            <a key={lm.id} href={`/p/${lm.id}`} target="_blank" rel="noreferrer" className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-violet-200 transition-all cursor-pointer block">
+                               <p className="text-sm font-bold text-slate-800 mb-1 truncate">{lm.title || 'Sin Título'}</p>
+                               <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-violet-600 uppercase italic">{lm.student_name}</span>
+                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-violet-500" />
+                               </div>
+                            </a>
                           ))}
                        </div>
                     </div>

@@ -5,6 +5,7 @@ import {
   Copy, Link, Code, X, ExternalLink, Check
 } from 'lucide-react';
 import { PALETTES, TEMPLATES, BLOCK_DEFS, getCustomPalette } from './blockTypes';
+import { useProject } from '../../context/ProjectContext';
 import LivePreview from './BlockPreview';
 import EditorPanel from './BlockEditor';
 
@@ -159,6 +160,7 @@ const TemplateSelector = ({ onSelect }) => (
 
 // Main component
 const LeadMagnetStudio = ({ onBack }) => {
+  const { currentUser } = useProject();
   const previewRef = React.useRef(null);
   const [isExporting, setIsExporting] = React.useState(false);
   const [showExportModal, setShowExportModal] = React.useState(false);
@@ -169,7 +171,7 @@ const LeadMagnetStudio = ({ onBack }) => {
   const [blocks, setBlocks] = React.useState([]);
   const [palette, setPalette] = React.useState('ocean');
   const [customHex, setCustomHex] = React.useState('#ff0000');
-  const [author, setAuthor] = React.useState('');
+  const [author, setAuthor] = React.useState(currentUser?.full_name || '');
   const [selectedId, setSelectedId] = React.useState(null);
   const [publishedId, setPublishedId] = React.useState(null);
 
@@ -186,6 +188,8 @@ const LeadMagnetStudio = ({ onBack }) => {
       const payload = {
         title: blocks[0]?.data?.title || 'Mi Landing Page',
         type: 'page_builder',
+        userId: currentUser?.id,
+        groupId: currentUser?.group_id,
         data: { blocks, palette, customHex, author }
       };
       const res = await fetch('/api/lead-magnets', {
