@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, ChevronUp, ChevronDown, Upload, X } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { BLOCK_DEFS, PALETTES, CALC_TYPES, createBlock, uid, getCustomPalette } from './blockTypes';
+import { BLOCK_DEFS, PALETTES, CALC_TYPES, createBlock, uid, getCustomPalette, COLUMNS } from './blockTypes';
 
 // Editor for a specific block's data
 const BlockDataEditor = ({ block, onUpdate }) => {
@@ -210,22 +210,56 @@ const BlockDataEditor = ({ block, onUpdate }) => {
         </button>
       </>);
 
-    default: return <p className="text-xs text-slate-400">Sin opciones disponibles</p>;
+    default: break;
   }
+
+  return (
+    <div className="mt-6 pt-6 border-t border-slate-100">
+      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta del Bloque</label>
+      <div className="flex gap-1.5 flex-wrap">
+        {PALETTES.map(p => (
+          <button key={p.id} onClick={() => onUpdate({ ...data }, p.id)}
+            className={`w-6 h-6 rounded-full border-2 transition-all ${block.paletteId === p.id ? 'border-slate-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
+            style={{ background: p.gradient }}
+            title={p.name}
+          />
+        ))}
+      </div>
+    </div>
+  );
 };
 
 // Block list + editor panel
 const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, setPalette, customHex, setCustomHex, author, setAuthor }) => {
-  const updateBlock = (id, newData) => {
-    setBlocks(prev => prev.map(b => b.id === id ? { ...b, data: newData } : b));
+  const updateBlock = (id, newData, newPaletteId) => {
+    setBlocks(prev => prev.map(b => b.id === id ? { ...b, data: newData, paletteId: newPaletteId || b.paletteId } : b));
   };
+
   const handleDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(blocks);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setBlocks(items);
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+
+    setBlocks(prev => {
+      const newBlocks = [...prev];
+      const blockIndex = newBlocks.findIndex(b => b.id === draggableId);
+      if (blockIndex === -1) return prev;
+      
+      const [block] = newBlocks.splice(blockIndex, 1);
+      block.columnId = destination.droppableId;
+
+      const columnBlocks = newBlocks.filter(b => b.columnId === destination.droppableId);
+      if (destination.index >= columnBlocks.length) {
+        const lastIndexInCol = newBlocks.findLastIndex(b => b.columnId === destination.droppableId);
+        newBlocks.splice(lastIndexInCol === -1 ? newBlocks.length : lastIndexInCol + 1, 0, block);
+      } else {
+        const targetBlock = columnBlocks[destination.index];
+        const targetIndex = newBlocks.findIndex(b => b.id === targetBlock.id);
+        newBlocks.splice(targetIndex, 0, block);
+      }
+      return newBlocks;
+    });
   };
+
   const removeBlock = (id) => {
     if (blocks.length <= 1) return;
     setBlocks(prev => prev.filter(b => b.id !== id));
@@ -242,10 +276,10 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
   const selectedBlock = blocks.find(b => b.id === selectedId);
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar">
+    <div className="h-full overflow-y-auto custom-scrollbar flex flex-col">
       {/* Global settings */}
-      <div className="p-4 border-b border-slate-100">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta de Colores</label>
+      <div className="p-4 border-b border-slate-100 flex-shrink-0">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta Global de Refuerzo</label>
         <div className="flex gap-1.5 flex-wrap mb-3">
           {PALETTES.map(p => (
             <button key={p.id} onClick={() => setPalette(p.id)}
@@ -254,69 +288,91 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
               {p.name}
             </button>
           ))}
-          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border-2 border-slate-200 bg-slate-50">
-            <input type="color" value={customHex} onChange={(e) => { setCustomHex(e.target.value); setPalette('custom'); }} className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent" />
-            <span className="text-[10px] font-bold text-slate-600 uppercase">HEX</span>
-          </div>
         </div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Autor / Marca</label>
         <input type="text" value={author} onChange={e => setAuthor(e.target.value)} placeholder="Tu marca"
           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:bg-white font-medium" />
       </div>
 
-      {/* Block list */}
-      <div className="p-4">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Bloques ({blocks.length})</label>
-        
+      {/* Block list by columns */}
+      <div className="p-4 flex-grow overflow-x-auto">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="blocks-list">
-            {(provided) => (
-              <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1.5">
-                {blocks.map((block, idx) => {
-                  const def = BLOCK_DEFS[block.type];
-                  const isSelected = selectedId === block.id;
-                  return (
-                    <Draggable key={block.id} draggableId={block.id} index={idx}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          onClick={() => setSelectedId(isSelected ? null : block.id)}
-                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing transition-all border-2 ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-100 hover:border-slate-200'} ${snapshot.isDragging ? 'shadow-lg border-blue-400 z-50' : ''}`}
-                        >
-                          <span className="text-sm">{def?.emoji || '📦'}</span>
-                          <span className={`flex-grow text-xs font-bold truncate ${isSelected ? 'text-blue-700' : 'text-slate-600'}`}>
-                            {block.data?.title || block.data?.heading || def?.label || block.type}
-                          </span>
-                          <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => removeBlock(block.id)} className="p-1 text-slate-300 hover:text-red-500 ml-1"><Trash2 size={14} /></button>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  );
-                })}
-                {provided.placeholder}
+          <div className="flex gap-4 min-w-[600px] h-full">
+            {COLUMNS.map(col => (
+              <div key={col.id} className="flex-1 flex flex-col min-w-[200px]">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
+                  <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{col.name}</h4>
+                  <span className="ml-auto text-[10px] font-bold text-slate-300 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                    {blocks.filter(b => b.columnId === col.id).length}
+                  </span>
+                </div>
+                
+                <Droppable droppableId={col.id}>
+                  {(provided, snapshot) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} 
+                      className={`flex-grow rounded-2xl p-2 transition-colors ${snapshot.isDraggingOver ? 'bg-slate-100/50' : 'bg-slate-50/50'} border-2 border-dashed border-transparent`}>
+                      <div className="space-y-2">
+                        {blocks.filter(b => b.columnId === col.id).map((block, idx) => {
+                          const def = BLOCK_DEFS[block.type];
+                          const isSelected = selectedId === block.id;
+                          const blockPalette = PALETTES.find(p => p.id === block.paletteId);
+                          return (
+                            <Draggable key={block.id} draggableId={block.id} index={idx}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  onClick={() => setSelectedId(isSelected ? null : block.id)}
+                                  className={`group relative p-3 rounded-xl cursor-grab active:cursor-grabbing transition-all border-2 ${isSelected ? 'bg-white border-slate-800 shadow-md' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'} ${snapshot.isDragging ? 'shadow-xl rotate-2 z-50' : ''}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center text-xs border border-slate-100">
+                                      {def?.emoji || '📦'}
+                                    </div>
+                                    <div className="flex-grow min-w-0">
+                                      <p className={`text-[10px] font-bold truncate ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}>
+                                        {block.data?.title || block.data?.heading || def?.label || block.type}
+                                      </p>
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        <div className="w-2 h-2 rounded-full border border-slate-200" style={{ background: blockPalette?.gradient }} />
+                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{blockPalette?.name}</span>
+                                      </div>
+                                    </div>
+                                    <button onClick={e => { e.stopPropagation(); removeBlock(block.id); }} className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                        {provided.placeholder}
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
               </div>
-            )}
-          </Droppable>
+            ))}
+          </div>
         </DragDropContext>
 
-        {/* Add block */}
-        <div className="relative mt-3">
+        {/* Add block button */}
+        <div className="relative mt-4">
           <button onClick={() => setShowAddMenu(!showAddMenu)}
-            className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/30 transition-all flex items-center justify-center gap-1.5">
-            <Plus size={14} /> Agregar bloque
+            className="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-violet-600 hover:border-violet-300 hover:bg-violet-50/30 transition-all flex items-center justify-center gap-2 group">
+            <Plus size={14} className="group-hover:scale-125 transition-transform" /> Agregar nuevo componente
           </button>
           <AnimatePresence>
             {showAddMenu && (
-              <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-20 p-2 grid grid-cols-2 gap-1">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute left-0 right-0 bottom-full mb-3 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[100] p-3 grid grid-cols-2 gap-2 origin-bottom">
                 {Object.entries(BLOCK_DEFS).map(([key, def]) => (
                   <button key={key} onClick={() => addBlock(key)}
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-blue-50 text-left transition-all">
-                    <span className="text-sm">{def.emoji}</span>
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-slate-50 text-left transition-all group">
+                    <span className="text-sm group-hover:scale-125 transition-transform">{def.emoji}</span>
                     <span className="text-[10px] font-bold text-slate-600">{def.label}</span>
                   </button>
                 ))}
@@ -339,7 +395,7 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
                 </div>
                 <button onClick={() => setSelectedId(null)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={14} className="text-slate-400" /></button>
               </div>
-              <BlockDataEditor block={selectedBlock} onUpdate={(newData) => updateBlock(selectedBlock.id, newData)} />
+              <BlockDataEditor block={selectedBlock} onUpdate={(newData, newPaletteId) => updateBlock(selectedBlock.id, newData, newPaletteId)} />
             </div>
           </motion.div>
         )}

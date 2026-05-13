@@ -197,9 +197,10 @@ const LivePreview = React.forwardRef(({ blocks, palette, resolvedPalette, author
   const p = resolvedPalette || PALETTES.find(pl => pl.id === palette) || PALETTES[0];
   return (
     <div ref={ref} style={{ width: '100%', minHeight: '842px', background: 'white', fontFamily: "'Inter','Segoe UI',sans-serif", overflow: 'hidden' }} className="shadow-2xl mx-auto">
-      {blocks.map((block, i) => (
-        <BlockPreview key={block.id} block={block} palette={p} isFirst={i === 0} />
-      ))}
+      {blocks.map((block, i) => {
+        const blockPalette = PALETTES.find(pl => pl.id === block.paletteId) || p;
+        return <BlockPreview key={block.id} block={block} palette={blockPalette} isFirst={i === 0} />;
+      })}
       {/* Footer */}
       <div style={{ margin: '0 48px', padding: '20px 0', borderTop: `2px solid ${p.light}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

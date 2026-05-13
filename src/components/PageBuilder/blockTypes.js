@@ -30,6 +30,12 @@ export const BLOCK_DEFS = {
 let _uid = 1;
 export const uid = () => `b${Date.now()}_${_uid++}`;
 
+export const COLUMNS = [
+  { id: 'col-1', name: 'Estrategia', color: '#6366f1' },
+  { id: 'col-2', name: 'Contenido', color: '#ec4899' },
+  { id: 'col-3', name: 'Conversión', color: '#f59e0b' },
+];
+
 export const createBlock = (type) => {
   const id = uid();
   const defaults = {
@@ -52,7 +58,7 @@ export const createBlock = (type) => {
     divider: { style: 'line' },
     form: { heading: 'Obtén acceso ahora', description: 'Déjanos tus datos y te enviamos la guía completa.', buttonText: 'Enviar', fields: ['Nombre', 'Email'] },
   };
-  return { id, type, data: defaults[type] || {} };
+  return { id, type, data: defaults[type] || {}, columnId: 'col-1', paletteId: 'ocean' };
 };
 
 // Calculator logic
