@@ -215,6 +215,11 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
   return (
     <div className="mt-6 pt-6 border-t border-slate-100">
+      <div className="mb-4">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Fondo del Bloque</label>
+        <ImageUpload field="blockBg" label="Imagen de fondo" />
+      </div>
+      
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta del Bloque</label>
       <div className="flex gap-1.5 flex-wrap items-center">
         {PALETTES.map(p => (
@@ -297,6 +302,10 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
               {p.name}
             </button>
           ))}
+          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border-2 border-slate-200 bg-slate-50">
+            <input type="color" value={customHex} onChange={(e) => { setCustomHex(e.target.value); setPalette('custom'); }} className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent" />
+            <span className="text-[10px] font-bold text-slate-600 uppercase">HEX</span>
+          </div>
         </div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Autor / Marca</label>
         <input type="text" value={author} onChange={e => setAuthor(e.target.value)} placeholder="Tu marca"

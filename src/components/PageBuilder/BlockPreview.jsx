@@ -41,14 +41,28 @@ const CalcPreview = ({ data, palette }) => {
 const BlockPreview = ({ block, palette, isFirst }) => {
   const { type, data } = block;
   const p = palette;
+  const bg = data.blockBg;
+
+  const wrap = (content, customStyles = {}) => (
+    <div style={{ position: 'relative', overflow: 'hidden', ...customStyles }}>
+      {bg && (
+        <>
+          <img src={bg} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.85)', zIndex: 1 }} />
+        </>
+      )}
+      <div style={{ position: 'relative', zIndex: 2 }}>{content}</div>
+    </div>
+  );
 
   switch (type) {
     case 'hero':
+      const heroBg = data.bgImage || bg;
       return (
-        <div style={{ position: 'relative', overflow: 'hidden', padding: data.bgImage ? '60px 48px 48px' : '40px 48px 32px', minHeight: data.bgImage ? '240px' : 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-          {data.bgImage ? (
+        <div style={{ position: 'relative', overflow: 'hidden', padding: heroBg ? '60px 48px 48px' : '40px 48px 32px', minHeight: heroBg ? '240px' : 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          {heroBg ? (
             <>
-              <img src={data.bgImage} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+              <img src={heroBg} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
               <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: `linear-gradient(180deg, ${p.secondary}cc 0%, ${p.primary}ee 60%, ${p.primary} 100%)`, zIndex: 1 }} />
             </>
           ) : (
@@ -56,7 +70,7 @@ const BlockPreview = ({ block, palette, isFirst }) => {
           )}
           <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', zIndex: 2 }} />
           <div style={{ position: 'relative', zIndex: 3 }}>
-            <h1 style={{ fontSize: data.bgImage ? '30px' : '26px', fontWeight: 900, color: 'white', lineHeight: 1.15, marginBottom: '10px', textShadow: data.bgImage ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>
+            <h1 style={{ fontSize: heroBg ? '30px' : '26px', fontWeight: 900, color: 'white', lineHeight: 1.15, marginBottom: '10px', textShadow: heroBg ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>
               {data.title || 'Tu Título Aquí'}
             </h1>
             {data.subtitle && <p style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.9)', lineHeight: 1.5, maxWidth: '85%' }}>{data.subtitle}</p>}
@@ -70,7 +84,7 @@ const BlockPreview = ({ block, palette, isFirst }) => {
       );
 
     case 'text':
-      return (
+      return wrap(
         <div style={{ padding: '24px 48px' }}>
           {data.heading && <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '10px', letterSpacing: '-0.3px' }}>{data.heading}</h3>}
           <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.8, textAlign: data.align || 'left', whiteSpace: 'pre-wrap' }}>{data.body || ''}</p>
@@ -78,7 +92,7 @@ const BlockPreview = ({ block, palette, isFirst }) => {
       );
 
     case 'checklist':
-      return (
+      return wrap(
         <div style={{ padding: '24px 48px' }}>
           {data.heading && <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '14px' }}>{data.heading}</h3>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -95,22 +109,24 @@ const BlockPreview = ({ block, palette, isFirst }) => {
       );
 
     case 'image':
-      return data.src ? (
-        <div style={{ padding: data.fullWidth ? '0' : '24px 48px' }}>
-          <img src={data.src} alt={data.caption || ''} style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: data.fullWidth ? '0' : '14px' }} />
-          {data.caption && <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '8px', fontStyle: 'italic', padding: '0 48px' }}>{data.caption}</p>}
-        </div>
-      ) : (
-        <div style={{ padding: '24px 48px' }}>
-          <div style={{ height: '160px', background: p.bg, borderRadius: '14px', border: `2px dashed ${p.light}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.accent, fontSize: '13px', fontWeight: 600 }}>📷 Sube una imagen</div>
-        </div>
+      return wrap(
+        data.src ? (
+          <div style={{ padding: data.fullWidth ? '0' : '24px 48px' }}>
+            <img src={data.src} alt={data.caption || ''} style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: data.fullWidth ? '0' : '14px' }} />
+            {data.caption && <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '8px', fontStyle: 'italic', padding: '0 48px' }}>{data.caption}</p>}
+          </div>
+        ) : (
+          <div style={{ padding: '24px 48px' }}>
+            <div style={{ height: '160px', background: p.bg, borderRadius: '14px', border: `2px dashed ${p.light}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.accent, fontSize: '13px', fontWeight: 600 }}>📷 Sube una imagen</div>
+          </div>
+        )
       );
 
     case 'calculator':
-      return <CalcPreview data={data} palette={p} />;
+      return wrap(<CalcPreview data={data} palette={p} />);
 
     case 'cta':
-      return (
+      return wrap(
         <div style={{ padding: '32px 48px', textAlign: 'center' }}>
           {data.heading && <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#1e293b', marginBottom: '8px' }}>{data.heading}</h3>}
           {data.description && <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '18px', maxWidth: '80%', margin: '0 auto 18px' }}>{data.description}</p>}
@@ -125,7 +141,7 @@ const BlockPreview = ({ block, palette, isFirst }) => {
       );
 
     case 'stats':
-      return (
+      return wrap(
         <div style={{ padding: '28px 48px' }}>
           {data.heading && <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '16px', textAlign: 'center' }}>{data.heading}</h3>}
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
@@ -140,7 +156,7 @@ const BlockPreview = ({ block, palette, isFirst }) => {
       );
 
     case 'testimonial':
-      return (
+      return wrap(
         <div style={{ padding: '28px 48px' }}>
           <div style={{ background: p.bg, borderRadius: '16px', padding: '24px', border: `1px solid ${p.light}`, position: 'relative' }}>
             <div style={{ fontSize: '36px', color: p.accent, lineHeight: 1, marginBottom: '8px' }}>"</div>
@@ -159,7 +175,7 @@ const BlockPreview = ({ block, palette, isFirst }) => {
       );
 
     case 'divider':
-      return (
+      return wrap(
         <div style={{ padding: '16px 48px' }}>
           {data.style === 'dots' ? (
             <div style={{ textAlign: 'center', color: p.accent, fontSize: '18px', letterSpacing: '8px' }}>• • •</div>
@@ -172,7 +188,7 @@ const BlockPreview = ({ block, palette, isFirst }) => {
       );
 
     case 'form':
-      return (
+      return wrap(
         <div style={{ padding: '28px 48px' }}>
           <div style={{ background: p.bg, borderRadius: '16px', padding: '28px', border: `1px solid ${p.light}` }}>
             {data.heading && <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '6px', textAlign: 'center' }}>{data.heading}</h3>}
