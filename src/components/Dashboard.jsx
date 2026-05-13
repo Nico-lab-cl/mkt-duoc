@@ -12,6 +12,7 @@ import {
   History,
   ExternalLink,
   ShieldCheck,
+  Wand2,
   Home,
   Monitor,
   Palette,
@@ -66,6 +67,14 @@ const platforms = [
     description: 'Glosario y Práctica de Métricas para Inbound',
     icon: <BarChart size={24} />,
     color: 'bg-[#8b5cf6]',
+    status: 'active'
+  },
+  {
+    id: 'leadmagnet',
+    name: 'Lead Magnet Studio',
+    description: 'Diseña y Exporta Checklists y E-books en PDF',
+    icon: <Wand2 size={24} />,
+    color: 'bg-gradient-to-br from-violet-500 to-fuchsia-500',
     status: 'active'
   }
 ];

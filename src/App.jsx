@@ -7,6 +7,7 @@ import Success from './components/Success';
 import ChatflowSimulator from './components/ChatflowSimulator';
 import GroupSelection from './components/GroupSelection';
 import KPIModule from './components/KPIModule';
+import LeadMagnetStudio from './components/LeadMagnetStudio';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser } = useProject();
@@ -30,6 +31,8 @@ const AppContent = () => {
       setView('chatflow');
     } else if (platform === 'kpi') {
       setView('kpi');
+    } else if (platform === 'leadmagnet') {
+      setView('leadmagnet');
     } else {
       setView('simulator');
     }
@@ -69,6 +72,12 @@ const AppContent = () => {
 
       {view === 'kpi' && (
         <KPIModule 
+          onBack={() => setView('dashboard')}
+        />
+      )}
+
+      {view === 'leadmagnet' && (
+        <LeadMagnetStudio 
           onBack={() => setView('dashboard')}
         />
       )}
