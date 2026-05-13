@@ -216,7 +216,7 @@ const BlockDataEditor = ({ block, onUpdate }) => {
   return (
     <div className="mt-6 pt-6 border-t border-slate-100">
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta del Bloque</label>
-      <div className="flex gap-1.5 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap items-center">
         {PALETTES.map(p => (
           <button key={p.id} onClick={() => onUpdate({ ...data }, p.id)}
             className={`w-6 h-6 rounded-full border-2 transition-all ${block.paletteId === p.id ? 'border-slate-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
@@ -224,6 +224,15 @@ const BlockDataEditor = ({ block, onUpdate }) => {
             title={p.name}
           />
         ))}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border-2 border-slate-200 bg-slate-50 ml-1">
+          <input 
+            type="color" 
+            value={block.paletteId?.startsWith('custom-') ? block.paletteId.replace('custom-', '') : '#3b82f6'} 
+            onChange={(e) => onUpdate({ ...data }, `custom-${e.target.value}`)} 
+            className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent" 
+          />
+          <span className="text-[8px] font-bold text-slate-500 uppercase">HEX</span>
+        </div>
       </div>
     </div>
   );
@@ -316,7 +325,9 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
                         {blocks.filter(b => b.columnId === col.id).map((block, idx) => {
                           const def = BLOCK_DEFS[block.type];
                           const isSelected = selectedId === block.id;
-                          const blockPalette = PALETTES.find(p => p.id === block.paletteId);
+                          const blockPalette = block.paletteId?.startsWith('custom-') 
+                            ? getCustomPalette(block.paletteId.replace('custom-', '')) 
+                            : PALETTES.find(p => p.id === block.paletteId);
                           return (
                             <Draggable key={block.id} draggableId={block.id} index={idx}>
                               {(provided, snapshot) => (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PALETTES, CALC_TYPES } from './blockTypes';
+import { PALETTES, CALC_TYPES, getCustomPalette } from './blockTypes';
 
 // Interactive calculator for preview
 const CalcPreview = ({ data, palette }) => {
@@ -195,10 +195,16 @@ const BlockPreview = ({ block, palette, isFirst }) => {
 // Full page preview
 const LivePreview = React.forwardRef(({ blocks, palette, resolvedPalette, author }, ref) => {
   const p = resolvedPalette || PALETTES.find(pl => pl.id === palette) || PALETTES[0];
+  
+  const getPalette = (pid) => {
+    if (pid?.startsWith('custom-')) return getCustomPalette(pid.replace('custom-', ''));
+    return PALETTES.find(pl => pl.id === pid) || p;
+  };
+
   return (
     <div ref={ref} style={{ width: '100%', minHeight: '842px', background: 'white', fontFamily: "'Inter','Segoe UI',sans-serif", overflow: 'hidden' }} className="shadow-2xl mx-auto">
       {blocks.map((block, i) => {
-        const blockPalette = PALETTES.find(pl => pl.id === block.paletteId) || p;
+        const blockPalette = getPalette(block.paletteId);
         return <BlockPreview key={block.id} block={block} palette={blockPalette} isFirst={i === 0} />;
       })}
       {/* Footer */}
