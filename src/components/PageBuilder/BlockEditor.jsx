@@ -255,10 +255,6 @@ const BlockDataEditor = ({ block, onUpdate }) => {
       </div>
     </div>
   );
-};>
-      </div>
-    </div>
-  );
 };
 
 // Block list + editor panel
