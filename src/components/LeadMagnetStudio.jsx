@@ -181,7 +181,7 @@ const EditorPanel = ({ state, setState, onImageUpload }) => {
 
       {/* Cover Image */}
       <div>
-        <SectionTitle icon={ImageIcon} title="Imagen de Portada" />
+        <SectionTitle icon={ImageIcon} title="Imagen de Fondo (Header)" />
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
         {state.coverImage ? (
           <div className="relative group rounded-2xl overflow-hidden border border-slate-200">
@@ -280,39 +280,73 @@ const LivePreview = React.forwardRef(({ state }, ref) => {
         overflow: 'hidden',
       }}
     >
-      {/* Header Band */}
-      <div style={{ background: palette.gradient, padding: '40px 48px 32px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-        <div style={{ position: 'absolute', bottom: '-20px', left: '40%', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <div style={{ width: '28px', height: '3px', background: 'rgba(255,255,255,0.6)', borderRadius: '2px' }} />
-          <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '3px' }}>
-            {state.type === 'checklist' ? 'Checklist' : 'Mini E-Book'}
-          </span>
-        </div>
-
-        <h1 style={{ fontSize: '28px', fontWeight: 900, color: 'white', lineHeight: 1.2, marginBottom: '12px', letterSpacing: '-0.5px' }}>
-          {state.title || 'Tu Título Aquí'}
-        </h1>
-        
-        {state.subtitle && (
-          <p style={{ fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, maxWidth: '80%' }}>
-            {state.subtitle}
-          </p>
+      {/* Header Band with Background Image */}
+      <div style={{
+        position: 'relative',
+        overflow: 'hidden',
+        padding: state.coverImage ? '60px 48px 48px' : '40px 48px 32px',
+        minHeight: state.coverImage ? '260px' : 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+      }}>
+        {/* Background: image or gradient */}
+        {state.coverImage ? (
+          <>
+            <img
+              src={state.coverImage}
+              alt=""
+              style={{
+                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                objectFit: 'cover', zIndex: 0,
+              }}
+            />
+            {/* Dark overlay for readability */}
+            <div style={{
+              position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+              background: `linear-gradient(180deg, ${palette.secondary}cc 0%, ${palette.primary}ee 60%, ${palette.primary} 100%)`,
+              zIndex: 1,
+            }} />
+          </>
+        ) : (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+            background: palette.gradient, zIndex: 0,
+          }} />
         )}
-      </div>
 
-      {/* Cover Image */}
-      {state.coverImage && (
-        <div style={{ padding: '24px 48px 0' }}>
-          <img
-            src={state.coverImage}
-            alt="Cover"
-            style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '16px', border: `3px solid ${palette.light}` }}
-          />
+        {/* Decorative circles */}
+        <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', zIndex: 2 }} />
+        <div style={{ position: 'absolute', bottom: '-20px', left: '40%', width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', zIndex: 2 }} />
+
+        {/* Text content */}
+        <div style={{ position: 'relative', zIndex: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ width: '28px', height: '3px', background: 'rgba(255,255,255,0.6)', borderRadius: '2px' }} />
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '3px' }}>
+              {state.type === 'checklist' ? 'Checklist' : 'Mini E-Book'}
+            </span>
+          </div>
+
+          <h1 style={{
+            fontSize: state.coverImage ? '32px' : '28px', fontWeight: 900, color: 'white',
+            lineHeight: 1.15, marginBottom: '12px', letterSpacing: '-0.5px',
+            textShadow: state.coverImage ? '0 2px 12px rgba(0,0,0,0.3)' : 'none',
+          }}>
+            {state.title || 'Tu Título Aquí'}
+          </h1>
+
+          {state.subtitle && (
+            <p style={{
+              fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.9)',
+              lineHeight: 1.5, maxWidth: '85%',
+              textShadow: state.coverImage ? '0 1px 6px rgba(0,0,0,0.2)' : 'none',
+            }}>
+              {state.subtitle}
+            </p>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Content Body */}
       <div style={{ padding: '32px 48px 40px' }}>
