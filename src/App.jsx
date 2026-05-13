@@ -9,9 +9,17 @@ import GroupSelection from './components/GroupSelection';
 import KPIModule from './components/KPIModule';
 import LeadMagnetStudio from './components/PageBuilder';
 
+import PublicView from './components/PageBuilder/PublicView';
+
 const AppContent = () => {
   const { currentUser, setCurrentUser } = useProject();
-  const [view, setView] = useState(currentUser ? (currentUser.group_id || currentUser.role === 'admin' ? 'dashboard' : 'group-selection') : 'login'); 
+  
+  // Check for public page view in URL
+  const path = window.location.pathname;
+  const isPublicPage = path.startsWith('/p/');
+  const publicPageId = isPublicPage ? path.split('/p/')[1] : null;
+
+  const [view, setView] = useState(isPublicPage ? 'public-view' : (currentUser ? (currentUser.group_id || currentUser.role === 'admin' ? 'dashboard' : 'group-selection') : 'login')); 
   const [selectedPlatform, setSelectedPlatform] = useState(null);
 
   // Determinar la vista inicial o transiciones automáticas
@@ -80,6 +88,10 @@ const AppContent = () => {
         <LeadMagnetStudio 
           onBack={() => setView('dashboard')}
         />
+      )}
+
+      {view === 'public-view' && (
+        <PublicView id={publicPageId} />
       )}
 
       {view === 'success' && (

@@ -27,28 +27,105 @@ const exportToPDF = async (ref, title) => {
 const encodeState = (s) => btoa(unescape(encodeURIComponent(JSON.stringify(s))));
 const getBase = () => (typeof window !== 'undefined' ? window.location.origin : 'https://softwarespectra.cl');
 
-// Export Modal (Simplified to just PDF)
-const ExportModal = ({ isOpen, onClose, isExporting, onExportPDF }) => {
+// Share Modal with PDF, URL and Embed
+const ShareModal = ({ isOpen, onClose, isExporting, onExportPDF, publishedUrl, embedCode }) => {
+  const [copied, setCopied] = useState(null);
+
   if (!isOpen) return null;
+
+  const copyToClipboard = (text, type) => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
-        className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}
-          className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center"><Download size={16} className="text-white" /></div>
-              <div><h3 className="text-base font-black text-slate-800">Exportar PDF</h3></div>
+        className="fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4">
+        <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} onClick={e => e.stopPropagation()}
+          className="bg-white rounded-[2.5rem] w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden">
+          
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-100">
+                <Share2 size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-800 tracking-tight">Compartir y Exportar</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Publica tu creación</p>
+              </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X size={18} className="text-slate-400" /></button>
-          </div>
-          <div className="p-5 space-y-3">
-            <button onClick={onExportPDF} disabled={isExporting}
-              className="w-full flex items-center gap-3 p-4 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white transition-all text-left group">
-              <div className="flex-grow text-center"><p className="font-bold text-sm">Descargar como PDF</p><p className="text-[10px] text-violet-200">Formato A4 alta calidad</p></div>
-              {isExporting && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            <button onClick={onClose} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all border border-transparent hover:border-slate-100">
+              <X size={20} className="text-slate-400" />
             </button>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* PDF Option */}
+            <div className="group">
+              <button onClick={onExportPDF} disabled={isExporting}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white border-2 border-slate-100 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-50/50 transition-all text-left">
+                <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform"><Download size={20} /></div>
+                <div className="flex-grow">
+                  <p className="font-black text-slate-800 text-sm">Descargar PDF</p>
+                  <p className="text-[10px] text-slate-400 font-medium tracking-tight">Formato A4 profesional de alta fidelidad</p>
+                </div>
+                {isExporting ? <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" /> : <ArrowLeft size={16} className="text-slate-300 rotate-180" />}
+              </button>
+            </div>
+
+            {publishedUrl ? (
+              <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-bottom-2">
+                {/* Public URL */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Enlace Público</label>
+                  <div className="flex gap-2 p-2 bg-slate-50 border-2 border-slate-100 rounded-2xl items-center">
+                    <div className="px-3 py-1.5 text-xs text-slate-500 font-medium truncate flex-grow select-all bg-white rounded-xl border border-slate-100">
+                      {publishedUrl}
+                    </div>
+                    <button onClick={() => copyToClipboard(publishedUrl, 'url')} 
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-[10px] transition-all ${copied === 'url' ? 'bg-green-500 text-white shadow-lg shadow-green-100' : 'bg-slate-800 text-white hover:bg-slate-900 shadow-lg shadow-slate-200'}`}>
+                      {copied === 'url' ? <><Check size={12} /> Copiado</> : <><Link size={12} /> Copiar</>}
+                    </button>
+                    <a href={publishedUrl} target="_blank" rel="noreferrer" className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 rounded-xl transition-all">
+                      <ExternalLink size={14} />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Embed Code */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Código de Inserción (Embed)</label>
+                  <div className="relative group">
+                    <pre className="p-4 bg-slate-900 rounded-2xl text-[10px] text-indigo-300 font-mono overflow-x-auto border-2 border-slate-800 group-hover:border-indigo-500/30 transition-all">
+                      {embedCode}
+                    </pre>
+                    <button onClick={() => copyToClipboard(embedCode, 'embed')} 
+                      className={`absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-[9px] transition-all ${copied === 'embed' ? 'bg-green-500 text-white shadow-lg' : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-md'}`}>
+                      {copied === 'embed' ? <><Check size={10} /> Copiado</> : <><Code size={10} /> Copiar Código</>}
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-medium text-center italic">Copia este código para insertar el bloque en cualquier sitio web.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-2">
+                <button onClick={() => window.dispatchEvent(new CustomEvent('publish-requested'))}
+                  className="w-full flex items-center gap-4 p-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-xl shadow-indigo-100 group">
+                  <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform"><Sparkles size={24} /></div>
+                  <div className="flex-grow text-left">
+                    <p className="font-black text-base leading-tight">Publicar Página</p>
+                    <p className="text-[10px] text-indigo-100 font-medium">Obtener URL pública y código embed</p>
+                  </div>
+                  <ArrowLeft size={20} className="rotate-180 opacity-50" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-slate-50 text-center">
+             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Lead Magnet Studio • Marketing Digital Lab</p>
           </div>
         </motion.div>
       </motion.div>
@@ -94,25 +171,58 @@ const LeadMagnetStudio = ({ onBack }) => {
   const [customHex, setCustomHex] = useState('#ff0000');
   const [author, setAuthor] = useState('');
   const [selectedId, setSelectedId] = useState(null);
+  const [publishedId, setPublishedId] = useState(null);
 
   const handleTemplate = (template) => {
     setBlocks(template.blocks());
     setShowTemplates(false);
     setSelectedId(null);
+    setPublishedId(null);
   };
+
+  const handlePublish = async () => {
+    setIsExporting(true);
+    try {
+      const payload = {
+        title: blocks[0]?.data?.title || 'Mi Landing Page',
+        type: 'page_builder',
+        data: { blocks, palette, customHex, author }
+      };
+      const res = await fetch('/api/lead-magnets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if (result.success) {
+        setPublishedId(result.id);
+      }
+    } catch (err) {
+      console.error('Error publishing:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  useEffect(() => {
+    const onPublish = () => handlePublish();
+    window.addEventListener('publish-requested', onPublish);
+    return () => window.removeEventListener('publish-requested', onPublish);
+  }, [blocks, palette, customHex, author]);
 
   const handleExport = async () => {
     setIsExporting(true);
-    // Force preview to desktop before exporting
     const oldMode = previewMode;
     if (previewMode !== 'desktop') setPreviewMode('desktop');
     setTimeout(async () => {
       try { await exportToPDF(previewRef, blocks[0]?.data?.title); } catch (e) { console.error(e); }
       setPreviewMode(oldMode);
       setIsExporting(false);
-      setShowExportModal(false);
     }, 100);
   };
+
+  const publicUrl = publishedId ? `${window.location.origin}/p/${publishedId}` : null;
+  const embedCode = publicUrl ? `<iframe src="${publicUrl}" width="100%" height="600px" frameborder="0"></iframe>` : '';
 
   // Resolve palette string into actual palette ID to pass down (if custom, pass 'custom' and store in blockTypes)
   const resolvedPalette = palette === 'custom' ? getCustomPalette(customHex) : PALETTES.find(p => p.id === palette);
@@ -149,8 +259,8 @@ const LeadMagnetStudio = ({ onBack }) => {
             <button onClick={() => setActiveTab('preview')} className={`px-3 py-1 rounded text-[10px] font-bold ${activeTab === 'preview' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}><Eye size={12} /></button>
           </div>
           <button onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider shadow-lg shadow-violet-200 transition-all">
-            <Download size={13} /> Exportar
+            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-lg shadow-violet-200 transition-all active:scale-95 group">
+            <Share2 size={14} className="group-hover:rotate-12 transition-transform" /> Compartir
           </button>
         </div>
       </header>
@@ -179,14 +289,18 @@ const LeadMagnetStudio = ({ onBack }) => {
               className={`rounded-2xl overflow-hidden shadow-2xl shadow-slate-300/50 transition-all duration-300 ${previewMode === 'mobile' ? 'w-[375px]' : 'w-full max-w-[800px]'}`} >
               <LivePreview ref={previewRef} blocks={blocks} palette={palette === 'custom' ? resolvedPalette.id : palette} resolvedPalette={resolvedPalette} author={author} />
             </motion.div>
-            <p className="mt-4 mb-8 text-[9px] font-bold text-slate-400 text-center">Exportación optimizada (A4) disponible en el botón Exportar</p>
+            <p className="mt-4 mb-8 text-[9px] font-bold text-slate-400 text-center">Exportación optimizada (A4) disponible en el botón Compartir</p>
           </div>
         </main>
       </div>
 
-      <ExportModal
-        isOpen={showExportModal} onClose={() => setShowExportModal(false)}
-        isExporting={isExporting} onExportPDF={handleExport}
+      <ShareModal 
+        isOpen={showExportModal} 
+        onClose={() => setShowExportModal(false)} 
+        isExporting={isExporting} 
+        onExportPDF={handleExport}
+        publishedUrl={publicUrl}
+        embedCode={embedCode}
       />
     </div>
   );
