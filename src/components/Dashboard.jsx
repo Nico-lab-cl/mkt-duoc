@@ -209,7 +209,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
       </aside>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="flex-grow overflow-y-auto relative transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
+      <main className="flex-grow overflow-y-auto custom-scrollbar relative transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
         {/* Header Superior */}
         <header className="h-20 border-b border-slate-200 flex items-center justify-between px-10 sticky top-0 z-30 backdrop-blur-md transition-colors duration-500" style={{ backgroundColor: 'var(--header-bg)' }}>
            <h2 className="text-xl font-black tracking-tighter uppercase" style={{ color: 'var(--text-primary)' }}>
@@ -237,7 +237,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
 
         <div className="p-10">
           {activeView === 'home' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-12 pb-24">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-12 pb-40">
                <div className="bg-blue-600 p-8 rounded-[2rem] text-white flex items-center justify-between shadow-2xl shadow-blue-200 relative overflow-hidden">
                   <div className="relative z-10">
                     <h3 className="text-3xl font-black tracking-tighter mb-2 italic">ESTADO DEL PROYECTO: {projectData.projectName.toUpperCase()}</h3>
