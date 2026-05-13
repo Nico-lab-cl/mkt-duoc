@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, ChevronUp, ChevronDown, Upload, X } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -7,7 +7,7 @@ import { BLOCK_DEFS, PALETTES, CALC_TYPES, createBlock, uid, getCustomPalette, C
 // Editor for a specific block's data
 const BlockDataEditor = ({ block, onUpdate }) => {
   const { type, data } = block;
-  const fileRef = useRef(null);
+  const fileRef = React.useRef(null);
   const u = (field, value) => onUpdate({ ...data, [field]: value });
 
   const Input = ({ label, field, placeholder, multiline, type: inputType }) => (
@@ -24,7 +24,7 @@ const BlockDataEditor = ({ block, onUpdate }) => {
   );
 
   const ImageUpload = ({ field, label }) => {
-    const ref = useRef(null);
+    const ref = React.useRef(null);
     const handleFile = (e) => {
       const file = e.target.files?.[0];
       if (file) { const r = new FileReader(); r.onload = (ev) => u(field, ev.target.result); r.readAsDataURL(file); }
