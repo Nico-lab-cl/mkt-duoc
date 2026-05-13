@@ -58,7 +58,7 @@ export const createBlock = (type) => {
     divider: { style: 'line' },
     form: { heading: 'Obtén acceso ahora', description: 'Déjanos tus datos y te enviamos la guía completa.', buttonText: 'Enviar', fields: ['Nombre', 'Email'] },
   };
-  return { id, type, data: defaults[type] || {}, columnId: 'col-1', paletteId: 'ocean' };
+  return { id, type, data: defaults[type] || {}, columnId: 'col-1', paletteId: null };
 };
 
 // Calculator logic

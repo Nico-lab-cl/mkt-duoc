@@ -222,6 +222,10 @@ const BlockDataEditor = ({ block, onUpdate }) => {
       
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta del Bloque</label>
       <div className="flex gap-1.5 flex-wrap items-center">
+        <button onClick={() => onUpdate({ ...data }, null)}
+          className={`px-3 py-1.5 rounded-lg border-2 text-[10px] font-bold transition-all ${block.paletteId === null ? 'border-slate-800 bg-slate-50' : 'border-slate-200 text-slate-400'}`}>
+          Global
+        </button>
         {PALETTES.map(p => (
           <button key={p.id} onClick={() => onUpdate({ ...data }, p.id)}
             className={`w-6 h-6 rounded-full border-2 transition-all ${block.paletteId === p.id ? 'border-slate-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
@@ -238,7 +242,7 @@ const BlockDataEditor = ({ block, onUpdate }) => {
               className="absolute inset-[-10px] w-[200%] h-[200%] cursor-pointer border-0 p-0" 
             />
           </div>
-          <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Personalizar</span>
+          <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">HEX</span>
         </div>
       </div>
     </div>
@@ -248,7 +252,7 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 // Block list + editor panel
 const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, setPalette, customHex, setCustomHex, author, setAuthor }) => {
   const updateBlock = (id, newData, newPaletteId) => {
-    setBlocks(prev => prev.map(b => b.id === id ? { ...b, data: newData, paletteId: newPaletteId || b.paletteId } : b));
+    setBlocks(prev => prev.map(b => b.id === id ? { ...b, data: newData, paletteId: newPaletteId !== undefined ? newPaletteId : b.paletteId } : b));
   };
 
   const handleDragEnd = (result) => {

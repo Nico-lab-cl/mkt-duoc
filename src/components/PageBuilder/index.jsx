@@ -115,7 +115,7 @@ const LeadMagnetStudio = ({ onBack }) => {
   };
 
   // Resolve palette string into actual palette ID to pass down (if custom, pass 'custom' and store in blockTypes)
-  const resolvedPalette = palette === 'custom' ? getCustomPalette(customHex) : palette;
+  const resolvedPalette = palette === 'custom' ? getCustomPalette(customHex) : PALETTES.find(p => p.id === palette);
 
   if (showTemplates) {
     return (
