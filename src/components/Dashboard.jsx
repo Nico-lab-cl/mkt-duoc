@@ -134,7 +134,13 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
       fetch('/api/admin/all')
         .then(res => res.json())
         .then(data => {
-          setAdminData(data);
+          if (data && !data.error) {
+            setAdminData(data);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Error loading admin data:", err);
           setLoading(false);
         });
     } else if (currentUser?.role === 'student' && currentUser?.group_id) {
@@ -142,8 +148,11 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
       fetch(`/api/group-data/${currentUser.group_id}`)
         .then(res => res.json())
         .then(data => {
-          setAdminData(prev => ({ ...prev, ...data }));
-        });
+          if (data && !data.error) {
+            setAdminData(prev => ({ ...prev, ...data }));
+          }
+        })
+        .catch(err => console.error("Error loading student data:", err));
     }
   }, [currentUser, activeView]);
 
