@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import LivePreview from './BlockPreview';
 import { getCustomPalette } from './blockTypes';
 
-const PublicView = ({ id }) => {
+const PagePublicView = ({ id }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -59,4 +59,4 @@ const PublicView = ({ id }) => {
   );
 };
 
-export default PublicView;
+export default PagePublicView;

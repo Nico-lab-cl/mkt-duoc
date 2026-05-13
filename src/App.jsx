@@ -9,7 +9,7 @@ import GroupSelection from './components/GroupSelection';
 import KPIModule from './components/KPIModule';
 import LeadMagnetStudio from './components/PageBuilder';
 
-import PublicView from './components/PageBuilder/PublicView';
+import PagePublicView from './components/PageBuilder/PagePublicView';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser } = useProject();
@@ -91,7 +91,7 @@ const AppContent = () => {
       )}
 
       {view === 'public-view' && (
-        <PublicView id={publicPageId} />
+        <PagePublicView id={publicPageId} />
       )}
 
       {view === 'success' && (
