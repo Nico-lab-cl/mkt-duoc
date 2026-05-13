@@ -239,4 +239,4 @@ const LivePreview = React.forwardRef(({ blocks, palette, resolvedPalette, author
 LivePreview.displayName = 'LivePreview';
 
 export default LivePreview;
-export { BlockPreview };
+export { LivePreview, BlockPreview };
