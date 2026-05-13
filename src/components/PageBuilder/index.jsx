@@ -175,11 +175,41 @@ const LeadMagnetStudio = ({ onBack }) => {
   const [selectedId, setSelectedId] = React.useState(null);
   const [publishedId, setPublishedId] = React.useState(null);
 
+  const [saveMessage, setSaveMessage] = React.useState(null);
+
   const handleTemplate = (template) => {
     setBlocks(template.blocks());
     setShowTemplates(false);
     setSelectedId(null);
     setPublishedId(null);
+  };
+
+  const handleSave = async () => {
+    setIsExporting(true);
+    try {
+      const payload = {
+        title: blocks[0]?.data?.title || 'Mi Landing Page',
+        type: 'page_builder',
+        userId: currentUser?.id,
+        groupId: currentUser?.group_id,
+        data: { blocks, palette, customHex, author }
+      };
+      const res = await fetch('/api/lead-magnets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if (result.success) {
+        setPublishedId(result.id);
+        setSaveMessage('¡Proyecto guardado con éxito!');
+        setTimeout(() => setSaveMessage(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error saving:', err);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handlePublish = async () => {
@@ -200,6 +230,7 @@ const LeadMagnetStudio = ({ onBack }) => {
       const result = await res.json();
       if (result.success) {
         setPublishedId(result.id);
+        setShowExportModal(true);
       }
     } catch (err) {
       console.error('Error publishing:', err);
@@ -262,12 +293,30 @@ const LeadMagnetStudio = ({ onBack }) => {
             <button onClick={() => setActiveTab('edit')} className={`px-3 py-1 rounded text-[10px] font-bold ${activeTab === 'edit' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}><Edit3 size={12} /></button>
             <button onClick={() => setActiveTab('preview')} className={`px-3 py-1 rounded text-[10px] font-bold ${activeTab === 'preview' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}><Eye size={12} /></button>
           </div>
+          
+          <button onClick={handleSave} disabled={isExporting}
+            className="flex items-center gap-2 px-5 py-2 bg-white border-2 border-slate-200 hover:border-violet-500 hover:text-violet-600 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 group">
+            <Check size={14} className={saveMessage ? 'text-green-500' : 'text-slate-400 group-hover:text-violet-500'} /> 
+            {saveMessage ? 'Guardado' : 'Guardar'}
+          </button>
+
           <button onClick={() => setShowExportModal(true)}
             className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-lg shadow-violet-200 transition-all active:scale-95 group">
             <Share2 size={14} className="group-hover:rotate-12 transition-transform" /> Compartir
           </button>
         </div>
       </header>
+
+      {/* Floating Save Message */}
+      <AnimatePresence>
+        {saveMessage && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10">
+            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"><Check size={14} /></div>
+            <span className="text-sm font-bold">{saveMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Two-column layout */}
       <div className="flex flex-1 overflow-hidden">
