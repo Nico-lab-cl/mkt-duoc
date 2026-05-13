@@ -268,8 +268,8 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                 ))}
                </div>
 
-               {/* Mis Entregas (Student specific) */}
-               {currentUser?.role === 'student' && adminData.lead_magnets?.filter(lm => lm.user_id === currentUser.id).length > 0 && (
+               {/* Mis Entregas (Personal) */}
+               {(adminData.lead_magnets || []).filter(lm => lm.user_id === currentUser?.id).length > 0 && (
                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                    <div className="flex items-center gap-3">
                      <div className="w-8 h-8 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center">
@@ -278,7 +278,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                      <h3 className="text-xl font-black tracking-tighter uppercase italic">Mis Publicaciones (Lead Magnets)</h3>
                    </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                     {adminData.lead_magnets.filter(lm => lm.user_id === currentUser.id).map(lm => (
+                     {(adminData.lead_magnets || []).filter(lm => lm.user_id === currentUser?.id).map(lm => (
                        <a key={lm.id} href={`/p/${lm.id}`} target="_blank" rel="noreferrer" 
                          className="p-5 bg-white border border-slate-200 rounded-[1.5rem] shadow-sm hover:shadow-xl hover:border-violet-300 transition-all group">
                          <div className="flex items-center justify-between mb-3">
@@ -308,7 +308,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                        </div>
                        <div className="p-6 flex-grow overflow-y-auto custom-scrollbar space-y-4">
                           <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Entregas de Campañas (Meta)</h5>
-                          {adminData.campaigns.filter(c => c.group_id === groupId).map(camp => (
+                          {(adminData.campaigns || []).filter(c => c.group_id === groupId).map(camp => (
                             <div key={camp.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-blue-200 transition-all cursor-pointer">
                                <p className="text-sm font-bold text-slate-800 mb-1">{camp.name}</p>
                                <div className="flex items-center justify-between">
@@ -319,7 +319,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                           ))}
                           
                           <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Estrategias Conversacionales</h5>
-                          {adminData.chatflows.filter(ch => ch.group_id === groupId).map(flow => (
+                          {(adminData.chatflows || []).filter(ch => ch.group_id === groupId).map(flow => (
                             <div key={flow.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-green-200 transition-all cursor-pointer">
                                <p className="text-sm font-bold text-slate-800 mb-1">{flow.name}</p>
                                <div className="flex items-center justify-between">
@@ -329,7 +329,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                             </div>
                           ))}
                           <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Evaluaciones de Métricas</h5>
-                          {adminData.evaluations?.filter(ev => ev.group_id === groupId).map(ev => (
+                          {(adminData.evaluations || []).filter(ev => ev.group_id === groupId).map(ev => (
                             <div key={ev.id} onClick={() => setSelectedEvaluation(ev)} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-purple-200 transition-all cursor-pointer">
                                <p className="text-sm font-bold text-slate-800 mb-1">Evaluación: {ev.score}/10</p>
                                <div className="flex items-center justify-between">

@@ -69,6 +69,15 @@ pool.connect(async (err, client, release) => {
         data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='user_id') THEN
+          ALTER TABLE lead_magnets ADD COLUMN user_id INTEGER;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='group_id') THEN
+          ALTER TABLE lead_magnets ADD COLUMN group_id INTEGER;
+        END IF;
+      END $$;
     `);
     console.log('🚀 Tablas de base de datos verificadas/creadas');
   } catch (dbErr) {
@@ -170,8 +179,8 @@ app.post('/api/chatflows', async (req, res) => {
     }
     res.json({ success: true, chatflow: result.rows[0] });
   } catch (err) {
-    console.error('DATABASE ERROR (Chatflow Save):', err);
-    res.status(500).json({ error: 'DB_ERROR_V4: ' + err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Error al guardar chatflow' });
   }
 });
 
@@ -185,18 +194,18 @@ app.delete('/api/chatflows/:id', async (req, res) => {
   }
 });
 
-app.post('/api/submit-evaluation', async (req, res) => {
-  const { userId, studentName, groupId, score, answers, justifications } = req.body;
+app.post('/api/evaluations', async (req, res) => {
+  const { userId, groupId, score, data } = req.body;
   try {
-    const jsonData = JSON.stringify({ answers, justifications });
+    const jsonData = JSON.stringify(data);
     const result = await pool.query(
       'INSERT INTO evaluations (user_id, group_id, score, data) VALUES ($1, $2, $3, $4) RETURNING *',
-      [userId, groupId, score || 0, jsonData]
+      [userId, groupId, score, jsonData]
     );
     res.json({ success: true, evaluation: result.rows[0] });
   } catch (err) {
-    console.error('DATABASE ERROR (Evaluation Save):', err);
-    res.status(500).json({ error: 'DB_ERROR: ' + err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Error al guardar evaluación' });
   }
 });
 
@@ -227,12 +236,13 @@ app.get('/api/admin/all', async (req, res) => {
       LEFT JOIN groups g ON lm.group_id = g.id
     `);
     res.json({ 
-      campaigns: campaigns.rows, 
-      chatflows: chatflows.rows, 
-      evaluations: evaluations.rows,
-      lead_magnets: lead_magnets.rows 
+      campaigns: campaigns.rows || [], 
+      chatflows: chatflows.rows || [], 
+      evaluations: evaluations.rows || [],
+      lead_magnets: lead_magnets.rows || [] 
     });
   } catch (err) {
+    console.error('Error in /api/admin/all:', err);
     res.status(500).json({ error: 'Error al obtener datos de admin' });
   }
 });
@@ -319,9 +329,9 @@ app.get('/api/group-data/:groupId', async (req, res) => {
     const chatflows = await pool.query('SELECT * FROM chatflows WHERE group_id = $1', [groupId]);
     const lead_magnets = await pool.query('SELECT * FROM lead_magnets WHERE group_id = $1', [groupId]);
     res.json({ 
-      campaigns: campaigns.rows, 
-      chatflows: chatflows.rows,
-      lead_magnets: lead_magnets.rows
+      campaigns: campaigns.rows || [], 
+      chatflows: chatflows.rows || [],
+      lead_magnets: lead_magnets.rows || []
     });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener datos del grupo' });
@@ -361,7 +371,6 @@ app.get('/api/lead-magnets/:id', async (req, res) => {
 });
 
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API
-// Usamos un middleware genérico para evitar errores de sintaxis en rutas de Express 5
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
