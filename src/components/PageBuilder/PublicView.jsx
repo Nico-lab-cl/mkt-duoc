@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { LivePreview } from './BlockPreview';
+import LivePreview from './BlockPreview';
 import { getCustomPalette } from './blockTypes';
 
 const PublicView = ({ id: propId }) => {
