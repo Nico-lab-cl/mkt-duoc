@@ -229,14 +229,16 @@ const BlockDataEditor = ({ block, onUpdate }) => {
             title={p.name}
           />
         ))}
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border-2 border-slate-200 bg-slate-50 ml-1">
-          <input 
-            type="color" 
-            value={block.paletteId?.startsWith('custom-') ? block.paletteId.replace('custom-', '') : '#3b82f6'} 
-            onChange={(e) => onUpdate({ ...data }, `custom-${e.target.value}`)} 
-            className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent" 
-          />
-          <span className="text-[8px] font-bold text-slate-500 uppercase">HEX</span>
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all">
+          <div className="relative w-5 h-5 rounded-md overflow-hidden border border-slate-100 shadow-inner">
+            <input 
+              type="color" 
+              value={block.paletteId?.startsWith('custom-') ? block.paletteId.replace('custom-', '') : '#3b82f6'} 
+              onChange={(e) => onUpdate({ ...data }, `custom-${e.target.value}`)} 
+              className="absolute inset-[-10px] w-[200%] h-[200%] cursor-pointer border-0 p-0" 
+            />
+          </div>
+          <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Personalizar</span>
         </div>
       </div>
     </div>
@@ -302,9 +304,13 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
               {p.name}
             </button>
           ))}
-          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border-2 border-slate-200 bg-slate-50">
-            <input type="color" value={customHex} onChange={(e) => { setCustomHex(e.target.value); setPalette('custom'); }} className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent" />
-            <span className="text-[10px] font-bold text-slate-600 uppercase">HEX</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all shadow-sm">
+            <div className="relative w-6 h-6 rounded-lg overflow-hidden border border-slate-200 shadow-inner">
+              <input type="color" value={customHex} onChange={(e) => { setCustomHex(e.target.value); setPalette('custom'); }} 
+                className="absolute inset-[-10px] w-[200%] h-[200%] cursor-pointer border-0 p-0" />
+            </div>
+            <span className="text-[10px] font-black text-slate-700 uppercase tracking-tighter">HEX</span>
+            <span className="text-[10px] font-mono font-bold text-slate-400">{customHex.toUpperCase()}</span>
           </div>
         </div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Autor / Marca</label>
