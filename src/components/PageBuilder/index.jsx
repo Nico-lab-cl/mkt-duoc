@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Download, Sparkles, Eye, Edit3, Share2,
@@ -159,19 +159,19 @@ const TemplateSelector = ({ onSelect }) => (
 
 // Main component
 const LeadMagnetStudio = ({ onBack }) => {
-  const previewRef = useRef(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('edit');
-  const [previewMode, setPreviewMode] = useState('desktop'); // 'desktop' or 'mobile'
-  const [showTemplates, setShowTemplates] = useState(true);
+  const previewRef = React.useRef(null);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [showExportModal, setShowExportModal] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState('edit');
+  const [previewMode, setPreviewMode] = React.useState('desktop'); // 'desktop' or 'mobile'
+  const [showTemplates, setShowTemplates] = React.useState(true);
 
-  const [blocks, setBlocks] = useState([]);
-  const [palette, setPalette] = useState('ocean');
-  const [customHex, setCustomHex] = useState('#ff0000');
-  const [author, setAuthor] = useState('');
-  const [selectedId, setSelectedId] = useState(null);
-  const [publishedId, setPublishedId] = useState(null);
+  const [blocks, setBlocks] = React.useState([]);
+  const [palette, setPalette] = React.useState('ocean');
+  const [customHex, setCustomHex] = React.useState('#ff0000');
+  const [author, setAuthor] = React.useState('');
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [publishedId, setPublishedId] = React.useState(null);
 
   const handleTemplate = (template) => {
     setBlocks(template.blocks());
@@ -204,7 +204,7 @@ const LeadMagnetStudio = ({ onBack }) => {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     const onPublish = () => handlePublish();
     window.addEventListener('publish-requested', onPublish);
     return () => window.removeEventListener('publish-requested', onPublish);

@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import LivePreview from './BlockPreview';
 import { getCustomPalette } from './blockTypes';
 
 const PagePublicView = ({ id }) => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetch(`/api/lead-magnets/${id}`);
