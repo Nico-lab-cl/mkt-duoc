@@ -29,7 +29,7 @@ const getBase = () => (typeof window !== 'undefined' ? window.location.origin : 
 
 // Share Modal with PDF, URL and Embed
 const ShareModal = ({ isOpen, onClose, isExporting, onExportPDF, publishedUrl, embedCode }) => {
-  const [copied, setCopied] = useState(null);
+  const [copied, setCopied] = React.useState(null);
 
   if (!isOpen) return null;
 

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PALETTES, CALC_TYPES, getCustomPalette } from './blockTypes';
 
 // Interactive calculator for preview
 const CalcPreview = ({ data, palette }) => {
   const calcDef = CALC_TYPES[data.calcType] || CALC_TYPES.roi;
-  const [vals, setVals] = useState(() => {
+  const [vals, setVals] = React.useState(() => {
     const init = {};
     calcDef.fields.forEach(f => { init[f.key] = data.inputs?.[f.key] || 0; });
     return init;
