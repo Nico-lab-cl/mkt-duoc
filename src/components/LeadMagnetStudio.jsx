@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Download, Type, AlignLeft, Image as ImageIcon,
   CheckSquare, BookOpen, Palette, Sparkles, Eye, Edit3,
-  Plus, Trash2, GripVertical, FileText, ChevronDown, Upload,
-  Bold, Italic, List, AlignCenter, AlignJustify
+  Plus, Trash2, FileText, Upload, AlignJustify,
+  Copy, Link, Code, X, ExternalLink, Check, Share2, ChevronDown
 } from 'lucide-react';
 
 // ── Color Palettes ──
@@ -418,12 +418,207 @@ const LivePreview = React.forwardRef(({ state }, ref) => {
 });
 LivePreview.displayName = 'LivePreview';
 
+// ── Helper: generate shareable URL ──
+const generateShareableData = (state) => {
+  const shareState = { ...state, coverImage: null }; // remove image for URL size
+  const json = JSON.stringify(shareState);
+  const encoded = btoa(unescape(encodeURIComponent(json)));
+  return encoded;
+};
+
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'https://softwarespectra.cl';
+};
+
+// ── Export Modal Component ──
+const ExportModal = ({ isOpen, onClose, state, previewRef, isExporting, onExportPDF }) => {
+  const [copied, setCopied] = useState(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState(null);
+
+  if (!isOpen) return null;
+
+  const baseUrl = getBaseUrl();
+  const shareData = generateShareableData(state);
+  const shareUrl = `${baseUrl}/lead-magnet?d=${shareData}`;
+
+  const embedScript = `<!-- Lead Magnet Embed - softwarespectra.cl -->
+<div id="lm-embed-container"></div>
+<script>
+(function() {
+  var iframe = document.createElement('iframe');
+  iframe.src = '${shareUrl}&embed=1';
+  iframe.style.cssText = 'width:100%;max-width:620px;height:900px;border:none;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.15);margin:0 auto;display:block;';
+  iframe.title = '${(state.title || 'Lead Magnet').replace(/'/g, "\\'")}';
+  document.getElementById('lm-embed-container').appendChild(iframe);
+})();
+</script>`;
+
+  const handleCopy = async (text, id) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2500);
+    } catch { /* fallback */ }
+  };
+
+  const handlePublish = async () => {
+    setPublishing(true);
+    try {
+      const resp = await fetch('/api/lead-magnets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: state.title,
+          type: state.type,
+          data: { ...state, coverImage: null },
+        }),
+      });
+      const result = await resp.json();
+      if (result.success) {
+        const url = `${baseUrl}/lead-magnet/${result.id}`;
+        setPublishedUrl(url);
+      }
+    } catch (err) {
+      console.error('Publish error:', err);
+      // fallback to client-side URL
+      setPublishedUrl(shareUrl);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const displayUrl = publishedUrl || shareUrl;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden"
+        >
+          {/* Modal Header */}
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                <Share2 size={18} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black tracking-tight text-slate-800">Exportar & Compartir</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tu Lead Magnet está listo</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+              <X size={20} className="text-slate-400" />
+            </button>
+          </div>
+
+          {/* Options */}
+          <div className="p-6 space-y-4">
+            {/* 1. PDF Download */}
+            <button
+              onClick={onExportPDF}
+              disabled={isExporting}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-200 hover:border-violet-300 hover:bg-violet-50/50 transition-all group text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <Download size={20} className="text-white" />
+              </div>
+              <div className="flex-grow">
+                <p className="font-bold text-sm text-slate-800">Descargar como PDF</p>
+                <p className="text-xs text-slate-400">Descarga directa en formato A4 de alta calidad</p>
+              </div>
+              {isExporting && <div className="w-5 h-5 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" />}
+            </button>
+
+            {/* 2. Shareable URL */}
+            <div className="rounded-2xl border-2 border-slate-200 overflow-hidden">
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                  <Link size={20} className="text-white" />
+                </div>
+                <div className="flex-grow">
+                  <p className="font-bold text-sm text-slate-800">URL Compartible</p>
+                  <p className="text-xs text-slate-400">Enlace directo para ver el Lead Magnet online</p>
+                </div>
+              </div>
+              <div className="px-4 pb-4">
+                {!publishedUrl ? (
+                  <button
+                    onClick={handlePublish}
+                    disabled={publishing}
+                    className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    {publishing ? (
+                      <><div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" /> Generando URL...</>
+                    ) : (
+                      <><ExternalLink size={14} /> Generar URL Pública</>
+                    )}
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={displayUrl}
+                      className="flex-grow px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 font-mono truncate"
+                    />
+                    <button
+                      onClick={() => handleCopy(displayUrl, 'url')}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 ${copied === 'url' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    >
+                      {copied === 'url' ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 3. Embed Script */}
+            <div className="rounded-2xl border-2 border-slate-200 overflow-hidden">
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                  <Code size={20} className="text-white" />
+                </div>
+                <div className="flex-grow">
+                  <p className="font-bold text-sm text-slate-800">Script Embebible</p>
+                  <p className="text-xs text-slate-400">Pega este código en cualquier página web</p>
+                </div>
+                <button
+                  onClick={() => handleCopy(embedScript, 'embed')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${copied === 'embed' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+                >
+                  {copied === 'embed' ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
+                </button>
+              </div>
+              <div className="px-4 pb-4">
+                <pre className="p-3 bg-slate-900 text-green-400 rounded-xl text-[10px] font-mono overflow-x-auto leading-relaxed max-h-32 overflow-y-auto custom-scrollbar">
+                  {embedScript}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 
 // ── Main Component ──
 const LeadMagnetStudio = ({ onBack }) => {
   const previewRef = useRef(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [activeTab, setActiveTab] = useState('edit'); // mobile toggle
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('edit');
 
   const [state, setState] = useState({
     type: 'checklist',
@@ -447,9 +642,9 @@ const LeadMagnetStudio = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f1f5f9' }}>
+    <div className="h-screen flex flex-col" style={{ backgroundColor: '#f1f5f9' }}>
       {/* ── Top Bar ── */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-50 shadow-sm">
+      <header className="h-16 min-h-[64px] bg-white border-b border-slate-200 flex items-center justify-between px-6 z-50 shadow-sm flex-shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-xl transition-all group">
             <ArrowLeft size={20} className="text-slate-500 group-hover:text-slate-800 transition-colors" />
@@ -477,44 +672,35 @@ const LeadMagnetStudio = ({ onBack }) => {
         </div>
 
         <button
-          onClick={handleExport}
-          disabled={isExporting}
-          className="flex items-center gap-2.5 px-6 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-violet-200 hover:shadow-xl hover:shadow-violet-300 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          onClick={() => setShowExportModal(true)}
+          className="flex items-center gap-2.5 px-6 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-violet-200 hover:shadow-xl hover:shadow-violet-300 transition-all"
         >
-          {isExporting ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Generando...
-            </>
-          ) : (
-            <>
-              <Download size={15} />
-              Exportar Lead Magnet (PDF)
-            </>
-          )}
+          <Share2 size={15} />
+          Exportar & Compartir
         </button>
       </header>
 
-      {/* ── Two-Column Layout ── */}
-      <div className="flex-grow flex overflow-hidden">
-        {/* Left: Editor */}
-        <aside className={`w-full md:w-[420px] lg:w-[460px] bg-white border-r border-slate-200 flex-shrink-0 overflow-hidden ${activeTab !== 'edit' ? 'hidden md:block' : ''}`}>
-          <div className="h-full flex flex-col">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <Edit3 size={14} className="text-slate-400" />
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Panel de Edición</span>
-              </div>
+      {/* ── Two-Column Layout with proper scroll ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: Editor - independent scroll */}
+        <aside className={`w-full md:w-[420px] lg:w-[460px] bg-white border-r border-slate-200 flex-shrink-0 flex flex-col overflow-hidden ${activeTab !== 'edit' ? 'hidden md:flex' : 'flex'}`}>
+          <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Edit3 size={14} className="text-slate-400" />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Panel de Edición</span>
             </div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
             <EditorPanel state={state} setState={setState} />
           </div>
         </aside>
 
-        {/* Right: Live Preview */}
-        <main className={`flex-grow overflow-auto bg-slate-100 ${activeTab !== 'preview' ? 'hidden md:block' : ''}`}
+        {/* Right: Live Preview - independent scroll */}
+        <main
+          className={`flex-1 overflow-y-auto ${activeTab !== 'preview' ? 'hidden md:block' : 'block'}`}
           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0)', backgroundSize: '24px 24px' }}
         >
-          <div className="p-6 md:p-10 flex flex-col items-center min-h-full">
+          <div className="p-6 md:p-10 flex flex-col items-center">
             <div className="mb-4 flex items-center gap-2">
               <Eye size={14} className="text-slate-400" />
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Vista Previa en Tiempo Real</span>
@@ -528,12 +714,22 @@ const LeadMagnetStudio = ({ onBack }) => {
             >
               <LivePreview ref={previewRef} state={state} />
             </motion.div>
-            <p className="mt-6 text-[10px] font-bold text-slate-400 text-center">
+            <p className="mt-6 mb-10 text-[10px] font-bold text-slate-400 text-center">
               Formato A4 · Se exportará tal como se ve aquí
             </p>
           </div>
         </main>
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        state={state}
+        previewRef={previewRef}
+        isExporting={isExporting}
+        onExportPDF={handleExport}
+      />
     </div>
   );
 };

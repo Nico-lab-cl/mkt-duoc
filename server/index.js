@@ -60,6 +60,13 @@ pool.connect(async (err, client, release) => {
         data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS lead_magnets (
+        id VARCHAR(12) PRIMARY KEY,
+        title TEXT,
+        type TEXT,
+        data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
     console.log('🚀 Tablas de base de datos verificadas/creadas');
   } catch (dbErr) {
@@ -300,6 +307,38 @@ app.get('/api/group-data/:groupId', async (req, res) => {
     res.json({ campaigns: campaigns.rows, chatflows: chatflows.rows });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener datos del grupo' });
+  }
+});
+
+// --- LEAD MAGNET ENDPOINTS ---
+
+app.post('/api/lead-magnets', async (req, res) => {
+  const { title, type, data } = req.body;
+  try {
+    const id = Math.random().toString(36).substring(2, 10);
+    const jsonData = JSON.stringify(data);
+    await pool.query(
+      'INSERT INTO lead_magnets (id, title, type, data) VALUES ($1, $2, $3, $4)',
+      [id, title, type, jsonData]
+    );
+    res.json({ success: true, id });
+  } catch (err) {
+    console.error('Error saving lead magnet:', err);
+    res.status(500).json({ error: 'Error al guardar lead magnet' });
+  }
+});
+
+app.get('/api/lead-magnets/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM lead_magnets WHERE id = $1', [id]);
+    if (result.rows.length > 0) {
+      res.json({ success: true, leadMagnet: result.rows[0] });
+    } else {
+      res.status(404).json({ error: 'Lead magnet no encontrado' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener lead magnet' });
   }
 });
 
