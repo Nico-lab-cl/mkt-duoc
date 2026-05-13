@@ -51,199 +51,211 @@ const BlockDataEditor = ({ block, onUpdate }) => {
     );
   };
 
-  switch (type) {
-    case 'hero':
-      return (<>
-        <Input label="Título" field="title" placeholder="Título principal" />
-        <Input label="Subtítulo" field="subtitle" placeholder="Propuesta de valor" />
-        <ImageUpload field="bgImage" label="Imagen de fondo" />
-        <div className="flex items-center gap-3 mb-3">
-          <input type="checkbox" checked={data.showCta || false} onChange={e => u('showCta', e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" />
-          <span className="text-xs font-bold text-slate-600">Mostrar botón CTA</span>
-        </div>
-        {data.showCta && <Input label="Texto del botón" field="ctaText" placeholder="Descargar Gratis" />}
-      </>);
-
-    case 'text':
-      return (<>
-        <Input label="Encabezado (opcional)" field="heading" placeholder="Sección de texto" />
-        <Input label="Contenido" field="body" placeholder="Escribe tu texto..." multiline />
-        <div className="mb-3">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Alineación</label>
-          <div className="flex gap-2">
-            {['left', 'center', 'justify'].map(a => (
-              <button key={a} onClick={() => u('align', a)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${data.align === a ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-                {a === 'left' ? 'Izquierda' : a === 'center' ? 'Centro' : 'Justificado'}
-              </button>
-            ))}
-          </div>
-        </div>
-      </>);
-
-    case 'checklist':
-      return (<>
-        <Input label="Título del checklist" field="heading" placeholder="Tu Checklist" />
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Ítems</label>
-        {(data.items || []).map((item, idx) => (
-          <div key={item.id} className="flex items-center gap-2 mb-2 group">
-            <span className="text-[10px] font-bold text-slate-300 w-4 text-center">{idx+1}</span>
-            <input type="text" value={item.text} onChange={e => {
-              const items = [...data.items]; items[idx] = { ...item, text: e.target.value }; u('items', items);
-            }} className="flex-grow px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:bg-white" placeholder="Ítem..." />
-            <button onClick={() => { if (data.items.length > 1) u('items', data.items.filter((_,i) => i !== idx)); }}
-              className="p-1 text-slate-300 hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={12} /></button>
-          </div>
-        ))}
-        <button onClick={() => u('items', [...(data.items||[]), { id: uid(), text: '', done: false }])}
-          className="w-full mt-1 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-1">
-          <Plus size={12} /> Agregar ítem
-        </button>
-      </>);
-
-    case 'image':
-      return (<>
-        <ImageUpload field="src" label="Imagen" />
-        <Input label="Pie de imagen" field="caption" placeholder="Descripción de la imagen" />
-        <div className="flex items-center gap-3 mb-3">
-          <input type="checkbox" checked={data.fullWidth !== false} onChange={e => u('fullWidth', e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" />
-          <span className="text-xs font-bold text-slate-600">Ancho completo</span>
-        </div>
-      </>);
-
-    case 'calculator':
-      return (<>
-        <Input label="Título" field="heading" placeholder="Calculadora de..." />
-        <div className="mb-3">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Tipo de cálculo</label>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(CALC_TYPES).map(([key, ct]) => (
-              <button key={key} onClick={() => {
-                const newInputs = {}; ct.fields.forEach(f => { newInputs[f.key] = data.inputs?.[f.key] || 0; });
-                u('calcType', key); u('inputs', newInputs);
-              }} className={`p-2.5 rounded-xl text-[10px] font-bold border-2 transition-all ${data.calcType === key ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-                {ct.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Valores por defecto</label>
-        {(CALC_TYPES[data.calcType]?.fields || []).map(f => (
-          <div key={f.key} className="mb-2">
-            <input type="number" value={data.inputs?.[f.key] || 0} onChange={e => u('inputs', { ...data.inputs, [f.key]: Number(e.target.value) })}
-              placeholder={f.label} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:bg-white" />
-            <span className="text-[9px] text-slate-400 mt-0.5 block">{f.label}</span>
-          </div>
-        ))}
-      </>);
-
-    case 'cta':
-      return (<>
-        <Input label="Título" field="heading" placeholder="¿Listo para empezar?" />
-        <Input label="Descripción" field="description" placeholder="Texto motivacional" />
-        <Input label="Texto del botón" field="buttonText" placeholder="Descargar Ahora" />
-        <div className="mb-3">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Estilo</label>
-          <div className="flex gap-2">
-            {[{v:'filled',l:'Sólido'},{v:'outline',l:'Borde'}].map(s => (
-              <button key={s.v} onClick={() => u('style', s.v)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${data.style === s.v ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-slate-200 text-slate-500'}`}>{s.l}</button>
-            ))}
-          </div>
-        </div>
-      </>);
-
-    case 'stats':
-      return (<>
-        <Input label="Título (opcional)" field="heading" placeholder="Nuestros resultados" />
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Métricas</label>
-        {(data.items || []).map((s, idx) => (
-          <div key={idx} className="flex gap-2 mb-2 group">
-            <input type="text" value={s.value} onChange={e => { const items = [...data.items]; items[idx] = { ...s, value: e.target.value }; u('items', items); }}
-              placeholder="85%" className="w-20 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold outline-none text-center" />
-            <input type="text" value={s.label} onChange={e => { const items = [...data.items]; items[idx] = { ...s, label: e.target.value }; u('items', items); }}
-              placeholder="Etiqueta" className="flex-grow px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none" />
-            <button onClick={() => { if (data.items.length > 1) u('items', data.items.filter((_,i) => i !== idx)); }}
-              className="p-1 text-slate-300 hover:text-red-500 rounded opacity-0 group-hover:opacity-100"><Trash2 size={12} /></button>
-          </div>
-        ))}
-        <button onClick={() => u('items', [...(data.items||[]), { value: '0', label: 'Métrica' }])}
-          className="w-full mt-1 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-1">
-          <Plus size={12} /> Agregar métrica
-        </button>
-      </>);
-
-    case 'testimonial':
-      return (<>
-        <Input label="Cita" field="quote" placeholder="Lo que dijo el cliente..." multiline />
-        <Input label="Nombre" field="author" placeholder="María González" />
-        <Input label="Cargo / Rol" field="role" placeholder="Directora de Marketing" />
-      </>);
-
-    case 'divider':
-      return (
-        <div className="mb-3">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Estilo</label>
-          <div className="flex gap-2">
-            {[{v:'line',l:'Línea'},{v:'dots',l:'Puntos'},{v:'space',l:'Espacio'}].map(s => (
-              <button key={s.v} onClick={() => u('style', s.v)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${data.style === s.v ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-slate-200 text-slate-500'}`}>{s.l}</button>
-            ))}
-          </div>
-        </div>
-      );
-
-    case 'form':
-      return (<>
-        <Input label="Título" field="heading" placeholder="Obtén acceso ahora" />
-        <Input label="Descripción" field="description" placeholder="Texto de apoyo" />
-        <Input label="Texto del botón" field="buttonText" placeholder="Enviar" />
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Campos</label>
-        {(data.fields || []).map((f, idx) => (
-          <div key={idx} className="flex gap-2 mb-2 group">
-            <input type="text" value={f} onChange={e => { const fields = [...data.fields]; fields[idx] = e.target.value; u('fields', fields); }}
-              className="flex-grow px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none" />
-            <button onClick={() => u('fields', data.fields.filter((_,i) => i !== idx))}
-              className="p-1 text-slate-300 hover:text-red-500 rounded opacity-0 group-hover:opacity-100"><Trash2 size={12} /></button>
-          </div>
-        ))}
-        <button onClick={() => u('fields', [...(data.fields||[]), 'Nuevo campo'])}
-          className="w-full mt-1 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-1">
-          <Plus size={12} /> Agregar campo
-        </button>
-      </>);
-
-    default: break;
-  }
-
   return (
-    <div className="mt-6 pt-6 border-t border-slate-100">
-      <div className="mb-4">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Fondo del Bloque</label>
-        <ImageUpload field="blockBg" label="Imagen de fondo" />
-      </div>
-      
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta del Bloque</label>
-      <div className="flex gap-1.5 flex-wrap items-center">
-        <button onClick={() => onUpdate({ ...data }, null)}
-          className={`px-3 py-1.5 rounded-lg border-2 text-[10px] font-bold transition-all ${block.paletteId === null ? 'border-slate-800 bg-slate-50' : 'border-slate-200 text-slate-400'}`}>
-          Global
-        </button>
-        {PALETTES.map(p => (
-          <button key={p.id} onClick={() => onUpdate({ ...data }, p.id)}
-            className={`w-6 h-6 rounded-full border-2 transition-all ${block.paletteId === p.id ? 'border-slate-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
-            style={{ background: p.gradient }}
-            title={p.name}
-          />
-        ))}
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all">
-          <div className="relative w-5 h-5 rounded-md overflow-hidden border border-slate-100 shadow-inner">
-            <input 
-              type="color" 
-              value={block.paletteId?.startsWith('custom-') ? block.paletteId.replace('custom-', '') : '#3b82f6'} 
-              onChange={(e) => onUpdate({ ...data }, `custom-${e.target.value}`)} 
-              className="absolute inset-[-10px] w-[200%] h-[200%] cursor-pointer border-0 p-0" 
-            />
-          </div>
-          <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">HEX</span>
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Fondo del Bloque</label>
+          <ImageUpload field="blockBg" label="Imagen de fondo" />
         </div>
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta del Bloque</label>
+          <div className="flex gap-1 flex-wrap items-center">
+            <button onClick={() => onUpdate({ ...data }, null)}
+              className={`px-2 py-1 rounded-lg border-2 text-[9px] font-black transition-all ${block.paletteId === null ? 'border-slate-800 bg-slate-50' : 'border-slate-200 text-slate-400'}`}>
+              GLOBAL
+            </button>
+            <div className="flex gap-1 items-center px-1.5 py-1 bg-slate-50 rounded-lg border border-slate-100">
+              {PALETTES.filter(p => p.id !== 'none').slice(0, 3).map(p => (
+                <button key={p.id} onClick={() => onUpdate({ ...data }, p.id)}
+                  className={`w-5 h-5 rounded-full border-2 transition-all ${block.paletteId === p.id ? 'border-slate-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
+                  style={{ background: p.gradient }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1 rounded-lg border-2 border-slate-200 bg-white hover:border-slate-300 transition-all shadow-sm">
+              <div className="relative w-5 h-5 rounded-md overflow-hidden border border-slate-100 shadow-inner">
+                <input 
+                  type="color" 
+                  value={block.paletteId?.startsWith('custom-') ? block.paletteId.replace('custom-', '') : '#3b82f6'} 
+                  onChange={(e) => onUpdate({ ...data }, `custom-${e.target.value}`)} 
+                  className="absolute inset-[-10px] w-[200%] h-[200%] cursor-pointer border-0 p-0" 
+                />
+              </div>
+              <span className="text-[9px] font-black text-slate-600">HEX</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-5 border-t border-slate-100">
+        {(() => {
+          switch (type) {
+            case 'hero':
+              return (<>
+                <Input label="Título" field="title" placeholder="Título principal" />
+                <Input label="Subtítulo" field="subtitle" placeholder="Propuesta de valor" />
+                <ImageUpload field="bgImage" label="Imagen de portada" />
+                <div className="flex items-center gap-3 mb-3">
+                  <input type="checkbox" checked={data.showCta || false} onChange={e => u('showCta', e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" />
+                  <span className="text-xs font-bold text-slate-600">Mostrar botón CTA</span>
+                </div>
+                {data.showCta && <Input label="Texto del botón" field="ctaText" placeholder="Descargar Gratis" />}
+              </>);
+
+            case 'text':
+              return (<>
+                <Input label="Encabezado (opcional)" field="heading" placeholder="Sección de texto" />
+                <Input label="Contenido" field="body" placeholder="Escribe tu texto..." multiline />
+                <div className="mb-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Alineación</label>
+                  <div className="flex gap-2">
+                    {['left', 'center', 'justify'].map(a => (
+                      <button key={a} onClick={() => u('align', a)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${data.align === a ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                        {a === 'left' ? 'Izquierda' : a === 'center' ? 'Centro' : 'Justificado'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>);
+
+            case 'checklist':
+              return (<>
+                <Input label="Título del checklist" field="heading" placeholder="Tu Checklist" />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Ítems</label>
+                {(data.items || []).map((item, idx) => (
+                  <div key={item.id} className="flex items-center gap-2 mb-2 group">
+                    <span className="text-[10px] font-bold text-slate-300 w-4 text-center">{idx+1}</span>
+                    <input type="text" value={item.text} onChange={e => {
+                      const items = [...data.items]; items[idx] = { ...item, text: e.target.value }; u('items', items);
+                    }} className="flex-grow px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:bg-white" placeholder="Ítem..." />
+                    <button onClick={() => { if (data.items.length > 1) u('items', data.items.filter((_,i) => i !== idx)); }}
+                      className="p-1 text-slate-300 hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={12} /></button>
+                  </div>
+                ))}
+                <button onClick={() => u('items', [...(data.items||[]), { id: uid(), text: '', done: false }])}
+                  className="w-full mt-1 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-1">
+                  <Plus size={12} /> Agregar ítem
+                </button>
+              </>);
+
+            case 'image':
+              return (<>
+                <ImageUpload field="src" label="Imagen" />
+                <Input label="Pie de imagen" field="caption" placeholder="Descripción de la imagen" />
+                <div className="flex items-center gap-3 mb-3">
+                  <input type="checkbox" checked={data.fullWidth !== false} onChange={e => u('fullWidth', e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" />
+                  <span className="text-xs font-bold text-slate-600">Ancho completo</span>
+                </div>
+              </>);
+
+            case 'calculator':
+              return (<>
+                <Input label="Título" field="heading" placeholder="Calculadora de..." />
+                <div className="mb-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Tipo de cálculo</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(CALC_TYPES).map(([key, ct]) => (
+                      <button key={key} onClick={() => {
+                        const newInputs = {}; ct.fields.forEach(f => { newInputs[f.key] = data.inputs?.[f.key] || 0; });
+                        u('calcType', key); u('inputs', newInputs);
+                      }} className={`p-2.5 rounded-xl text-[10px] font-bold border-2 transition-all ${data.calcType === key ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                        {ct.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Valores por defecto</label>
+                {(CALC_TYPES[data.calcType]?.fields || []).map(f => (
+                  <div key={f.key} className="mb-2">
+                    <input type="number" value={data.inputs?.[f.key] || 0} onChange={e => u('inputs', { ...data.inputs, [f.key]: Number(e.target.value) })}
+                      placeholder={f.label} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:bg-white" />
+                    <span className="text-[9px] text-slate-400 mt-0.5 block">{f.label}</span>
+                  </div>
+                ))}
+              </>);
+
+            case 'cta':
+              return (<>
+                <Input label="Título" field="heading" placeholder="¿Listo para empezar?" />
+                <Input label="Descripción" field="description" placeholder="Texto motivacional" />
+                <Input label="Texto del botón" field="buttonText" placeholder="Descargar Ahora" />
+                <div className="mb-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Estilo</label>
+                  <div className="flex gap-2">
+                    {[{v:'filled',l:'Sólido'},{v:'outline',l:'Borde'}].map(s => (
+                      <button key={s.v} onClick={() => u('style', s.v)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${data.style === s.v ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-slate-200 text-slate-500'}`}>{s.l}</button>
+                    ))}
+                  </div>
+                </div>
+              </>);
+
+            case 'stats':
+              return (<>
+                <Input label="Título (opcional)" field="heading" placeholder="Nuestros resultados" />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Métricas</label>
+                {(data.items || []).map((s, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2 group">
+                    <input type="text" value={s.value} onChange={e => { const items = [...data.items]; items[idx] = { ...s, value: e.target.value }; u('items', items); }}
+                      placeholder="85%" className="w-20 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold outline-none text-center" />
+                    <input type="text" value={s.label} onChange={e => { const items = [...data.items]; items[idx] = { ...s, label: e.target.value }; u('items', items); }}
+                      placeholder="Etiqueta" className="flex-grow px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none" />
+                    <button onClick={() => { if (data.items.length > 1) u('items', data.items.filter((_,i) => i !== idx)); }}
+                      className="p-1 text-slate-300 hover:text-red-500 rounded opacity-0 group-hover:opacity-100"><Trash2 size={12} /></button>
+                  </div>
+                ))}
+                <button onClick={() => u('items', [...(data.items||[]), { value: '0', label: 'Métrica' }])}
+                  className="w-full mt-1 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-1">
+                  <Plus size={12} /> Agregar métrica
+                </button>
+              </>);
+
+            case 'testimonial':
+              return (<>
+                <Input label="Cita" field="quote" placeholder="Lo que dijo el cliente..." multiline />
+                <Input label="Nombre" field="author" placeholder="María González" />
+                <Input label="Cargo / Rol" field="role" placeholder="Directora de Marketing" />
+              </>);
+
+            case 'divider':
+              return (
+                <div className="mb-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Estilo</label>
+                  <div className="flex gap-2">
+                    {[{v:'line',l:'Línea'},{v:'dots',l:'Puntos'},{v:'space',l:'Espacio'}].map(s => (
+                      <button key={s.v} onClick={() => u('style', s.v)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${data.style === s.v ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-slate-200 text-slate-500'}`}>{s.l}</button>
+                    ))}
+                  </div>
+                </div>
+              );
+
+            case 'form':
+              return (<>
+                <Input label="Título" field="heading" placeholder="Obtén acceso ahora" />
+                <Input label="Descripción" field="description" placeholder="Texto de apoyo" />
+                <Input label="Texto del botón" field="buttonText" placeholder="Enviar" />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Campos</label>
+                {(data.fields || []).map((f, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2 group">
+                    <input type="text" value={f} onChange={e => { const fields = [...data.fields]; fields[idx] = e.target.value; u('fields', fields); }}
+                      className="flex-grow px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none" />
+                    <button onClick={() => u('fields', data.fields.filter((_,i) => i !== idx))}
+                      className="p-1 text-slate-300 hover:text-red-500 rounded opacity-0 group-hover:opacity-100"><Trash2 size={12} /></button>
+                  </div>
+                ))}
+                <button onClick={() => u('fields', [...(data.fields||[]), 'Nuevo campo'])}
+                  className="w-full mt-1 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-1">
+                  <Plus size={12} /> Agregar campo
+                </button>
+              </>);
+
+            default: return null;
+          }
+        })()}
+      </div>
+    </div>
+  );
+};>
       </div>
     </div>
   );
