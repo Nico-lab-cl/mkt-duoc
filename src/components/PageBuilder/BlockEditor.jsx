@@ -4,59 +4,59 @@ import { Plus, Trash2, ChevronUp, ChevronDown, Upload, X } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { BLOCK_DEFS, PALETTES, CALC_TYPES, createBlock, uid, getCustomPalette, COLUMNS } from './blockTypes';
 
+const BlockInput = ({ label, field, placeholder, multiline, type: inputType, data, onUpdate }) => (
+  <div className="mb-3">
+    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">{label}</label>
+    {multiline ? (
+      <textarea value={data[field] || ''} onChange={e => onUpdate(field, e.target.value)} placeholder={placeholder} rows={4}
+        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white resize-none" />
+    ) : (
+      <input type={inputType || 'text'} value={data[field] || ''} onChange={e => onUpdate(field, inputType === 'number' ? Number(e.target.value) : e.target.value)} placeholder={placeholder}
+        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white font-medium" />
+    )}
+  </div>
+);
+
+const BlockImageUpload = ({ field, label, data, onUpdate }) => {
+  const ref = React.useRef(null);
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (file) { const r = new FileReader(); r.onload = (ev) => onUpdate(field, ev.target.result); r.readAsDataURL(file); }
+  };
+  return (
+    <div className="mb-3">
+      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">{label}</label>
+      <input ref={ref} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      {data[field] ? (
+        <div className="relative group rounded-xl overflow-hidden border border-slate-200">
+          <img src={data[field]} alt="" className="w-full h-28 object-cover" />
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <button onClick={() => ref.current?.click()} className="px-3 py-1.5 bg-white text-slate-800 rounded-lg text-[10px] font-bold">Cambiar</button>
+            <button onClick={() => onUpdate(field, null)} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-[10px] font-bold">Quitar</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => ref.current?.click()} className="w-full p-5 border-2 border-dashed border-slate-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all flex flex-col items-center gap-1 group">
+          <Upload size={18} className="text-slate-400 group-hover:text-blue-500" />
+          <span className="text-[10px] font-bold text-slate-400 group-hover:text-blue-600">Subir imagen</span>
+        </button>
+      )}
+    </div>
+  );
+};
+
 // Editor for a specific block's data
 const BlockDataEditor = ({ block, onUpdate }) => {
   const { type, data } = block;
   const fileRef = React.useRef(null);
   const u = (field, value) => onUpdate({ ...data, [field]: value });
 
-  const Input = ({ label, field, placeholder, multiline, type: inputType }) => (
-    <div className="mb-3">
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">{label}</label>
-      {multiline ? (
-        <textarea value={data[field] || ''} onChange={e => u(field, e.target.value)} placeholder={placeholder} rows={4}
-          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white resize-none" />
-      ) : (
-        <input type={inputType || 'text'} value={data[field] || ''} onChange={e => u(field, inputType === 'number' ? Number(e.target.value) : e.target.value)} placeholder={placeholder}
-          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white font-medium" />
-      )}
-    </div>
-  );
-
-  const ImageUpload = ({ field, label }) => {
-    const ref = React.useRef(null);
-    const handleFile = (e) => {
-      const file = e.target.files?.[0];
-      if (file) { const r = new FileReader(); r.onload = (ev) => u(field, ev.target.result); r.readAsDataURL(file); }
-    };
-    return (
-      <div className="mb-3">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">{label}</label>
-        <input ref={ref} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-        {data[field] ? (
-          <div className="relative group rounded-xl overflow-hidden border border-slate-200">
-            <img src={data[field]} alt="" className="w-full h-28 object-cover" />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <button onClick={() => ref.current?.click()} className="px-3 py-1.5 bg-white text-slate-800 rounded-lg text-[10px] font-bold">Cambiar</button>
-              <button onClick={() => u(field, null)} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-[10px] font-bold">Quitar</button>
-            </div>
-          </div>
-        ) : (
-          <button onClick={() => ref.current?.click()} className="w-full p-5 border-2 border-dashed border-slate-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all flex flex-col items-center gap-1 group">
-            <Upload size={18} className="text-slate-400 group-hover:text-blue-500" />
-            <span className="text-[10px] font-bold text-slate-400 group-hover:text-blue-600">Subir imagen</span>
-          </button>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Fondo del Bloque</label>
-          <ImageUpload field="blockBg" label="Imagen de fondo" />
+          <BlockImageUpload data={data} onUpdate={u} field="blockBg" label="Imagen de fondo" />
         </div>
         <div>
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Paleta del Bloque</label>
@@ -93,20 +93,20 @@ const BlockDataEditor = ({ block, onUpdate }) => {
           switch (type) {
             case 'hero':
               return (<>
-                <Input label="Título" field="title" placeholder="Título principal" />
-                <Input label="Subtítulo" field="subtitle" placeholder="Propuesta de valor" />
-                <ImageUpload field="bgImage" label="Imagen de portada" />
+                <BlockInput data={data} onUpdate={u} label="Título" field="title" placeholder="Título principal" />
+                <BlockInput data={data} onUpdate={u} label="Subtítulo" field="subtitle" placeholder="Propuesta de valor" />
+                <BlockImageUpload data={data} onUpdate={u} field="bgImage" label="Imagen de portada" />
                 <div className="flex items-center gap-3 mb-3">
                   <input type="checkbox" checked={data.showCta || false} onChange={e => u('showCta', e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" />
                   <span className="text-xs font-bold text-slate-600">Mostrar botón CTA</span>
                 </div>
-                {data.showCta && <Input label="Texto del botón" field="ctaText" placeholder="Descargar Gratis" />}
+                {data.showCta && <BlockInput data={data} onUpdate={u} label="Texto del botón" field="ctaText" placeholder="Descargar Gratis" />}
               </>);
 
             case 'text':
               return (<>
-                <Input label="Encabezado (opcional)" field="heading" placeholder="Sección de texto" />
-                <Input label="Contenido" field="body" placeholder="Escribe tu texto..." multiline />
+                <BlockInput data={data} onUpdate={u} label="Encabezado (opcional)" field="heading" placeholder="Sección de texto" />
+                <BlockInput data={data} onUpdate={u} label="Contenido" field="body" placeholder="Escribe tu texto..." multiline />
                 <div className="mb-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Alineación</label>
                   <div className="flex gap-2">
@@ -121,7 +121,7 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
             case 'checklist':
               return (<>
-                <Input label="Título del checklist" field="heading" placeholder="Tu Checklist" />
+                <BlockInput data={data} onUpdate={u} label="Título del checklist" field="heading" placeholder="Tu Checklist" />
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Ítems</label>
                 {(data.items || []).map((item, idx) => (
                   <div key={item.id} className="flex items-center gap-2 mb-2 group">
@@ -141,8 +141,8 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
             case 'image':
               return (<>
-                <ImageUpload field="src" label="Imagen" />
-                <Input label="Pie de imagen" field="caption" placeholder="Descripción de la imagen" />
+                <BlockImageUpload data={data} onUpdate={u} field="src" label="Imagen" />
+                <BlockInput data={data} onUpdate={u} label="Pie de imagen" field="caption" placeholder="Descripción de la imagen" />
                 <div className="flex items-center gap-3 mb-3">
                   <input type="checkbox" checked={data.fullWidth !== false} onChange={e => u('fullWidth', e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" />
                   <span className="text-xs font-bold text-slate-600">Ancho completo</span>
@@ -151,7 +151,7 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
             case 'calculator':
               return (<>
-                <Input label="Título" field="heading" placeholder="Calculadora de..." />
+                <BlockInput data={data} onUpdate={u} label="Título" field="heading" placeholder="Calculadora de..." />
                 <div className="mb-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Tipo de cálculo</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -177,9 +177,9 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
             case 'cta':
               return (<>
-                <Input label="Título" field="heading" placeholder="¿Listo para empezar?" />
-                <Input label="Descripción" field="description" placeholder="Texto motivacional" />
-                <Input label="Texto del botón" field="buttonText" placeholder="Descargar Ahora" />
+                <BlockInput data={data} onUpdate={u} label="Título" field="heading" placeholder="¿Listo para empezar?" />
+                <BlockInput data={data} onUpdate={u} label="Descripción" field="description" placeholder="Texto motivacional" />
+                <BlockInput data={data} onUpdate={u} label="Texto del botón" field="buttonText" placeholder="Descargar Ahora" />
                 <div className="mb-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Estilo</label>
                   <div className="flex gap-2">
@@ -192,7 +192,7 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
             case 'stats':
               return (<>
-                <Input label="Título (opcional)" field="heading" placeholder="Nuestros resultados" />
+                <BlockInput data={data} onUpdate={u} label="Título (opcional)" field="heading" placeholder="Nuestros resultados" />
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Métricas</label>
                 {(data.items || []).map((s, idx) => (
                   <div key={idx} className="flex gap-2 mb-2 group">
@@ -212,9 +212,9 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
             case 'testimonial':
               return (<>
-                <Input label="Cita" field="quote" placeholder="Lo que dijo el cliente..." multiline />
-                <Input label="Nombre" field="author" placeholder="María González" />
-                <Input label="Cargo / Rol" field="role" placeholder="Directora de Marketing" />
+                <BlockInput data={data} onUpdate={u} label="Cita" field="quote" placeholder="Lo que dijo el cliente..." multiline />
+                <BlockInput data={data} onUpdate={u} label="Nombre" field="author" placeholder="María González" />
+                <BlockInput data={data} onUpdate={u} label="Cargo / Rol" field="role" placeholder="Directora de Marketing" />
               </>);
 
             case 'divider':
@@ -231,9 +231,9 @@ const BlockDataEditor = ({ block, onUpdate }) => {
 
             case 'form':
               return (<>
-                <Input label="Título" field="heading" placeholder="Obtén acceso ahora" />
-                <Input label="Descripción" field="description" placeholder="Texto de apoyo" />
-                <Input label="Texto del botón" field="buttonText" placeholder="Enviar" />
+                <BlockInput data={data} onUpdate={u} label="Título" field="heading" placeholder="Obtén acceso ahora" />
+                <BlockInput data={data} onUpdate={u} label="Descripción" field="description" placeholder="Texto de apoyo" />
+                <BlockInput data={data} onUpdate={u} label="Texto del botón" field="buttonText" placeholder="Enviar" />
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Campos</label>
                 {(data.fields || []).map((f, idx) => (
                   <div key={idx} className="flex gap-2 mb-2 group">
