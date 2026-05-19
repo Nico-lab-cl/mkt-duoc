@@ -22,7 +22,8 @@ import {
   X,
   User as UserIcon,
   AlertCircle,
-  BarChart
+  BarChart,
+  Zap
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
@@ -76,6 +77,15 @@ const platforms = [
     icon: <Wand2 size={24} />,
     color: 'bg-gradient-to-br from-violet-500 to-fuchsia-500',
     status: 'active'
+  },
+  {
+    id: 'n8n',
+    name: 'N8N AUTOMATIZACIONES',
+    description: 'Plataforma de automatización de flujos y procesos',
+    icon: <Zap size={24} />,
+    color: 'bg-[#ff6d5a]',
+    status: 'external',
+    url: 'https://n8n-n8n.db8enk.easypanel.host/'
   }
 ];
 
@@ -168,6 +178,20 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
     </button>
   );
 
+  const ExternalSidebarItem = ({ icon: Icon, label, href, badge }) => (
+    <a 
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-slate-500 hover:bg-slate-100"
+    >
+      <Icon size={20} />
+      <span className="font-bold text-sm flex-grow text-left">{label}</span>
+      {badge && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{badge}</span>}
+      <ExternalLink size={14} className="text-slate-400" />
+    </a>
+  );
+
   return (
     <div className="min-h-screen flex overflow-hidden transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
       {/* --- SIDEBAR --- */}
@@ -185,6 +209,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
         <nav className="flex-grow">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-4">Simulación</p>
           <SidebarItem icon={Home} label="Dashboard" view="home" />
+          <ExternalSidebarItem icon={Zap} label="N8N AUTOMATIZACIONES" href="https://n8n-n8n.db8enk.easypanel.host/" />
           
           {currentUser?.role === 'admin' && (
             <>
@@ -262,16 +287,22 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
-                    onClick={() => platform.status === 'active' && onSelectPlatform(platform.id)}
-                    className={`group p-8 rounded-3xl bg-white border border-slate-200 text-left shadow-sm transition-all ${platform.status === 'active' ? 'hover:shadow-2xl hover:border-blue-500 cursor-pointer' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    onClick={() => {
+                      if (platform.status === 'external') {
+                        window.open(platform.url, '_blank');
+                      } else if (platform.status === 'active') {
+                        onSelectPlatform(platform.id);
+                      }
+                    }}
+                    className={`group p-8 rounded-3xl bg-white border border-slate-200 text-left shadow-sm transition-all ${(platform.status === 'active' || platform.status === 'external') ? 'hover:shadow-2xl hover:border-blue-500 cursor-pointer' : 'opacity-50 grayscale cursor-not-allowed'}`}
                   >
                     <div className={`w-12 h-12 ${platform.color} rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform`}>
                       {platform.icon}
                     </div>
                     <h3 className="text-2xl font-black text-slate-800 tracking-tighter mb-2">{platform.name}</h3>
                     <p className="text-slate-500 text-sm mb-6 leading-relaxed">{platform.description}</p>
-                    <div className={`flex items-center gap-2 font-black text-xs uppercase tracking-widest ${platform.status === 'active' ? 'text-blue-600' : 'text-slate-400'}`}>
-                      {platform.status === 'active' ? 'Iniciar Simulación' : 'Próximamente'} <ArrowRight size={16} />
+                    <div className={`flex items-center gap-2 font-black text-xs uppercase tracking-widest ${(platform.status === 'active' || platform.status === 'external') ? 'text-blue-600' : 'text-slate-400'}`}>
+                      {platform.status === 'active' ? 'Iniciar Simulación' : platform.status === 'external' ? 'Abrir Plataforma' : 'Próximamente'} <ArrowRight size={16} />
                     </div>
                   </motion.button>
                 ))}
