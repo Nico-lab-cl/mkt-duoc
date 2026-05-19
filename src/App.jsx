@@ -8,6 +8,7 @@ import ChatflowSimulator from './components/ChatflowSimulator';
 import GroupSelection from './components/GroupSelection';
 import KPIModule from './components/KPIModule';
 import LeadMagnetStudio from './components/PageBuilder';
+import N8NModule from './components/N8NModule';
 
 import PagePublicView from './components/PageBuilder/PagePublicView';
 
@@ -41,6 +42,8 @@ const AppContent = () => {
       setView('kpi');
     } else if (platform === 'leadmagnet') {
       setView('leadmagnet');
+    } else if (platform === 'n8n') {
+      setView('n8n');
     } else {
       setView('simulator');
     }
@@ -86,6 +89,12 @@ const AppContent = () => {
 
       {view === 'leadmagnet' && (
         <LeadMagnetStudio 
+          onBack={() => setView('dashboard')}
+        />
+      )}
+
+      {view === 'n8n' && (
+        <N8NModule 
           onBack={() => setView('dashboard')}
         />
       )}

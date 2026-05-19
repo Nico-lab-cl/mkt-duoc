@@ -84,7 +84,7 @@ const platforms = [
     description: 'Plataforma de automatización de flujos y procesos',
     icon: <Zap size={24} />,
     color: 'bg-[#ff6d5a]',
-    status: 'external',
+    status: 'active',
     url: 'https://n8n-n8n.db8enk.easypanel.host/'
   }
 ];
