@@ -421,9 +421,9 @@ const EditorPanel = ({ blocks, setBlocks, selectedId, setSelectedId, palette, se
       </div>
 
       {/* Selected block editor */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {selectedBlock && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+          <motion.div key={selectedBlock.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
             className="border-t border-slate-100">
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
