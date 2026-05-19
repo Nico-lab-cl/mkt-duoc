@@ -193,10 +193,10 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   );
 
   return (
-    <div className="min-h-screen flex overflow-hidden transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
+    <div className="h-screen w-full flex overflow-hidden transition-colors duration-500" style={{ backgroundColor: 'var(--main-bg)' }}>
       {/* --- SIDEBAR --- */}
-      <aside className="w-64 border-r border-slate-200 flex flex-col p-4 z-40 transition-colors duration-500 shadow-xl" style={{ backgroundColor: 'var(--sidebar-bg)' }}>
-        <div className="flex items-center gap-3 px-2 mb-8">
+      <aside className="w-64 flex-shrink-0 border-r border-slate-200 flex flex-col p-4 z-40 transition-colors duration-500 shadow-xl overflow-y-auto custom-scrollbar" style={{ backgroundColor: 'var(--sidebar-bg)' }}>
+        <div className="flex items-center gap-3 px-2 mb-8 flex-shrink-0">
            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-xl" style={{ backgroundColor: 'var(--primary)' }}>
               <ShieldCheck size={24} />
            </div>
@@ -223,7 +223,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
           <SidebarItem icon={Settings} label="Configuración" view="config" />
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-slate-100">
+        <div className="mt-auto pt-6 border-t border-slate-100 flex-shrink-0">
            <div className="p-4 bg-slate-50/50 rounded-2xl flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
                  {currentUser?.full_name[0]}
