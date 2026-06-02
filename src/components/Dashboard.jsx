@@ -6,6 +6,7 @@ import {
   Search, 
   Video, 
   ArrowRight, 
+  MessageCircle,
   MessageSquare, 
   Settings, 
   Users, 
@@ -86,6 +87,15 @@ const platforms = [
     color: 'bg-[#ff6d5a]',
     status: 'active',
     url: 'https://n8n-n8n.db8enk.easypanel.host/'
+  },
+  {
+    id: 'whatsapp',
+    name: 'WHATSAPP INTEGRACION',
+    description: 'Conexión y gestión de la API de WhatsApp (Evolution API)',
+    icon: <MessageCircle size={24} />,
+    color: 'bg-[#25D366]',
+    status: 'external',
+    url: 'http://evolution-api-evolution-api.db8enk.easypanel.host/manager'
   }
 ];
 
@@ -210,6 +220,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-4">Simulación</p>
           <SidebarItem icon={Home} label="Dashboard" view="home" />
           <ExternalSidebarItem icon={Zap} label="N8N AUTOMATIZACIONES" href="https://n8n-n8n.db8enk.easypanel.host/" />
+          <ExternalSidebarItem icon={MessageCircle} label="WHATSAPP INTEGRACION" href="http://evolution-api-evolution-api.db8enk.easypanel.host/manager" />
           
           {currentUser?.role === 'admin' && (
             <>
