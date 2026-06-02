@@ -24,7 +24,8 @@ import {
   User as UserIcon,
   AlertCircle,
   BarChart,
-  Zap
+  Zap,
+  Copy
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
@@ -113,6 +114,8 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
     confirmPassword: ''
   });
   const [configMessage, setConfigMessage] = useState(null);
+  const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -188,11 +191,12 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
     </button>
   );
 
-  const ExternalSidebarItem = ({ icon: Icon, label, href, badge }) => (
+  const ExternalSidebarItem = ({ icon: Icon, label, href, badge, onClick }) => (
     <a 
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={onClick}
       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-slate-500 hover:bg-slate-100"
     >
       <Icon size={20} />
@@ -220,7 +224,15 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-4">Simulación</p>
           <SidebarItem icon={Home} label="Dashboard" view="home" />
           <ExternalSidebarItem icon={Zap} label="N8N AUTOMATIZACIONES" href="https://n8n-n8n.db8enk.easypanel.host/" />
-          <ExternalSidebarItem icon={MessageCircle} label="WHATSAPP INTEGRACION" href="http://evolution-api-evolution-api.db8enk.easypanel.host/manager" />
+          <ExternalSidebarItem 
+            icon={MessageCircle} 
+            label="WHATSAPP INTEGRACION" 
+            href="http://evolution-api-evolution-api.db8enk.easypanel.host/manager" 
+            onClick={(e) => {
+              e.preventDefault();
+              setShowWhatsappModal(true);
+            }}
+          />
           
           {currentUser?.role === 'admin' && (
             <>
@@ -299,7 +311,9 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
                     onClick={() => {
-                      if (platform.status === 'external') {
+                      if (platform.id === 'whatsapp') {
+                        setShowWhatsappModal(true);
+                      } else if (platform.status === 'external') {
                         window.open(platform.url, '_blank');
                       } else if (platform.status === 'active') {
                         onSelectPlatform(platform.id);
@@ -557,6 +571,81 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* WHATSAPP MODAL */}
+        <AnimatePresence>
+          {showWhatsappModal && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+                className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl flex flex-col border border-slate-100"
+              >
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center">
+                      <MessageCircle size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black tracking-tighter uppercase italic text-slate-800">Integración WhatsApp</h3>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Evolution API</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowWhatsappModal(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    Antes de ingresar al administrador, copia la siguiente <strong>API Key / Global Token</strong>. La necesitarás para autenticarte y conectar tu cuenta:
+                  </p>
+                  
+                  <div className="relative bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between group">
+                    <code className="text-xs font-mono font-bold text-slate-800 select-all break-all pr-12">
+                      429683C4C977415CAAFCCE10F7D57E11
+                    </code>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText("429683C4C977415CAAFCCE10F7D57E11");
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="absolute right-3 p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-500 hover:text-slate-700 transition-colors shadow-sm animate-pulse hover:animate-none"
+                      title="Copiar token"
+                    >
+                      {copied ? (
+                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-1">¡Copiado!</span>
+                      ) : (
+                        <Copy size={16} />
+                      )}
+                    </button>
+                  </div>
+                  
+                  <div className="flex gap-3 pt-2">
+                    <button 
+                      onClick={() => setShowWhatsappModal(false)}
+                      className="flex-1 py-3 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl font-black uppercase text-xs tracking-widest transition-all"
+                    >
+                      Cancelar
+                    </button>
+                    <a 
+                      href="http://evolution-api-evolution-api.db8enk.easypanel.host/manager"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowWhatsappModal(false)}
+                      className="flex-1 py-3 bg-[#25D366] hover:bg-[#20ba59] text-white text-center rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-green-100 flex items-center justify-center gap-2"
+                    >
+                      Continuar <ArrowRight size={14} />
+                    </a>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
