@@ -41,55 +41,55 @@ const CITIES = [
 const TEST_OPTIONS = [
   {
     id: 'A',
-    text: '[Bardo Viral] Lanzo encantamientos de video corto (Reels/TikTok) con música y tendencias para hipnotizar a la audiencia y volvernos virales.',
+    text: 'Grabar y editar Reels/TikToks dinámicos con ganchos virales mostrando las hamburguesas.',
     role: 'Social Media Content',
-    badge: 'Bardo Viral',
-    rpgClass: 'BARDO VIRAL',
+    badge: 'Viral Video Specialist',
+    rpgClass: 'VIRAL VIDEO SPECIALIST',
     color: 'from-green-400 to-emerald-600',
     textNeon: 'text-green-400'
   },
   {
     id: 'B',
-    text: '[Paladín de Comunidad] Escudo protector de los seguidores. Respondo comentarios con memes, defiendo la marca de trolls y mantengo viva la taberna (comunidad).',
+    text: 'Crear un servidor de Discord para fans y hacer dinámicas y sorteos semanales de hamburguesas.',
     role: 'Community Manager',
-    badge: 'Paladín de Comunidad',
-    rpgClass: 'PALADÍN DE COMUNIDAD',
+    badge: 'Community Architect',
+    rpgClass: 'COMMUNITY ARCHITECT',
     color: 'from-pink-400 to-rose-600',
     textNeon: 'text-pink-400'
   },
   {
     id: 'C',
-    text: '[Cazador de Pauta] Disparo flechas de presupuesto publicitario en Meta/Instagram para perseguir a los clientes por todo el mapa digital hasta que compren.',
+    text: 'Lanzar campañas de anuncios pagados dirigidos a los fans de streamers en Latinoamérica.',
     role: 'Trafficker / Paid Media',
-    badge: 'Cazador de Pauta',
-    rpgClass: 'CAZADOR DE PAUTA',
+    badge: 'Growth Ads Specialist',
+    rpgClass: 'GROWTH ADS SPECIALIST',
     color: 'from-cyan-400 to-blue-600',
     textNeon: 'text-cyan-400'
   },
   {
     id: 'D',
-    text: '[Mago de Conversión] Lanzo hechizos en buscadores. Cuando alguien busca un producto en Google, aparezco instantáneamente en el primer lugar con mi magia pagada (SEM).',
+    text: 'Pagar para que cuando la gente busque "hambre" o "comida rápida" en Google, salgamos primeros.',
     role: 'Especialista SEM',
-    badge: 'Mago de Conversión',
-    rpgClass: 'MAGO DE CONVERSIÓN',
+    badge: 'SEM Manager',
+    rpgClass: 'SEM MANAGER',
     color: 'from-yellow-400 to-amber-600',
     textNeon: 'text-yellow-400'
   },
   {
     id: 'E',
-    text: '[Pícaro del SEO] Me infiltro en las sombras del código y el contenido web para engañar a los algoritmos de Google y aparecer primero gratis a largo plazo.',
+    text: 'Optimizar la web de Beast Burger para que aparezca primera en Google de forma gratis.',
     role: 'Consultor SEO',
-    badge: 'Pícaro del SEO',
-    rpgClass: 'PÍCARO DEL SEO',
+    badge: 'SEO Growth Hacker',
+    rpgClass: 'SEO GROWTH HACKER',
     color: 'from-orange-400 to-red-600',
     textNeon: 'text-orange-400'
   },
   {
     id: 'F',
-    text: '[Oráculo de Datos] Leo las runas de analítica y mapas de calor. Predigo el comportamiento del usuario y le digo al gremio exactamente dónde atacar.',
+    text: 'Analizar los gráficos de visitas por minuto y ventas para saber qué ciudades tienen más demanda.',
     role: 'Data Analyst',
-    badge: 'Oráculo de Datos',
-    rpgClass: 'ORÁCULO DE DATOS',
+    badge: 'Data Analytics Guru',
+    rpgClass: 'DATA ANALYTICS GURU',
     color: 'from-purple-400 to-indigo-600',
     textNeon: 'text-purple-400'
   }
@@ -523,10 +523,10 @@ const VocationalFairLanding = () => {
             <div className="space-y-4 pt-4 border-t border-slate-800">
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
                 <span className="w-2 h-6 bg-purple-500 rounded-full inline-block" />
-                2. Test de Especialidad (Desafío RPG)
+                2. Test de Especialidad (El Desafío Influencer)
               </h2>
               <p className="text-slate-300 font-bold text-sm sm:text-base leading-relaxed">
-                Para salvar el reino de las ventas y derrotar al jefe final "Falta de Tráfico" en esta aventura de Marketing Digital, ¿cuál es tu clase o habilidad especial? *
+                Imagina que MrBeast te contrata hoy mismo en su equipo de marketing para expandir su marca. ¿Cuál sería tu primera acción estratégica para multiplicar las ventas de sus hamburguesas Beast Burger? *
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
