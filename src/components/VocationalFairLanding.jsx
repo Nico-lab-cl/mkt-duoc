@@ -201,46 +201,77 @@ const TOUR_SLIDES = [
     )
   },
   {
-    title: "1. Meta Ads: Caza de Clientes",
-    subtitle: "ANUNCIOS EN INSTAGRAM Y TIKTOK",
-    description: "Aprende a controlar la pauta publicitaria. En Duoc UC simulamos campañas reales, segmentamos el público ideal y gestionamos presupuestos para perseguir a los compradores por toda la web.",
+    title: "1. Configuración de Campañas",
+    subtitle: "INSTAGRAM • TIKTOK • GOOGLE • FACEBOOK • YOUTUBE",
+    description: "Aprende a controlar la pauta publicitaria en las plataformas más grandes del mundo. En Duoc UC configuramos y simulamos campañas reales, segmentamos audiencias y gestionamos presupuestos para llegar a miles de clientes.",
     accent: "from-blue-500 to-indigo-600",
     shadow: "shadow-blue-500/20",
     border: "border-blue-500/30",
     icon: (
-      <svg className="w-16 h-16 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-        <line x1="9" y1="3" x2="9" y2="21"/>
-        <line x1="15" y1="3" x2="15" y2="21"/>
-        <line x1="3" y1="9" x2="21" y2="9"/>
-        <line x1="3" y1="15" x2="21" y2="15"/>
-      </svg>
+      <div className="flex flex-wrap gap-2 items-center justify-center p-1 text-slate-100 max-w-[95px] select-none">
+        {/* Facebook */}
+        <svg className="w-6 h-6 text-[#1877F2] drop-shadow-[0_0_6px_rgba(24,119,242,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+        {/* Instagram */}
+        <svg className="w-6 h-6 text-[#E1306C] drop-shadow-[0_0_6px_rgba(225,48,108,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+        </svg>
+        {/* TikTok */}
+        <svg className="w-6 h-6 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.23-.45-.47-.65-.73v7.07c0 2.76-1.02 5.47-3.21 7.19-2.14 1.66-5.11 2.21-7.72 1.43-2.61-.79-4.73-2.91-5.5-5.52-.77-2.61-.22-5.58 1.44-7.72 1.72-2.19 4.43-3.21 7.19-3.21v4.03c-1.53 0-3.09.63-4.17 1.75-1.11 1.12-1.62 2.7-1.79 4.24v.1c0 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79h.1c1.53 0 3.09-.63 4.17-1.75 1.11-1.12 1.62-2.7 1.79-4.24V.02z"/>
+        </svg>
+        {/* YouTube */}
+        <svg className="w-6 h-6 text-[#FF0000] drop-shadow-[0_0_6px_rgba(255,0,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.107C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.388.511a3.002 3.002 0 0 0-2.11 2.107C0 8.053 0 12 0 12s0 3.947.502 5.837a3.003 3.003 0 0 0 2.11 2.107C4.495 20.455 12 20.455 12 20.455s7.505 0 9.388-.511a3.003 3.003 0 0 0 2.11-2.107C24 15.947 24 12 24 12s0-3.947-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+        {/* Google */}
+        <svg className="w-6 h-6 drop-shadow-[0_0_6px_rgba(234,67,53,0.3)]" viewBox="0 0 24 24">
+          <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.277 1.565-1.762 4.593-6.887 4.593-4.43 0-8.04-3.668-8.04-8.193S7.81 2.607 12.24 2.607c2.52 0 4.21 1.05 5.17 1.977l3.24-3.12C18.59.852 15.69 0 12.24 0 5.58 0 0 5.487 0 12.2s5.58 12.2 12.24 12.2c6.96 0 11.57-4.89 11.57-11.78 0-.79-.08-1.4-.19-1.97H12.24z"/>
+        </svg>
+      </div>
     )
   },
   {
-    title: "2. Chatbots y WhatsApp API",
-    subtitle: "MARKETING CONVERSACIONAL E INTELIGENTE",
-    description: "Diseña flujos de conversación que venden en piloto automático 24/7. Conectamos la API de WhatsApp para interactuar en tiempo real, resolver dudas y cerrar ventas de forma instantánea.",
+    title: "2. Chatbots",
+    subtitle: "MARKETING CONVERSACIONAL",
+    description: "Diseña flujos de conversación inteligentes que guían al cliente y cierran ventas de forma automática. En el simulador creamos bots estructurados que responden al instante, resolviendo dudas de los usuarios.",
     accent: "from-green-500 to-emerald-600",
     shadow: "shadow-green-500/20",
     border: "border-green-500/30",
     icon: (
-      <svg className="w-16 h-16 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
+      <div className="flex gap-4 items-center justify-center p-1 text-slate-100 select-none">
+        {/* WhatsApp */}
+        <svg className="w-8 h-8 text-[#25D366] drop-shadow-[0_0_6px_rgba(37,211,102,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.863-9.858.002-2.634-1.013-5.11-2.861-6.963-1.848-1.854-4.321-2.87-6.956-2.871-5.439 0-9.861 4.42-9.864 9.86-.001 1.738.455 3.433 1.32 4.932l-.991 3.623 3.717-.975zm11.758-7.079c-.097-.163-.359-.261-.754-.457-.395-.197-2.336-1.153-2.696-1.284-.36-.131-.622-.197-.884.197-.262.393-.997 1.25-.198 1.348.33.065 1.547.457 2.203.457.656 0 1.22-.097 1.517-.261.298-.163.56-.261.56-.554s-.065-.554-.163-.717zm-4.331-2.228c-.262-.393-.524-.458-.884-.458s-.622-.033-.884.097c-.262.131-.997.755-.997 1.842 0 1.088.754 2.142.884 2.306.131.163 1.484 2.27 3.6 3.181.504.216.897.346 1.203.443.507.161.968.138 1.332.084.407-.06 1.22-.497 1.385-.978.164-.48.164-.897.115-.978-.05-.084-.197-.131-.59-.328z"/>
+        </svg>
+        {/* Facebook Messenger */}
+        <svg className="w-8 h-8 text-[#0084FF] drop-shadow-[0_0_6px_rgba(0,132,255,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.36 2 2 6.13 2 11.69c0 3.16 1.43 5.92 3.67 7.74V23l3.35-1.84c.94.26 1.94.42 2.98.42 5.64 0 10-4.13 10-9.69C22 6.13 17.64 2 12 2zm1.09 12.87l-2.67-2.85-5.2 2.85 5.71-6.07 2.7 2.85 5.17-2.85-5.71 6.07z"/>
+        </svg>
+      </div>
     )
   },
   {
-    title: "3. Automatizaciones con N8N",
-    subtitle: "CONECTA LA MATRIX DIGITAL",
-    description: "Conecta plataformas como HubSpot, WhatsApp, OpenAI y bases de datos para crear flujos automatizados que trabajan por ti. Enviamos correos segmentados en el instante preciso.",
+    title: "3. Automatización",
+    subtitle: "PROCESOS Y WORKFLOWS EFICIENTES",
+    description: "Conecta diferentes herramientas y bases de datos para crear flujos de trabajo que funcionan en piloto automático. Automatiza el envío de correos, el traspaso de leads y las alertas del equipo para optimizar el tiempo.",
     accent: "from-orange-500 to-red-600",
     shadow: "shadow-orange-500/20",
     border: "border-orange-500/30",
     icon: (
-      <svg className="w-16 h-16 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-      </svg>
+      <div className="flex gap-4 items-center justify-center p-1 text-slate-100 select-none">
+        {/* Zapier Underscore */}
+        <svg className="w-8 h-8 text-[#FF4F00] drop-shadow-[0_0_6px_rgba(255,79,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="2" y="16" width="20" height="5" rx="1.5" />
+        </svg>
+        {/* Make overlapping dots */}
+        <div className="flex items-center justify-center w-8 h-8 relative drop-shadow-[0_0_6px_rgba(138,43,226,0.4)]">
+          <circle cx="7" cy="14" r="5.5" fill="#4B0082" />
+          <circle cx="15" cy="9" r="5" fill="#8A2BE2" opacity="0.95" />
+          <circle cx="16" cy="16" r="4.5" fill="#DA70D6" opacity="0.85" />
+        </div>
+      </div>
     )
   },
   {
@@ -251,9 +282,18 @@ const TOUR_SLIDES = [
     shadow: "shadow-purple-500/20",
     border: "border-purple-500/30",
     icon: (
-      <svg className="w-16 h-16 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M18 20V10M12 20V4M6 20v-6"/>
-      </svg>
+      <div className="flex gap-4 items-center justify-center p-1 text-slate-100 select-none">
+        {/* Google Analytics */}
+        <svg className="w-8 h-8 drop-shadow-[0_0_6px_rgba(244,180,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path fill="#F4B400" d="M6.5 13.5c0-.83-.67-1.5-1.5-1.5S3.5 12.67 3.5 13.5v5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5z" />
+          <path fill="#F9AB00" d="M12.5 1.5c0-.83-.67-1.5-1.5-1.5S9.5.67 9.5 1.5v11c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-11z" />
+          <path fill="#E37400" d="M18.5 7.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5z" />
+        </svg>
+        {/* Google Sheets */}
+        <svg className="w-8 h-8 text-[#0F9D58] drop-shadow-[0_0_6px_rgba(15,157,88,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+        </svg>
+      </div>
     )
   }
 ];
@@ -429,17 +469,10 @@ const VocationalFairLanding = () => {
             <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${TOUR_SLIDES[tourIndex].accent} opacity-5 rounded-full blur-2xl pointer-events-none`} />
 
             {/* Header del Slide */}
-            <div className="w-full flex justify-between items-center pb-4 border-b border-slate-850">
-              <span className="text-[10px] font-black text-slate-555 uppercase tracking-widest">
+            <div className="w-full flex justify-center items-center pb-4 border-b border-slate-850">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 RECORRIDO MARTECH • PASO {tourIndex + 1} DE {TOUR_SLIDES.length}
               </span>
-              <button 
-                type="button"
-                onClick={() => setShowTour(false)}
-                className="text-xs font-black text-cyan-400 hover:text-cyan-300 uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                Saltar Recorrido ➔
-              </button>
             </div>
 
             {/* Icono de Módulo */}
