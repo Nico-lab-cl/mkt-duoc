@@ -35,7 +35,9 @@ const AppContent = () => {
   useEffect(() => {
     if (currentUser) {
       if (currentUser.role === 'guest') {
-        setView('dashboard');
+        if (view === 'login') {
+          setView('dashboard');
+        }
         if (window.location.pathname !== '/') {
           window.history.pushState(null, '', '/');
         }

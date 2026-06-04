@@ -526,7 +526,7 @@ const VocationalFairLanding = () => {
           Genera tu Identidad Digital
         </h1>
         <p className="text-slate-400 mt-3 text-base sm:text-lg font-semibold max-w-3xl text-left">
-          Ingeniería en Marketing Digital • Descubre tu rol en la Matrix digital y descarga tu credencial Cyberpunk personalizada.
+          Ingeniería en Marketing Digital • Explora el software real de simulación MarTech.
         </p>
       </div>
 
@@ -563,7 +563,7 @@ const VocationalFairLanding = () => {
 
             {/* Descripción */}
             <p className="text-slate-300 text-sm sm:text-base font-medium leading-relaxed text-justify">
-              Hoy vas a sumergirte en el software que usan nuestros estudiantes universitarios. Aprenderás a dominar los canales digitales que mueven millones de dólares en el mundo real. Navega libremente por la plataforma y, al finalizar el recorrido, conoce tu vocación en Marketing Digital para descargar tu credencial cyberpunk personalizada.
+              Hoy vas a sumergirte en el software que usan nuestros estudiantes universitarios. Aprenderás a dominar los canales digitales que mueven millones de dólares en el mundo real. Navega libremente por la plataforma y descubre cómo funcionan las herramientas reales de Marketing Digital.
             </p>
 
             {/* Botones de Navegación del Tour */}
