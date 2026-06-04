@@ -519,6 +519,9 @@ app.get('/api/admin/leads/export', async (req, res) => {
   } catch (err) {
     console.error('Error exporting leads:', err);
     res.status(500).json({ error: 'Error al exportar leads' });
+  }
+});
+
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API (SPA)
 const indexHtmlPath = path.resolve(__dirname, '../dist/index.html');
 app.use((req, res) => {
