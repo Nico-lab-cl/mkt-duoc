@@ -510,7 +510,7 @@ app.post('/api/leads', async (req, res) => {
     // Generar contraseña temporal de 6 caracteres alfanuméricos
     const tmpPassword = Math.random().toString(36).slice(-6).toUpperCase();
 
-    // Crear el usuario asociado al lead
+    // Crear o actualizar el usuario asociado al lead
     try {
       const userExists = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
       if (userExists.rows.length === 0) {
@@ -519,9 +519,17 @@ app.post('/api/leads', async (req, res) => {
            VALUES ($1, $2, $3, 'guest', 999, TRUE)`,
           [email, tmpPassword, `${first_name} ${last_name}`]
         );
+      } else {
+        // Si el usuario ya existe, actualizamos su contraseña temporal y forzamos el cambio
+        await pool.query(
+          `UPDATE users 
+           SET password = $1, must_change_password = TRUE, full_name = $2, role = 'guest', group_id = 999 
+           WHERE email = $3`,
+          [tmpPassword, `${first_name} ${last_name}`, email]
+        );
       }
     } catch (userErr) {
-      console.error('Error al crear usuario para el lead:', userErr);
+      console.error('Error al crear/actualizar usuario para el lead:', userErr);
     }
 
     res.json({ success: true, lead: result.rows[0], tmpPassword });

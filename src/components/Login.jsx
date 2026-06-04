@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useProject } from '../context/ProjectContext';
-import { Rocket, Shield, Lock, Mail, AlertCircle, Check } from 'lucide-react';
+import { Rocket, Shield, Lock, Mail, AlertCircle, Check, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Login = ({ onNext }) => {
@@ -31,6 +31,11 @@ const Login = ({ onNext }) => {
 
   // States para recuperación de contraseña
   const [recoveryEmail, setRecoveryEmail] = useState('');
+
+  // States para visibilidad de contraseña
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -206,13 +211,20 @@ const Login = ({ onNext }) => {
                     <Lock size={18} />
                   </div>
                   <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"} 
                     required
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm font-medium"
+                    className="w-full pl-10 pr-10 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm font-medium"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center p-1"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
                 <div className="text-right mt-1.5">
                   <button 
@@ -222,7 +234,7 @@ const Login = ({ onNext }) => {
                       setSuccessMsg('');
                       setMode('recover-password');
                     }}
-                    className="text-xs font-bold text-blue-650 hover:text-blue-700 hover:underline cursor-pointer"
+                    className="text-xs font-bold text-blue-650 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
@@ -244,7 +256,7 @@ const Login = ({ onNext }) => {
         {mode === 'change-password' && (
           <>
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-650 rounded-2xl mb-4 text-white shadow-lg">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-655 rounded-2xl mb-4 text-white shadow-lg">
                 <Lock size={32} />
               </div>
               <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Crea tu Nueva Contraseña</h1>
@@ -270,14 +282,21 @@ const Login = ({ onNext }) => {
                     <Lock size={18} />
                   </div>
                   <input 
-                    type="password" 
+                    type={showNewPassword ? "text" : "password"} 
                     required
                     minLength={4}
                     placeholder="Mínimo 4 caracteres"
-                    className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm font-medium"
+                    className="w-full pl-10 pr-10 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm font-medium"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center p-1"
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
               
@@ -288,14 +307,21 @@ const Login = ({ onNext }) => {
                     <Lock size={18} />
                   </div>
                   <input 
-                    type="password" 
+                    type={showConfirmPassword ? "text" : "password"} 
                     required
                     minLength={4}
                     placeholder="Repite tu contraseña"
-                    className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm font-medium"
+                    className="w-full pl-10 pr-10 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm font-medium"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center p-1"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
 
