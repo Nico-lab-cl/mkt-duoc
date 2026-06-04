@@ -195,47 +195,78 @@ app.post('/api/recover-password', async (req, res) => {
   }
   const emailNormalized = email.trim().toLowerCase();
   try {
-    // Buscar si el usuario existe
-    const userExists = await pool.query('SELECT id, email, full_name FROM users WHERE LOWER(email) = $1', [emailNormalized]);
-    if (userExists.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'El correo electrónico no está registrado.' });
-    }
+    // Generar nueva contraseña temporal de 6 caracteres alfanuméricos
+    const tmpPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    // Buscar información en la tabla 'leads' para obtener nombre y teléfono
+    // 1. Buscar si el usuario existe en 'users'
+    const userExists = await pool.query('SELECT id, email, full_name FROM users WHERE LOWER(email) = $1', [emailNormalized]);
+    
     let first_name = '';
     let last_name = '';
     let phone = '';
-    let full_name = userExists.rows[0].full_name;
+    let full_name = '';
+    let userId = null;
 
-    const leadInfo = await pool.query(
-      'SELECT first_name, last_name, phone FROM leads WHERE LOWER(email) = $1 ORDER BY created_at DESC LIMIT 1',
-      [emailNormalized]
-    );
-    if (leadInfo.rows.length > 0) {
+    if (userExists.rows.length === 0) {
+      // 2. Si no existe en 'users', buscar en la tabla 'leads' para ver si es un alumno registrado huérfano
+      console.log(`Usuario no encontrado en 'users' para ${emailNormalized}. Buscando en 'leads'...`);
+      const leadInfo = await pool.query(
+        'SELECT first_name, last_name, phone FROM leads WHERE LOWER(email) = $1 ORDER BY created_at DESC LIMIT 1',
+        [emailNormalized]
+      );
+
+      if (leadInfo.rows.length === 0) {
+        // No existe en ninguna parte
+        console.log(`Correo ${emailNormalized} no existe en leads ni users.`);
+        return res.status(404).json({ success: false, message: 'El correo electrónico no está registrado.' });
+      }
+
+      // Si existe en leads, crear su usuario en 'users' al vuelo
       first_name = leadInfo.rows[0].first_name;
       last_name = leadInfo.rows[0].last_name;
       phone = leadInfo.rows[0].phone || '';
       full_name = `${first_name} ${last_name}`;
+      
+      console.log(`Lead encontrado. Creando cuenta de usuario para ${emailNormalized} al vuelo...`);
+      const insertUser = await pool.query(
+        `INSERT INTO users (email, password, full_name, role, group_id, must_change_password)
+         VALUES ($1, $2, $3, 'guest', 999, TRUE) RETURNING id`,
+        [emailNormalized, tmpPassword, full_name]
+      );
+      userId = insertUser.rows[0].id;
+    } else {
+      // Si el usuario existe, obtener datos del lead si están disponibles
+      full_name = userExists.rows[0].full_name;
+      userId = userExists.rows[0].id;
+
+      const leadInfo = await pool.query(
+        'SELECT first_name, last_name, phone FROM leads WHERE LOWER(email) = $1 ORDER BY created_at DESC LIMIT 1',
+        [emailNormalized]
+      );
+      if (leadInfo.rows.length > 0) {
+        first_name = leadInfo.rows[0].first_name;
+        last_name = leadInfo.rows[0].last_name;
+        phone = leadInfo.rows[0].phone || '';
+        full_name = `${first_name} ${last_name}`;
+      }
+
+      // Actualizar la contraseña en 'users' y forzar cambio
+      await pool.query(
+        'UPDATE users SET password = $1, must_change_password = TRUE WHERE id = $2',
+        [tmpPassword, userId]
+      );
     }
 
-    // Generar nueva contraseña temporal de 6 caracteres alfanuméricos
-    const tmpPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-    // Actualizar la contraseña y forzar el cambio
-    await pool.query(
-      'UPDATE users SET password = $1, must_change_password = TRUE WHERE LOWER(email) = $2',
-      [tmpPassword, emailNormalized]
-    );
-
-    // Disparar Webhook a n8n
+    // 3. Disparar Webhook a n8n
     try {
-      await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
+      console.log(`Disparando webhook de recuperación a n8n para ${emailNormalized}...`);
+      const webhookRes = await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email,
+          email: emailNormalized,
           new_password: tmpPassword,
-          Correo: email,
+          Correo: emailNormalized,
           "Contraseña temporal": tmpPassword,
           Nombre: full_name,
           first_name: first_name,
@@ -244,6 +275,9 @@ app.post('/api/recover-password', async (req, res) => {
           phone: phone
         })
       });
+      
+      const responseText = await webhookRes.text();
+      console.log(`Webhook n8n response - Status: ${webhookRes.status}, Body: ${responseText}`);
     } catch (webhookErr) {
       console.error('Error al disparar webhook de recuperación en n8n:', webhookErr);
     }
