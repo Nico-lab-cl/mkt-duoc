@@ -93,6 +93,9 @@ pool.connect(async (err, client, release) => {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='group_id') THEN
           ALTER TABLE lead_magnets ADD COLUMN group_id INTEGER;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='must_change_password') THEN
+          ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE;
+        END IF;
       END $$;
     `);
     console.log('🚀 Tablas de base de datos verificadas/creadas');
@@ -109,18 +112,95 @@ app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const result = await pool.query(
-      'SELECT id, email, full_name, role, group_id FROM users WHERE email = $1 AND password = $2',
+      'SELECT id, email, full_name, role, group_id, must_change_password FROM users WHERE email = $1 AND password = $2',
       [email, password]
     );
 
     if (result.rows.length > 0) {
-      res.json({ success: true, user: result.rows[0] });
+      const user = result.rows[0];
+      if (user.must_change_password) {
+        return res.json({ success: true, mustChangePassword: true, email: user.email });
+      }
+      res.json({ success: true, user });
     } else {
       res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
     }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+app.post('/api/change-password', async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+  if (!email || !currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, error: 'Todos los campos son obligatorios' });
+  }
+  try {
+    // Verificar que la contraseña actual (temporal) coincida
+    const checkUser = await pool.query(
+      'SELECT id, email, full_name, role, group_id FROM users WHERE email = $1 AND password = $2',
+      [email, currentPassword]
+    );
+    if (checkUser.rows.length === 0) {
+      return res.status(401).json({ success: false, message: 'Contraseña actual incorrecta.' });
+    }
+
+    // Actualizar la contraseña
+    const updateResult = await pool.query(
+      'UPDATE users SET password = $1, must_change_password = FALSE WHERE id = $2 RETURNING id, email, full_name, role, group_id',
+      [newPassword, checkUser.rows[0].id]
+    );
+
+    res.json({ success: true, user: updateResult.rows[0] });
+  } catch (err) {
+    console.error('Error al cambiar contraseña:', err);
+    res.status(500).json({ error: 'Error en el servidor al actualizar la contraseña' });
+  }
+});
+
+app.post('/api/recover-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, error: 'El correo electrónico es obligatorio' });
+  }
+  try {
+    // Buscar si el usuario existe
+    const userExists = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'El correo electrónico no está registrado.' });
+    }
+
+    // Generar nueva contraseña temporal de 6 caracteres
+    const tmpPassword = Math.random().toString(36).slice(-6).toUpperCase();
+
+    // Actualizar la contraseña y forzar el cambio
+    await pool.query(
+      'UPDATE users SET password = $1, must_change_password = TRUE WHERE email = $2',
+      [tmpPassword, email]
+    );
+
+    // Disparar Webhook a n8n
+    try {
+      await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          new_password: tmpPassword,
+          Correo: email,
+          "Contraseña temporal": tmpPassword
+        })
+      });
+    } catch (webhookErr) {
+      console.error('Error al disparar webhook de recuperación en n8n:', webhookErr);
+      // Continuamos de todas formas ya que el cambio de contraseña en DB fue exitoso
+    }
+
+    res.json({ success: true, message: 'Se ha generado y enviado una nueva contraseña temporal.' });
+  } catch (err) {
+    console.error('Error al recuperar contraseña:', err);
+    res.status(500).json({ error: 'Error en el servidor al procesar la recuperación' });
   }
 });
 
@@ -435,8 +515,8 @@ app.post('/api/leads', async (req, res) => {
       const userExists = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
       if (userExists.rows.length === 0) {
         await pool.query(
-          `INSERT INTO users (email, password, full_name, role, group_id)
-           VALUES ($1, $2, $3, 'guest', 999)`,
+          `INSERT INTO users (email, password, full_name, role, group_id, must_change_password)
+           VALUES ($1, $2, $3, 'guest', 999, TRUE)`,
           [email, tmpPassword, `${first_name} ${last_name}`]
         );
       }
