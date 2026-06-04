@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas-pro';
 import { 
   User, 
@@ -11,7 +11,17 @@ import {
   QrCode, 
   Download, 
   RefreshCw, 
-  Check
+  Check,
+  Zap,
+  Home,
+  Layout,
+  MessageSquare,
+  BarChart,
+  Lock,
+  ArrowRight,
+  ChevronRight,
+  Info,
+  ShieldCheck
 } from 'lucide-react';
 
 const CITIES = [
@@ -216,121 +226,7 @@ const SOCIAL_MEDIA = [
   }
 ];
 
-const TOUR_SLIDES = [
-  {
-    title: "Bienvenido a la Matrix del Marketing",
-    subtitle: "INGENIERÍA EN MARKETING DIGITAL DUOC UC",
-    description: "Hoy vas a sumergirte en el software que usan nuestros estudiantes universitarios. Aprenderás a dominar los canales digitales que mueven millones de dólares en el mundo real.",
-    accent: "from-cyan-500 to-blue-500",
-    shadow: "shadow-cyan-500/20",
-    border: "border-cyan-500/30",
-    icon: (
-      <svg className="w-16 h-16 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
-    )
-  },
-  {
-    title: "1. Configuración de Campañas",
-    subtitle: "INSTAGRAM • TIKTOK • GOOGLE • FACEBOOK • YOUTUBE",
-    description: "Aprende a controlar la pauta publicitaria en las plataformas más grandes del mundo. En Duoc UC configuramos y simulamos campañas reales, segmentamos audiencias y gestionamos presupuestos para llegar a miles de clientes.",
-    accent: "from-blue-500 to-indigo-600",
-    shadow: "shadow-blue-500/20",
-    border: "border-blue-500/30",
-    icon: (
-      <div className="flex flex-wrap gap-2 items-center justify-center p-1 text-slate-100 max-w-[95px] select-none">
-        {/* Facebook */}
-        <svg className="w-6 h-6 text-[#1877F2] drop-shadow-[0_0_6px_rgba(24,119,242,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-        </svg>
-        {/* Instagram */}
-        <svg className="w-6 h-6 text-[#E1306C] drop-shadow-[0_0_6px_rgba(225,48,108,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-        </svg>
-        {/* TikTok */}
-        <svg className="w-6 h-6 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.23-.45-.47-.65-.73v7.07c0 2.76-1.02 5.47-3.21 7.19-2.14 1.66-5.11 2.21-7.72 1.43-2.61-.79-4.73-2.91-5.5-5.52-.77-2.61-.22-5.58 1.44-7.72 1.72-2.19 4.43-3.21 7.19-3.21v4.03c-1.53 0-3.09.63-4.17 1.75-1.11 1.12-1.62 2.7-1.79 4.24v.1c0 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79h.1c1.53 0 3.09-.63 4.17-1.75 1.11-1.12 1.62-2.7 1.79-4.24V.02z"/>
-        </svg>
-        {/* YouTube */}
-        <svg className="w-6 h-6 text-[#FF0000] drop-shadow-[0_0_6px_rgba(255,0,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.107C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.388.511a3.002 3.002 0 0 0-2.11 2.107C0 8.053 0 12 0 12s0 3.947.502 5.837a3.003 3.003 0 0 0 2.11 2.107C4.495 20.455 12 20.455 12 20.455s7.505 0 9.388-.511a3.003 3.003 0 0 0 2.11-2.107C24 15.947 24 12 24 12s0-3.947-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-        </svg>
-        {/* Google */}
-        <svg className="w-6 h-6 drop-shadow-[0_0_6px_rgba(234,67,53,0.3)]" viewBox="0 0 24 24">
-          <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.277 1.565-1.762 4.593-6.887 4.593-4.43 0-8.04-3.668-8.04-8.193S7.81 2.607 12.24 2.607c2.52 0 4.21 1.05 5.17 1.977l3.24-3.12C18.59.852 15.69 0 12.24 0 5.58 0 0 5.487 0 12.2s5.58 12.2 12.24 12.2c6.96 0 11.57-4.89 11.57-11.78 0-.79-.08-1.4-.19-1.97H12.24z"/>
-        </svg>
-      </div>
-    )
-  },
-  {
-    title: "2. Chatbots",
-    subtitle: "MARKETING CONVERSACIONAL",
-    description: "Diseña flujos de conversación inteligentes que guían al cliente y cierran ventas de forma automática. En el simulador creamos bots estructurados que responden al instante, resolviendo dudas de los usuarios.",
-    accent: "from-green-500 to-emerald-600",
-    shadow: "shadow-green-500/20",
-    border: "border-green-500/30",
-    icon: (
-      <div className="flex gap-4 items-center justify-center p-1 text-slate-100 select-none">
-        {/* WhatsApp */}
-        <svg className="w-8 h-8 text-[#25D366] drop-shadow-[0_0_6px_rgba(37,211,102,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.863-9.858.002-2.634-1.013-5.11-2.861-6.963-1.848-1.854-4.321-2.87-6.956-2.871-5.439 0-9.861 4.42-9.864 9.86-.001 1.738.455 3.433 1.32 4.932l-.991 3.623 3.717-.975zm11.758-7.079c-.097-.163-.359-.261-.754-.457-.395-.197-2.336-1.153-2.696-1.284-.36-.131-.622-.197-.884.197-.262.393-.997 1.25-.198 1.348.33.065 1.547.457 2.203.457.656 0 1.22-.097 1.517-.261.298-.163.56-.261.56-.554s-.065-.554-.163-.717zm-4.331-2.228c-.262-.393-.524-.458-.884-.458s-.622-.033-.884.097c-.262.131-.997.755-.997 1.842 0 1.088.754 2.142.884 2.306.131.163 1.484 2.27 3.6 3.181.504.216.897.346 1.203.443.507.161.968.138 1.332.084.407-.06 1.22-.497 1.385-.978.164-.48.164-.897.115-.978-.05-.084-.197-.131-.59-.328z"/>
-        </svg>
-        {/* Facebook Messenger */}
-        <svg className="w-8 h-8 text-[#0084FF] drop-shadow-[0_0_6px_rgba(0,132,255,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.36 2 2 6.13 2 11.69c0 3.16 1.43 5.92 3.67 7.74V23l3.35-1.84c.94.26 1.94.42 2.98.42 5.64 0 10-4.13 10-9.69C22 6.13 17.64 2 12 2zm1.09 12.87l-2.67-2.85-5.2 2.85 5.71-6.07 2.7 2.85 5.17-2.85-5.71 6.07z"/>
-        </svg>
-      </div>
-    )
-  },
-  {
-    title: "3. Automatización",
-    subtitle: "PROCESOS Y WORKFLOWS EFICIENTES",
-    description: "Conecta diferentes herramientas y bases de datos para crear flujos de trabajo que funcionan en piloto automático. Automatiza el envío de correos, el traspaso de leads y las alertas del equipo para optimizar el tiempo.",
-    accent: "from-orange-500 to-red-600",
-    shadow: "shadow-orange-500/20",
-    border: "border-orange-500/30",
-    icon: (
-      <div className="flex gap-3 items-center justify-center p-1 text-slate-100 select-none">
-        {/* n8n Logo */}
-        <svg className="w-10 h-6 text-[#FF6D5A] drop-shadow-[0_0_6px_rgba(255,109,90,0.5)]" viewBox="0 0 228 120" fill="currentColor">
-          <path fillRule="evenodd" clipRule="evenodd" d="M204 48C192.817 48 183.42 40.3514 180.756 30H153.248C147.382 30 142.376 34.241 141.412 40.0272L140.425 45.9456C139.489 51.5648 136.646 56.4554 132.626 60C136.646 63.5446 139.489 68.4352 140.425 74.0544L141.412 79.9728C142.376 85.759 147.382 90 153.248 90H156.756C159.42 79.6486 168.817 72 180 72C193.255 72 204 82.7452 204 96C204 109.255 193.255 120 180 120C168.817 120 159.42 112.351 156.756 102H153.248C141.516 102 131.504 93.5181 129.575 81.9456L128.588 76.0272C127.624 70.241 122.618 66 116.752 66H107.244C104.58 76.3514 95.183 84 84 84C72.817 84 63.4204 76.3514 60.7561 66H47.2439C44.5796 76.3514 35.183 84 24 84C10.7452 84 0 73.2548 0 60C0 46.7452 10.7452 36 24 36C35.183 36 44.5796 43.6486 47.2439 54H60.7561C63.4204 43.6486 72.817 36 84 36C95.183 36 104.58 43.6486 107.244 54H116.752C122.618 54 127.624 49.759 128.588 43.9728L129.575 38.0544C131.504 26.4819 141.516 18 153.248 18L180.756 18C183.42 7.64864 192.817 0 204 0C217.255 0 228 10.7452 228 24C228 37.2548 217.255 48 204 48ZM204 36C210.627 36 216 30.6274 216 24C216 17.3726 210.627 12 204 12C197.373 12 192 17.3726 192 24C192 30.6274 197.373 36 204 36ZM24 72C30.6274 72 36 66.6274 36 60C36 53.3726 30.6274 48 24 48C17.3726 48 12 53.3726 12 60C12 66.6274 17.3726 72 24 72ZM96 60C96 66.6274 90.6274 72 84 72C77.3726 72 72 66.6274 72 60C72 53.3726 77.3726 48 84 48C90.6274 48 96 53.3726 96 60ZM192 96C192 102.627 186.627 108 180 108C173.373 108 168 102.627 168 96C168 89.3726 173.373 84 180 84C186.627 84 192 89.3726 192 96Z" />
-        </svg>
-        {/* Zapier Underscore */}
-        <svg className="w-6 h-6 text-[#FF4F00] drop-shadow-[0_0_6px_rgba(255,79,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <rect x="2" y="16" width="20" height="5" rx="1.5" />
-        </svg>
-        {/* Make overlapping dots */}
-        <div className="flex items-center justify-center w-7 h-7 relative drop-shadow-[0_0_6px_rgba(138,43,226,0.4)]">
-          <circle cx="6" cy="14" r="5" fill="#4B0082" />
-          <circle cx="14" cy="9" r="4.5" fill="#8A2BE2" opacity="0.95" />
-          <circle cx="15" cy="15" r="4" fill="#DA70D6" opacity="0.85" />
-        </div>
-      </div>
-    )
-  },
-  {
-    title: "4. Analítica y Laboratorio de KPIs",
-    subtitle: "EL CEREBRO DETRÁS DE LOS NÚMEROS",
-    description: "Analizamos el rendimiento en vivo: visitas, CTR, conversiones y retorno de inversión (ROI). Los números te dicen exactamente si tu estrategia está funcionando o qué debes cambiar para ganar.",
-    accent: "from-purple-500 to-indigo-600",
-    shadow: "shadow-purple-500/20",
-    border: "border-purple-500/30",
-    icon: (
-      <div className="flex gap-4 items-center justify-center p-1 text-slate-100 select-none">
-        {/* Google Analytics */}
-        <svg className="w-8 h-8 drop-shadow-[0_0_6px_rgba(244,180,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path fill="#F4B400" d="M6.5 13.5c0-.83-.67-1.5-1.5-1.5S3.5 12.67 3.5 13.5v5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5z" />
-          <path fill="#F9AB00" d="M12.5 1.5c0-.83-.67-1.5-1.5-1.5S9.5.67 9.5 1.5v11c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-11z" />
-          <path fill="#E37400" d="M18.5 7.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5z" />
-        </svg>
-        {/* Google Sheets */}
-        <svg className="w-8 h-8 text-[#0F9D58] drop-shadow-[0_0_6px_rgba(15,157,88,0.4)]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-        </svg>
-      </div>
-    )
-  }
-];
+// TOUR_SLIDES removed - replaced with direct dashboard and simulator tour;
 
 const VocationalFairLanding = () => {
   const [formData, setFormData] = useState({
@@ -346,8 +242,59 @@ const VocationalFairLanding = () => {
     test_answer: ''
   });
 
-  const [tourIndex, setTourIndex] = useState(0);
-  const [showTour, setShowTour] = useState(true);
+  const [step, setStep] = useState('tour-intro'); // 'tour-intro' | 'software-tour' | 'form' | 'credential'
+  const [softwareStep, setSoftwareStep] = useState(0); // 0: Dashboard, 1: Meta Ads, 2: Marketing Conversacional, 3: Lead Magnet, 4: N8N Automatizaciones, 5: Laboratorio de Analíticas y KPI
+  
+  // Mockups de Simulación
+  const [mockBudget, setMockBudget] = useState(150000);
+  const [mockPlatform, setMockPlatform] = useState('Instagram');
+  const [mockAge, setMockAge] = useState('18-24');
+  const [chatMessages, setChatMessages] = useState([
+    { sender: 'bot', text: '¡Hola! Soy Spectra Bot 🤖. Bienvenido al taller de Marketing Digital de Duoc UC. Haz clic en una opción para interactuar:' }
+  ]);
+  const [autoNode, setAutoNode] = useState(-1); // -1: idle, 0: Webhook, 1: AI, 2: WhatsApp
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoFinished, setAutoFinished] = useState(false);
+  const [mockCity, setMockCity] = useState('Valparaíso');
+
+  // Lead Magnet Simulator States
+  const [lmTemplate, setLmTemplate] = useState('Ebook');
+  const [lmColor, setLmColor] = useState('cyan');
+  const [lmCta, setLmCta] = useState('¡Descargar Ebook Gratis!');
+  const [lmLeadsCount, setLmLeadsCount] = useState(42);
+  const [lmSubmitted, setLmSubmitted] = useState(false);
+  const [lmTestName, setLmTestName] = useState('');
+  const [lmTestEmail, setLmTestEmail] = useState('');
+
+  const chatEndRef = useRef(null);
+
+  // Auto-scroll para el chat
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
+
+  const handleChatOption = (userText, botResponse) => {
+    const userMsg = { sender: 'user', text: userText };
+    const botMsg = { sender: 'bot', text: botResponse };
+    setChatMessages(prev => [...prev, userMsg, botMsg]);
+  };
+
+  const runAutomation = () => {
+    if (autoRunning) return;
+    setAutoRunning(true);
+    setAutoFinished(false);
+    setAutoNode(0);
+    
+    setTimeout(() => setAutoNode(1), 1000);
+    setTimeout(() => setAutoNode(2), 2000);
+    setTimeout(() => {
+      setAutoRunning(false);
+      setAutoFinished(true);
+      setAutoNode(-1);
+    }, 3000);
+  };
 
   const [whatsappDigits, setWhatsappDigits] = useState(''); // Solo 8 dígitos
   const [loading, setLoading] = useState(false);
@@ -456,7 +403,7 @@ const VocationalFairLanding = () => {
         setTimeout(() => setDecodingStep(3), 2100);
         setTimeout(() => {
           setIsDecoding(false);
-          setSubmitted(true);
+          setStep('credential');
         }, 2800);
       } else {
         setErrorMsg(data.error || 'Error al guardar tus datos. Inténtalo nuevamente.');
@@ -507,7 +454,8 @@ const VocationalFairLanding = () => {
       test_answer: ''
     });
     setWhatsappDigits('');
-    setSubmitted(false);
+    setStep('tour-intro');
+    setSoftwareStep(0);
     setAssignedLead(null);
   };
 
@@ -535,149 +483,928 @@ const VocationalFairLanding = () => {
 
       {/* MAIN CONTAINER */}
       <div className="w-full max-w-4xl z-10 pb-16">
-        {showTour ? (
-          /* RECORRIDO ESTUDIANTIL */
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col items-start text-left space-y-6 animate-fade-in relative overflow-hidden">
-            {/* Elementos neón del slide */}
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${TOUR_SLIDES[tourIndex].accent} opacity-5 rounded-full blur-2xl pointer-events-none`} />
+        {step === 'tour-intro' ? (
+          /* PÁGINA DE BIENVENIDA */
+          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 sm:p-10 shadow-2xl flex flex-col items-start text-left space-y-6 animate-fade-in relative overflow-hidden max-w-2xl mx-auto w-full">
+            {/* Glow decorativo */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500 to-blue-500 opacity-5 rounded-full blur-2xl pointer-events-none" />
 
-            {/* Header del Slide */}
             <div className="w-full flex justify-start items-center pb-4 border-b border-slate-850">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                RECORRIDO MARTECH • PASO {tourIndex + 1} DE {TOUR_SLIDES.length}
+                BIENVENIDA • INGENIERÍA EN MARKETING DIGITAL DUOC UC
               </span>
             </div>
 
             {/* Icono de Módulo */}
-            <div className={`w-28 h-28 rounded-[2rem] bg-slate-950 border ${TOUR_SLIDES[tourIndex].border} flex items-center justify-center shadow-2xl ${TOUR_SLIDES[tourIndex].shadow} transition-transform duration-500 hover:scale-105`}>
-              {TOUR_SLIDES[tourIndex].icon}
+            <div className="w-24 h-24 rounded-[1.8rem] bg-slate-950 border border-cyan-500/30 flex items-center justify-center shadow-2xl shadow-cyan-500/10 transition-transform duration-500 hover:scale-105">
+              <svg className="w-12 h-12 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
             </div>
 
-            {/* Título y Subtítulo */}
+            {/* Título */}
             <div className="space-y-2">
-              <span className={`text-[10px] sm:text-xs font-black bg-gradient-to-r ${TOUR_SLIDES[tourIndex].accent} bg-clip-text text-transparent uppercase tracking-widest block`}>
-                {TOUR_SLIDES[tourIndex].subtitle}
+              <span className="text-[10px] sm:text-xs font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent uppercase tracking-widest block">
+                EXPERIENCIA INTERACTIVA
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight italic leading-tight">
-                {TOUR_SLIDES[tourIndex].title}
+                Bienvenido a la Matrix de Spectra
               </h2>
             </div>
 
             {/* Descripción */}
-            <p className="text-slate-300 text-sm sm:text-base font-medium max-w-xl leading-relaxed text-justify">
-              {TOUR_SLIDES[tourIndex].description}
+            <p className="text-slate-300 text-sm sm:text-base font-medium leading-relaxed text-justify">
+              Hoy vas a sumergirte en el software que usan nuestros estudiantes universitarios. Aprenderás a dominar los canales digitales que mueven millones de dólares en el mundo real. Navega libremente por la plataforma y, al finalizar el recorrido, conoce tu vocación en Marketing Digital para descargar tu credencial cyberpunk personalizada.
             </p>
 
-            {/* Indicadores de Progreso */}
-            <div className="flex gap-2">
-              {TOUR_SLIDES.map((_, idx) => (
-                <div 
-                  key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === tourIndex ? `w-8 bg-gradient-to-r ${TOUR_SLIDES[tourIndex].accent}` : 'w-2 bg-slate-800'
-                  }`}
-                />
-              ))}
-            </div>
-
             {/* Botones de Navegación del Tour */}
-            <div className="w-full pt-4 flex gap-4">
-              {tourIndex > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setTourIndex(prev => prev - 1)}
-                  className="flex-1 py-3.5 bg-slate-950 hover:bg-slate-900 text-slate-300 font-bold uppercase tracking-wider text-xs rounded-xl border border-slate-800 transition-all cursor-pointer"
-                >
-                  Anterior
-                </button>
-              ) : null}
-
+            <div className="w-full pt-4">
               <button
                 type="button"
                 onClick={() => {
-                  if (tourIndex < TOUR_SLIDES.length - 1) {
-                    setTourIndex(prev => prev + 1);
-                  } else {
-                    setShowTour(false);
-                  }
+                  setStep('software-tour');
+                  setSoftwareStep(0);
                 }}
-                className={`flex-1 py-3.5 bg-gradient-to-r ${TOUR_SLIDES[tourIndex].accent} hover:brightness-110 text-white font-black uppercase tracking-wider text-xs rounded-xl shadow-lg transition-all cursor-pointer`}
+                className="w-full py-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:brightness-110 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-indigo-950/40 transition-all cursor-pointer"
               >
-                {tourIndex === TOUR_SLIDES.length - 1 ? 'Iniciar Desafío' : 'Siguiente Módulo'}
+                Iniciar Desafío
               </button>
             </div>
           </div>
-        ) : isDecoding ? (
-          /* PANTALLA INTERACTIVA DECODIFICADOR NEURONAL */
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-cyan-500/30 rounded-3xl p-8 sm:p-12 shadow-2xl flex flex-col items-center text-center space-y-8 animate-pulse relative overflow-hidden min-h-[420px] justify-center">
-            {/* Escáner de líneas Cyberpunk */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(0,255,255,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%] pointer-events-none" />
-            
-            <style dangerouslySetInnerHTML={{__html: `
-              @keyframes scan {
-                0% { top: 0%; }
-                50% { top: 100%; }
-                100% { top: 0%; }
-              }
-              .animate-scan {
-                position: absolute;
-                animation: scan 2.5s linear infinite;
-              }
-            `}} />
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-cyan-500/40 shadow-[0_0_12px_#06b6d4] animate-scan pointer-events-none" />
-            
-            {/* Animación de Radar */}
-            <div className="relative w-24 h-24 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-ping" />
-              <div className="absolute w-16 h-16 rounded-full border-2 border-dashed border-cyan-400 animate-spin" />
-              <Sparkles className="w-8 h-8 text-cyan-400 animate-bounce" />
+        ) : step === 'software-tour' ? (
+          /* RECORRIDO INTERACTIVO POR EL SOFTWARE MOCKUP */
+          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-6 animate-fade-in relative overflow-hidden w-full">
+            {/* Cabecera del Dashboard Mockup */}
+            <div className="w-full flex items-center justify-between pb-4 border-b border-slate-800/80">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center font-black text-white italic text-sm shadow">
+                  S
+                </div>
+                <div className="text-left">
+                  <h3 className="text-sm font-black text-white tracking-tight uppercase leading-none">Spectra Simulator</h3>
+                  <span className="text-[9px] font-bold text-slate-500 tracking-wider block mt-1">SOFTWARE DE ENTRENAMIENTO MARTECH</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="hidden sm:inline-block text-[8px] font-black text-green-400 uppercase tracking-widest bg-green-950/30 px-2 py-0.5 rounded border border-green-900/20 mr-1">
+                  API PROFE NICO: CONECTADA
+                </span>
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">
+                  MODO INVITADO VIP
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-4 max-w-md w-full">
-              <h2 className="text-xl sm:text-2xl font-black text-cyan-400 tracking-wider uppercase animate-pulse">
-                DECODIFICANDO ROL EN LA MATRIX
-              </h2>
-              
-              {/* Typewriter terminal content based on decodingStep */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 font-mono text-[11px] text-left text-slate-300 space-y-2.5 min-h-[140px] shadow-inner">
-                <div className="flex items-center gap-2 text-cyan-400">
-                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping" />
-                  <span>[SYSTEM]: Sincronización Matrix establecida...</span>
-                </div>
-                {decodingStep >= 1 && (
-                  <div className="text-emerald-400 flex items-center gap-2">
-                    <span>✔</span>
-                    <span>[ANALYSIS]: Evaluando respuestas de MrBeast...</span>
-                  </div>
-                )}
-                {decodingStep >= 2 && (
-                  <div className="text-purple-400 flex items-center gap-2">
-                    <span>✔</span>
-                    <span>[CALCULUS]: Asignando clase RPG en base a afinidad...</span>
-                  </div>
-                )}
-                {decodingStep >= 3 && (
-                  <div className="text-cyan-400 animate-pulse flex items-center gap-2">
-                    <span className="animate-spin inline-block">⚙</span>
-                    <span>[VIP]: Generando credencial digital única Duoc UC...</span>
-                  </div>
-                )}
+            {/* Layout Cuerpo: Sidebar + Contenido */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 min-h-[380px]">
+              {/* Sidebar */}
+              <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 border-b md:border-b-0 md:border-r border-slate-800/80 md:pr-4">
+                <button
+                  type="button"
+                  onClick={() => setSoftwareStep(0)}
+                  className={`flex items-center gap-2.5 py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer w-full text-left whitespace-nowrap ${
+                    softwareStep === 0 ? 'bg-cyan-600/10 border border-cyan-500/30 text-cyan-400' : 'border border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Home size={14} />
+                  Dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoftwareStep(1)}
+                  className={`flex items-center gap-2.5 py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer w-full text-left whitespace-nowrap ${
+                    softwareStep === 1 ? 'bg-blue-600/10 border border-blue-500/30 text-blue-400' : 'border border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Layout size={14} />
+                  1. Meta Ads
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoftwareStep(2)}
+                  className={`flex items-center gap-2.5 py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer w-full text-left whitespace-nowrap ${
+                    softwareStep === 2 ? 'bg-green-600/10 border border-green-500/30 text-green-400' : 'border border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <MessageSquare size={14} />
+                  2. M. Conversacional
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoftwareStep(3)}
+                  className={`flex items-center gap-2.5 py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer w-full text-left whitespace-nowrap ${
+                    softwareStep === 3 ? 'bg-amber-600/10 border border-amber-500/30 text-amber-400' : 'border border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Sparkles size={14} />
+                  3. Lead Magnet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoftwareStep(4)}
+                  className={`flex items-center gap-2.5 py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer w-full text-left whitespace-nowrap ${
+                    softwareStep === 4 ? 'bg-orange-600/10 border border-orange-500/30 text-orange-400' : 'border border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Zap size={14} />
+                  4. N8N Automatizaciones
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoftwareStep(5)}
+                  className={`flex items-center gap-2.5 py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer w-full text-left whitespace-nowrap ${
+                    softwareStep === 5 ? 'bg-purple-600/10 border border-purple-500/30 text-purple-400' : 'border border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <BarChart size={14} />
+                  5. Lab Analíticas y KPI
+                </button>
               </div>
 
-              {/* Progress bar */}
-              <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-850">
-                <div 
-                  className="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 transition-all duration-700 ease-out"
-                  style={{ width: `${(decodingStep + 1) * 25}%` }}
-                />
+              {/* Contenido Dinámico del Tab */}
+              <div className="md:col-span-3 flex flex-col justify-between min-h-[380px]">
+                {softwareStep === 0 && (
+                  /* VISTA DASHBOARD (INICIO) */
+                  <div className="space-y-8 animate-fade-in text-left">
+                    {/* Hero Welcome banner */}
+                    <div className="bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-slate-900/80 border border-cyan-500/20 rounded-2xl p-6 relative overflow-hidden shadow-xl shadow-cyan-950/5">
+                      <div className="absolute right-0 top-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+                      <h3 className="text-lg font-black text-white uppercase italic tracking-tight mb-2">Canales de Simulación Activos</h3>
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-justify">
+                        Bienvenido a la consola de administración de Spectra. Nuestros estudiantes utilizan esta plataforma para gestionar campañas reales, capturar leads, crear flujos conversacionales, automatizar integraciones y analizar KPIs. Haz clic en cualquiera de los módulos activos para interactuar libremente.
+                      </p>
+                    </div>
+
+                    {/* Card Grid - Much bigger and more interactive */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {/* Meta Ads Card */}
+                      <div 
+                        onClick={() => setSoftwareStep(1)}
+                        className="bg-slate-950/80 backdrop-blur border border-slate-800 rounded-2xl p-6 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:bg-slate-900/40 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[190px] group shadow-lg hover:-translate-y-1"
+                      >
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 bg-blue-600/10 text-blue-400 border border-blue-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                            <Layout size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black uppercase text-white tracking-wider group-hover:text-blue-400 transition-colors">Meta Ads</h4>
+                            <p className="text-xs text-slate-400 mt-2 leading-relaxed text-left text-justify">
+                              Configura campañas de anuncios en Instagram y Facebook. Simula presupuestos y analiza el alcance.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-900">
+                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-950/60 px-2.5 py-1 rounded border border-blue-800/30">Módulo Activo</span>
+                          <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1 group-hover:text-blue-400 transition-colors">Simular →</span>
+                        </div>
+                      </div>
+
+                      {/* Marketing Conversacional Card */}
+                      <div 
+                        onClick={() => setSoftwareStep(2)}
+                        className="bg-slate-950/80 backdrop-blur border border-slate-800 rounded-2xl p-6 hover:border-green-500 hover:shadow-[0_0_20px_rgba(34,197,94,0.2)] hover:bg-slate-900/40 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[190px] group shadow-lg hover:-translate-y-1"
+                      >
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 bg-green-600/10 text-green-400 border border-green-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(34,197,94,0.1)]">
+                            <MessageSquare size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black uppercase text-white tracking-wider group-hover:text-green-400 transition-colors">M. Conversacional</h4>
+                            <p className="text-xs text-slate-400 mt-2 leading-relaxed text-left text-justify">
+                              Automatiza la atención por chat. Prueba flujos interactivos de decisión orientados a conversión.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-900">
+                          <span className="text-[9px] font-black text-green-400 uppercase tracking-widest bg-green-950/60 px-2.5 py-1 rounded border border-green-800/30">Módulo Activo</span>
+                          <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1 group-hover:text-green-400 transition-colors">Simular →</span>
+                        </div>
+                      </div>
+
+                      {/* Lead Magnet Card */}
+                      <div 
+                        onClick={() => setSoftwareStep(3)}
+                        className="bg-slate-950/80 backdrop-blur border border-slate-800 rounded-2xl p-6 hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:bg-slate-900/40 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[190px] group shadow-lg hover:-translate-y-1"
+                      >
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 bg-amber-600/10 text-amber-400 border border-amber-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                            <Sparkles size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black uppercase text-white tracking-wider group-hover:text-amber-400 transition-colors">Lead Magnet</h4>
+                            <p className="text-xs text-slate-400 mt-2 leading-relaxed text-left text-justify">
+                              Configura páginas de aterrizaje y ofrece recursos valiosos para captar datos de contacto de prospectos.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-900">
+                          <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-955/60 px-2.5 py-1 rounded border border-amber-800/30">Módulo Activo</span>
+                          <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1 group-hover:text-amber-400 transition-colors">Simular →</span>
+                        </div>
+                      </div>
+
+                      {/* N8N Automatizaciones Card */}
+                      <div 
+                        onClick={() => setSoftwareStep(4)}
+                        className="bg-slate-950/80 backdrop-blur border border-slate-800 rounded-2xl p-6 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:bg-slate-900/40 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[190px] group shadow-lg hover:-translate-y-1"
+                      >
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 bg-orange-600/10 text-orange-400 border border-orange-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(249,115,22,0.1)]">
+                            <Zap size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black uppercase text-white tracking-wider group-hover:text-orange-400 transition-colors">N8N Automatizaciones</h4>
+                            <p className="text-xs text-slate-400 mt-2 leading-relaxed text-left text-justify">
+                              Conecta diferentes plataformas en la nube. Simula procesos automáticos con Webhooks, IA y WhatsApp API.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-900">
+                          <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest bg-orange-950/60 px-2.5 py-1 rounded border border-orange-800/30">Módulo Activo</span>
+                          <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1 group-hover:text-orange-400 transition-colors">Simular →</span>
+                        </div>
+                      </div>
+
+                      {/* Laboratorio de Analíticas y KPI Card */}
+                      <div 
+                        onClick={() => setSoftwareStep(5)}
+                        className="bg-slate-950/80 backdrop-blur border border-slate-800 rounded-2xl p-6 hover:border-purple-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] hover:bg-slate-900/40 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[190px] group shadow-lg hover:-translate-y-1"
+                      >
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 bg-purple-600/10 text-purple-400 border border-purple-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(168,85,247,0.1)]">
+                            <BarChart size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black uppercase text-white tracking-wider group-hover:text-purple-400 transition-colors">Lab de Analíticas y KPI</h4>
+                            <p className="text-xs text-slate-400 mt-2 leading-relaxed text-left text-justify">
+                              Monitorea tasas de conversión, ROI y costos por lead. Filtra métricas en vivo por comunas de la región.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-900">
+                          <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-950/60 px-2.5 py-1 rounded border border-purple-800/30">Módulo Activo</span>
+                          <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1 group-hover:text-purple-400 transition-colors">Simular →</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Locked Modules Section - Marked as "Solo para alumnos" */}
+                    <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                      <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Otros Módulos del Software (Exclusivo Alumnos)</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        {[
+                          { name: 'Google Ads', desc: 'Campañas de búsqueda y anuncios SEM dirigidos a intención de compra activa.' },
+                          { name: 'TikTok Ads', desc: 'Publicidad en video dinámico integrada para audiencias de la Generación Z.' },
+                          { name: 'WhatsApp API', desc: 'Integración avanzada de mensajería empresarial para automatizaciones a gran escala.' }
+                        ].map(mod => (
+                          <div key={mod.name} className="bg-slate-950/40 border border-slate-900/60 rounded-2xl p-5 flex flex-col justify-between min-h-[155px] relative select-none">
+                            <div className="absolute top-4 right-4 text-slate-700">
+                              <Lock size={16} />
+                            </div>
+                            <div className="space-y-2">
+                              <span className="text-sm font-black text-slate-500 block leading-none">{mod.name}</span>
+                              <p className="text-[11px] text-slate-600 leading-relaxed text-left text-justify">{mod.desc}</p>
+                            </div>
+                            <div className="mt-4 pt-3 border-t border-slate-900/40 flex items-center justify-between">
+                              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">Solo para alumnos</span>
+                              <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Próximamente</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {softwareStep === 1 && (
+                  /* SIMULADOR META ADS */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in text-left">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-blue-400 tracking-wider">Campaña de Pauta Digital</h4>
+                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 block">Configuración de Anuncio</span>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Presupuesto Mensual</label>
+                        <input
+                          type="range"
+                          min="10000"
+                          max="500000"
+                          step="10005"
+                          value={mockBudget}
+                          onChange={(e) => setMockBudget(Number(e.target.value))}
+                          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                        <div className="flex justify-between text-xs font-bold text-slate-300">
+                          <span>$10.000 CLP</span>
+                          <span className="text-blue-400 font-black">${mockBudget.toLocaleString('es-CL')} CLP</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Plataforma Objetivo</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['Instagram', 'TikTok', 'Google'].map(plat => (
+                            <button
+                              key={plat}
+                              type="button"
+                              onClick={() => setMockPlatform(plat)}
+                              className={`py-2 px-3 rounded-lg text-center font-bold text-[10px] uppercase border transition-all cursor-pointer ${
+                                mockPlatform === plat ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                              }`}
+                            >
+                              {plat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Segmentación Edad</label>
+                        <select
+                          value={mockAge}
+                          onChange={(e) => setMockAge(e.target.value)}
+                          className="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-300 outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          <option value="15-18">15-18 (Escolares de Media)</option>
+                          <option value="18-24">18-24 (Universitarios / Egresados)</option>
+                          <option value="25-34">25-34 (Profesionales Jóvenes)</option>
+                        </select>
+                      </div>
+
+                      {/* Calculated metrics details */}
+                      <div className="p-3 bg-slate-950 border border-slate-800/80 rounded-xl space-y-2">
+                        <div className="text-[8px] font-black text-slate-550 uppercase tracking-widest">Estimaciones de Rendimiento</div>
+                        <div className="grid grid-cols-2 gap-2 text-left">
+                          <div>
+                            <span className="text-[7px] font-bold text-slate-400 uppercase block">Alcance Estimado</span>
+                            <span className="text-xs font-black text-white block mt-0.5">{Math.floor(mockBudget * 0.18).toLocaleString('es-CL')} pers.</span>
+                          </div>
+                          <div>
+                            <span className="text-[7px] font-bold text-slate-400 uppercase block">Leads Potenciales</span>
+                            <span className="text-xs font-black text-white block mt-0.5">{Math.floor(mockBudget / 900).toLocaleString('es-CL')} leads</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Instagram-style preview card */}
+                    <div className="bg-slate-950 border border-slate-855 rounded-2xl p-4 flex flex-col justify-between max-w-[270px] mx-auto w-full shadow-xl relative overflow-hidden">
+                      {/* Glow background */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
+                      
+                      <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-slate-900">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white italic text-[10px] shadow">S</div>
+                        <div>
+                          <span className="text-[10px] font-black text-white block">spectra_digital</span>
+                          <span className="text-[8px] text-slate-505 block">Publicidad en {mockPlatform}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-blue-700/80 via-indigo-950 to-slate-950 rounded-xl aspect-[4/3] p-4 flex flex-col justify-between border border-blue-900/30 relative overflow-hidden select-none shadow-inner">
+                        <div className="absolute top-[-20%] right-[-20%] w-24 h-24 bg-blue-400/10 rounded-full blur-xl" />
+                        <span className="text-[8px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full self-start shadow-sm tracking-wider">MARTECH LAB</span>
+                        
+                        <div className="my-auto text-center space-y-1">
+                          <h5 className="text-[12px] font-black text-white tracking-tight uppercase italic leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Estudia Marketing Digital</h5>
+                          <p className="text-[8px] text-slate-350 font-bold leading-tight">Configura campañas en Duoc UC.</p>
+                        </div>
+                        
+                        <div className="flex justify-between items-center text-[7px] text-slate-455 font-mono border-t border-blue-900/30 pt-2">
+                          <span>PRESUPUESTO:</span>
+                          <span className="text-blue-455 font-black">${mockBudget.toLocaleString('es-CL')} CLP</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-slate-900">
+                        <div>
+                          <span className="text-[8px] font-bold text-slate-400 block">Audiencia: {mockAge}</span>
+                          <span className="text-[7px] font-medium text-slate-650 block">Segmento Martech</span>
+                        </div>
+                        <button type="button" className="px-3 py-1 bg-blue-600 hover:bg-blue-505 text-white font-black uppercase text-[8px] tracking-widest rounded-lg cursor-pointer transition-colors shadow">
+                          Ver Más
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {softwareStep === 2 && (
+                  /* SIMULADOR MARKETING CONVERSACIONAL */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in text-left">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-green-400 tracking-wider">Marketing Conversacional</h4>
+                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 block">Árbol de Decisión del Chatbot</span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed text-justify">
+                        Los chatbots de Marketing Conversacional automatizan el embudo de ventas. En Duoc UC diseñamos flujos de conversación inteligentes que atienden y guían a miles de clientes en tiempo real.
+                      </p>
+                      
+                      {/* Node flow diagram mock */}
+                      <div className="space-y-2">
+                        <span className="text-[8px] font-black text-slate-505 uppercase tracking-widest">Nodos del Flujo de Chat</span>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 p-2 bg-slate-950 border border-slate-855 rounded-xl">
+                            <div className="w-5 h-5 rounded-md bg-green-500/10 text-green-400 flex items-center justify-center font-black text-[9px] border border-green-500/20">1</div>
+                            <div>
+                              <span className="text-[9px] font-black text-white block leading-none">Entrada: WhatsApp Chat</span>
+                              <span className="text-[7px] text-slate-500 font-bold block mt-0.5 uppercase">Trigger de Entrada</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3 p-2 bg-slate-950 border border-slate-855 rounded-xl">
+                            <div className="w-5 h-5 rounded-md bg-green-500/10 text-green-400 flex items-center justify-center font-black text-[9px] border border-green-500/20">2</div>
+                            <div>
+                              <span className="text-[9px] font-black text-white block leading-none">Menú de Carrera</span>
+                              <span className="text-[7px] text-slate-505 font-bold block mt-0.5 uppercase">Opciones Múltiples</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Smartphone Mockup */}
+                    <div className="border-4 border-slate-855 bg-slate-955 rounded-[2.2rem] w-full max-w-[260px] aspect-[9/16] mx-auto p-3 flex flex-col justify-between shadow-2xl relative">
+                      {/* Notch */}
+                      <div className="w-12 h-3.5 bg-slate-900 rounded-full mx-auto mb-2 flex items-center justify-center border border-slate-850/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-850" />
+                      </div>
+                      
+                      {/* Chat Messages */}
+                      <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 flex flex-col justify-start py-2 custom-scrollbar">
+                        {chatMessages.map((msg, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-2.5 rounded-2xl text-[10px] leading-snug font-bold max-w-[85%] ${
+                              msg.sender === 'bot' 
+                                ? 'bg-slate-900 border border-slate-800 text-slate-205 self-start rounded-tl-none' 
+                                : 'bg-green-600 text-white self-end rounded-tr-none shadow-sm animate-fade-in'
+                            }`}
+                          >
+                            {msg.text}
+                          </div>
+                        ))}
+                        {/* Elemento de anclaje para auto-scroll */}
+                        <div ref={chatEndRef} />
+                      </div>
+
+                      {/* Buttons */}
+                      <div className="border-t border-slate-900 pt-2.5 flex flex-col gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleChatOption(
+                            '¿Qué es Martech?', 
+                            'Es la convergencia de Marketing y Tecnología, aplicando herramientas de automatización, IA y análisis para potenciar negocios. ⚡'
+                          )}
+                          className="w-full py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-green-500/30 text-slate-350 hover:text-green-400 font-black text-[8px] uppercase tracking-wider rounded-xl cursor-pointer transition-all"
+                        >
+                          ¿Qué es Martech?
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleChatOption(
+                            '¿Cuánto dura la carrera?', 
+                            'Dura 4 años (8 semestres) y obtienes el título profesional de Ingeniero/a en Marketing Digital en Duoc UC. 🎓'
+                          )}
+                          className="w-full py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-green-500/30 text-slate-350 hover:text-green-400 font-black text-[8px] uppercase tracking-wider rounded-xl cursor-pointer transition-all"
+                        >
+                          ¿Cuánto dura la carrera?
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleChatOption(
+                            '¿Cuál es el campo laboral?', 
+                            'Podrás trabajar como Growth Manager, Trafficker, Consultor SEO, Analista de Datos o Director de Marketing Digital. 💼'
+                          )}
+                          className="w-full py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-green-505/30 text-slate-350 hover:text-green-400 font-black text-[8px] uppercase tracking-wider rounded-xl cursor-pointer transition-all"
+                        >
+                          ¿Cuál es el campo laboral?
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {softwareStep === 3 && (
+                  /* SIMULADOR LEAD MAGNET */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in text-left">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-amber-400 tracking-wider">Lead Magnet Studio</h4>
+                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 block">Captura de Prospectos</span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed text-justify">
+                        Un Lead Magnet es un contenido de alto valor (como ebooks, descuentos o guías) que entregas de forma gratuita a cambio de los datos de contacto de tus potenciales clientes.
+                      </p>
+
+                      <div className="space-y-3">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block font-bold">1. Elegir Recurso de Regalo</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 'Ebook', label: 'Ebook Viral' },
+                            { id: 'Descuento', label: 'Beast Burger 50% Off' }
+                          ].map(t => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => {
+                                setLmTemplate(t.id);
+                                if (t.id === 'Ebook') {
+                                  setLmCta('¡Descargar Ebook Gratis!');
+                                } else {
+                                  setLmCta('¡Reclamar 50% Descuento!');
+                                }
+                                setLmSubmitted(false);
+                              }}
+                              className={`py-2 px-3 rounded-lg text-center font-bold text-[10px] uppercase border transition-all cursor-pointer ${
+                                lmTemplate === t.id ? 'bg-amber-600/20 border-amber-500 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.1)]' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block font-bold">2. Personalizar Color del Botón</label>
+                        <div className="flex gap-2">
+                          {[
+                            { id: 'cyan', colorClass: 'bg-cyan-500', name: 'Cyan neón' },
+                            { id: 'purple', colorClass: 'bg-purple-500', name: 'Morado Matrix' },
+                            { id: 'green', colorClass: 'bg-emerald-500', name: 'Tóxico Green' }
+                          ].map(c => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              title={c.name}
+                              onClick={() => setLmColor(c.id)}
+                              className={`w-6 h-6 rounded-full ${c.colorClass} border-2 transition-all cursor-pointer ${
+                                lmColor === c.id ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-90'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Lead Magnet Metrics */}
+                      <div className="p-3 bg-slate-950 border border-slate-800/80 rounded-xl flex items-center justify-between">
+                        <div>
+                          <span className="text-[8px] font-black text-slate-550 uppercase tracking-widest block">Prospectos Capturados</span>
+                          <span className="text-lg font-black text-white block mt-0.5">{lmLeadsCount} Leads</span>
+                        </div>
+                        <span className="text-[8px] font-black text-amber-400 uppercase tracking-widest bg-amber-955 px-2 py-1 rounded border border-amber-900/30">
+                          TASA CONV: 24.8%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Live Preview Container */}
+                    <div className="bg-slate-950 border border-slate-855 rounded-2xl p-4 flex flex-col justify-between max-w-[270px] mx-auto w-full shadow-xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+                      
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-900">
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Vista Previa Landing Page</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      </div>
+
+                      <div className="bg-slate-900/40 border border-slate-850 rounded-xl p-4 flex-1 flex flex-col justify-between space-y-3 min-h-[220px]">
+                        {lmTemplate === 'Ebook' ? (
+                          <div className="space-y-1.5 text-center my-auto">
+                            <div className="w-12 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded shadow-md mx-auto flex items-center justify-center text-[10px] font-black text-slate-955 uppercase tracking-tighter">
+                              BOOK
+                            </div>
+                            <h5 className="text-[11px] font-black text-white uppercase tracking-tight leading-tight mt-2">10 Leyes del Growth Marketing</h5>
+                            <p className="text-[8px] text-slate-400 leading-snug">El ebook definitivo para estallar tus conversiones.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 text-center my-auto">
+                            <div className="w-14 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg shadow-md mx-auto flex items-center justify-center text-xs font-black text-slate-955">
+                              🍔 50%
+                            </div>
+                            <h5 className="text-[11px] font-black text-white uppercase tracking-tight leading-tight mt-2">MrBeast Burger Taller Especial</h5>
+                            <p className="text-[8px] text-slate-400 leading-snug">Descuento exclusivo para alumnos de la feria vocacional.</p>
+                          </div>
+                        )}
+
+                        {!lmSubmitted ? (
+                          <div className="space-y-2">
+                            <input 
+                              type="text" 
+                              placeholder="Tu Nombre" 
+                              value={lmTestName}
+                              onChange={(e) => setLmTestName(e.target.value)}
+                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-850 rounded-md text-[9px] font-semibold text-slate-200 outline-none focus:border-amber-500"
+                            />
+                            <input 
+                              type="email" 
+                              placeholder="Tu Email" 
+                              value={lmTestEmail}
+                              onChange={(e) => setLmTestEmail(e.target.value)}
+                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-855 rounded-md text-[9px] font-semibold text-slate-200 outline-none focus:border-amber-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (lmTestName && lmTestEmail) {
+                                  setLmLeadsCount(prev => prev + 1);
+                                  setLmSubmitted(true);
+                                } else {
+                                  alert('Por favor escribe un nombre y email ficticios para probar el Lead Magnet.');
+                                }
+                              }}
+                              className={`w-full py-2 font-black uppercase text-[8px] tracking-wider rounded-lg text-white transition-all cursor-pointer ${
+                                lmColor === 'cyan' ? 'bg-cyan-600 hover:bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.3)]' :
+                                lmColor === 'purple' ? 'bg-purple-600 hover:bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)]' :
+                                'bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                              }`}
+                            >
+                              {lmCta}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="bg-emerald-950/20 border border-emerald-900/30 p-2.5 rounded-lg text-center space-y-1 animate-fade-in my-auto">
+                            <span className="text-emerald-400 font-black text-[9px] block">¡LEAD CAPTURADO CON ÉXITO!</span>
+                            <p className="text-slate-450 text-[8px] leading-snug">El recurso se envió a tu correo. El contador de leads aumentó +1.</p>
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                setLmSubmitted(false);
+                                setLmTestName('');
+                                setLmTestEmail('');
+                              }}
+                              className="text-[7px] font-black text-slate-500 hover:text-slate-350 uppercase tracking-widest mt-1 block mx-auto underline cursor-pointer"
+                            >
+                              Volver a Probar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {softwareStep === 4 && (
+                  /* SIMULADOR AUTOMATIZACIÓN */
+                  <div className="flex flex-col gap-5 animate-fade-in justify-center items-center py-2 text-left">
+                    <div className="w-full">
+                      <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">N8N Automatizaciones</h4>
+                      <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 block">Integraciones en Segundo Plano</span>
+                    </div>
+                    
+                    <p className="text-xs text-slate-350 leading-relaxed text-justify w-full">
+                      Conecta tus bases de datos y la API de WhatsApp para enviar mensajes automáticos cada vez que un lead se registra, eliminando las tareas repetitivas de tu equipo de ventas.
+                    </p>
+                    
+                    {/* Workflow Canvas */}
+                    <div className="w-full max-w-lg bg-slate-950 border border-slate-850 rounded-2xl p-6 flex flex-col items-center justify-between shadow-lg relative overflow-hidden min-h-[160px]">
+                      {/* grid background pattern */}
+                      <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
+                      
+                      <div className="w-full flex justify-between items-center relative py-4 z-10">
+                        {/* Connecting Lines */}
+                        <div className="absolute top-[20px] left-[15%] right-[15%] h-0.5 bg-slate-800 z-0" />
+                        <div 
+                          className="absolute top-[20px] left-[15%] h-0.5 bg-gradient-to-r from-orange-500 via-amber-400 to-green-500 transition-all duration-[2000ms] ease-out z-0" 
+                          style={{ width: autoNode === -1 ? '0%' : autoNode === 0 ? '30%' : autoNode === 1 ? '70%' : '75%' }}
+                        />
+
+                        {/* Node 1: Webhook */}
+                        <div className={`flex flex-col items-center gap-1.5 z-10 w-1/3 transition-all duration-300 ${autoNode >= 0 ? 'scale-105' : 'opacity-40'}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-[9px] ${
+                            autoNode === 0 
+                              ? 'bg-orange-500/20 border-orange-500 text-orange-400 animate-pulse shadow-[0_0_15px_rgba(249,115,22,0.3)]' 
+                              : autoNode > 0 ? 'bg-orange-600 border-orange-600 text-white' : 'bg-slate-950 border-slate-805 text-slate-500'
+                          }`}>
+                            Webhook
+                          </div>
+                          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest text-center">Registro Web</span>
+                        </div>
+
+                        {/* Node 2: n8n AI Classifier */}
+                        <div className={`flex flex-col items-center gap-1.5 z-10 w-1/3 transition-all duration-300 ${autoNode >= 1 ? 'scale-105' : 'opacity-40'}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-[9px] ${
+                            autoNode === 1 
+                              ? 'bg-amber-500/20 border-amber-500 text-amber-400 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.3)]' 
+                              : autoNode > 1 ? 'bg-amber-600 border-amber-600 text-white' : 'bg-slate-950 border-slate-805 text-slate-500'
+                          }`}>
+                            n8n / AI
+                          </div>
+                          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest text-center">IA Clasificación</span>
+                        </div>
+
+                        {/* Node 3: WhatsApp */}
+                        <div className={`flex flex-col items-center gap-1.5 z-10 w-1/3 transition-all duration-300 ${autoNode >= 2 ? 'scale-105' : 'opacity-40'}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border font-bold text-[9px] ${
+                            autoNode === 2 
+                              ? 'bg-green-500/20 border-green-500 text-green-400 animate-pulse shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
+                              : autoFinished ? 'bg-green-600 border-green-600 text-white' : 'bg-slate-950 border-slate-805 text-slate-500'
+                          }`}>
+                            WhatsApp
+                          </div>
+                          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest text-center">Envío Mensaje</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Platform logos & triggers */}
+                    <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 mt-2">
+                      {/* Logos official Zapier / Make / n8n */}
+                      <div className="flex items-center gap-3">
+                        {/* n8n */}
+                        <div className="flex items-center gap-1 bg-slate-955 px-2.5 py-1.5 rounded-lg border border-slate-855 shadow-sm" title="n8n Integration">
+                          <svg className="w-5 h-4 text-[#FF6D5A]" viewBox="0 0 228 120" fill="currentColor">
+                            <path d="M204 48C192.817 48 183.42 40.3514 180.756 30H153.248C147.382 30 142.376 34.241 141.412 40.0272L140.425 45.9456C139.489 51.5648 136.646 56.4554 132.626 60C136.646 63.5446 139.489 68.4352 140.425 74.0544L141.412 79.9728C142.376 85.759 147.382 90 153.248 90H156.756C159.42 79.6486 168.817 72 180 72C193.255 72 204 82.7452 204 96C204 109.255 193.255 120 180 120C168.817 120 159.42 112.351 156.756 102H153.248C141.516 102 131.504 93.5181 129.575 81.9456L128.588 76.0272C127.624 70.241 122.618 66 116.752 66H107.244C104.58 76.3514 95.183 84 84 84C72.817 84 63.4204 76.3514 60.7561 66H47.2439C44.5796 76.3514 35.183 84 24 84C10.7452 84 0 73.2548 0 60C0 46.7452 10.7452 36 24 36C35.183 36 44.5796 43.6486 47.2439 54H60.7561C63.4204 43.6486 72.817 36 84 36C95.183 36 104.58 43.6486 107.244 54H116.752C122.618 54 127.624 49.759 128.588 43.9728L129.575 38.0544C131.504 26.4819 141.516 18 153.248 18L180.756 18C183.42 7.64864 192.817 0 204 0C217.255 0 228 10.7452 228 24C228 37.2548 217.255 48 204 48ZM204 36C210.627 36 216 30.6274 216 24C216 17.3726 210.627 12 204 12C197.373 12 192 17.3726 192 24C192 30.6274 197.373 36 204 36ZM24 72C30.6274 72 36 66.6274 36 60C36 53.3726 30.6274 48 24 48C17.3726 48 12 53.3726 12 60C12 66.6274 17.3726 72 24 72ZM96 60C96 66.6274 90.6274 72 84 72C77.3726 72 72 66.6274 72 60C72 53.3726 77.3726 48 84 48C90.6274 48 96 53.3726 96 60ZM192 96C192 102.627 186.627 108 180 108C173.373 108 168 102.627 168 96C168 89.3726 173.373 84 180 84C186.627 84 192 89.3726 192 96Z" />
+                          </svg>
+                          <span className="text-[7px] text-slate-400 font-black uppercase">n8n</span>
+                        </div>
+                        
+                        {/* Zapier */}
+                        <div className="flex items-center gap-1.5 bg-slate-955 px-2.5 py-1.5 rounded-lg border border-slate-855 shadow-sm" title="Zapier Integration">
+                          <svg className="w-3.5 h-3.5 text-[#FF4F00]" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="2" y="16" width="20" height="5" rx="1.5" />
+                          </svg>
+                          <span className="text-[7px] text-slate-400 font-black uppercase">Zapier</span>
+                        </div>
+                        
+                        {/* Make */}
+                        <div className="flex items-center gap-1.5 bg-slate-955 px-2.5 py-1.5 rounded-lg border border-slate-855 shadow-sm" title="Make Integration">
+                          <div className="flex items-center justify-center w-3.5 h-3.5 relative">
+                            <circle cx="3" cy="10" r="3" fill="#4B0082" />
+                            <circle cx="8" cy="6" r="2.5" fill="#8A2BE2" opacity="0.95" />
+                            <circle cx="9" cy="11" r="2.2" fill="#DA70D6" opacity="0.85" />
+                          </div>
+                          <span className="text-[7px] text-slate-400 font-black uppercase">Make</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={autoRunning}
+                        onClick={runAutomation}
+                        className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white font-black uppercase text-[9px] tracking-widest rounded-xl shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                      >
+                        <Zap size={10} className={autoRunning ? 'animate-bounce' : ''} />
+                        <span>{autoRunning ? 'Corriendo...' : autoFinished ? 'Ejecutado con Éxito ✓' : 'Ejecutar Integración'}</span>
+                      </button>
+                    </div>
+                    
+                    {autoFinished && (
+                      <p className="text-[9px] text-emerald-450 font-mono font-bold animate-fade-in bg-emerald-950/20 px-3 py-2 rounded-xl border border-emerald-900/30 w-full font-bold">
+                        [SUCCESS]: Lead recibido de la web, clasificado por IA como 'GROWTH MARKETING' y mensaje enviado a WhatsApp.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {softwareStep === 5 && (
+                  /* SIMULADOR ANALÍTICA */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in text-left">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-purple-400 tracking-wider">Laboratorio de Analíticas y KPI</h4>
+                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 block font-bold">Monitoreo de Conversiones y Métricas</span>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block font-bold">Filtrar por Comuna</label>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {['Valparaíso', 'Viña del Mar', 'Quillota', 'Quilpué'].map(city => (
+                            <button
+                              key={city}
+                              type="button"
+                              onClick={() => setMockCity(city)}
+                              className={`py-1.5 px-3 rounded-lg font-bold text-[9px] uppercase border transition-all cursor-pointer ${
+                                mockCity === city ? 'bg-purple-600/20 border-purple-500 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.1)]' : 'bg-slate-950 border-slate-800 text-slate-550 hover:border-slate-700'
+                              }`}
+                            >
+                              {city}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="p-2.5 bg-slate-955 border border-slate-855 rounded-xl text-center">
+                          <span className="text-[7px] font-bold text-slate-505 block uppercase tracking-wide">CTR Promedio</span>
+                          <span className="text-xs font-black text-white block mt-0.5">
+                            {mockCity === 'Valparaíso' ? '5.4%' : mockCity === 'Viña del Mar' ? '6.8%' : mockCity === 'Quillota' ? '4.2%' : '4.9%'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-slate-955 border border-slate-855 rounded-xl text-center">
+                          <span className="text-[7px] font-bold text-slate-505 block uppercase tracking-wide">ROI Promedio</span>
+                          <span className="text-xs font-black text-white block mt-0.5">
+                            {mockCity === 'Valparaíso' ? '2.8x' : mockCity === 'Viña del Mar' ? '3.6x' : mockCity === 'Quillota' ? '2.1x' : '2.4x'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-slate-955 border border-slate-855 rounded-xl text-center">
+                          <span className="text-[7px] font-bold text-slate-505 block uppercase tracking-wide">Costo Lead</span>
+                          <span className="text-xs font-black text-white block mt-0.5">
+                            {mockCity === 'Valparaíso' ? '$450' : mockCity === 'Viña del Mar' ? '$380' : mockCity === 'Quillota' ? '$610' : '$540'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gráfico de Barras */}
+                    <div className="bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col justify-between shadow-xl relative overflow-hidden">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-900 pb-1.5">Conversiones por Canal en {mockCity}</div>
+                      
+                      <div className="flex h-36 items-end justify-around pt-6 pb-2">
+                        {/* Meta Ads Bar */}
+                        <div className="flex flex-col items-center gap-1.5 w-8">
+                          <div 
+                            className="w-full bg-gradient-to-t from-blue-600 to-cyan-400 rounded-t-md transition-all duration-500 shadow-md"
+                            style={{ 
+                              height: mockCity === 'Valparaíso' ? '70px' : mockCity === 'Viña del Mar' ? '110px' : mockCity === 'Quillota' ? '50px' : '62px' 
+                            }}
+                          />
+                          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest font-mono">Meta</span>
+                        </div>
+                        
+                        {/* Google Ads Bar */}
+                        <div className="flex flex-col items-center gap-1.5 w-8">
+                          <div 
+                            className="w-full bg-gradient-to-t from-yellow-500 to-amber-400 rounded-t-md transition-all duration-500 shadow-md"
+                            style={{ 
+                              height: mockCity === 'Valparaíso' ? '100px' : mockCity === 'Viña del Mar' ? '65px' : mockCity === 'Quillota' ? '40px' : '52px' 
+                            }}
+                          />
+                          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest font-mono">Google</span>
+                        </div>
+                        
+                        {/* TikTok Ads Bar */}
+                        <div className="flex flex-col items-center gap-1.5 w-8">
+                          <div 
+                            className="w-full bg-gradient-to-t from-purple-600 to-pink-500 rounded-t-md transition-all duration-500 shadow-md"
+                            style={{ 
+                              height: mockCity === 'Valparaíso' ? '50px' : mockCity === 'Viña del Mar' ? '85px' : mockCity === 'Quillota' ? '105px' : '90px' 
+                            }}
+                          />
+                          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest font-mono">TikTok</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black">
-                Procesando variables. Mantén tu conexión estable.
-              </p>
+            </div>
+
+            {/* GUÍA DE COADYUVANTE (TOUR ASSISTANT) */}
+            <div className="w-full bg-slate-950/80 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg shadow-cyan-950/10 z-10">
+              <div className="flex items-start gap-3 text-left">
+                <div className="p-2 bg-cyan-950/50 rounded-xl border border-cyan-800/30 text-cyan-400">
+                  <Sparkles size={16} className="animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="text-[8px] font-black text-slate-550 uppercase tracking-widest">
+                    {softwareStep === 0 ? "Guía de la Matrix • Consola Principal" : `Guía de la Matrix • Paso ${softwareStep} de 5`}
+                  </h4>
+                  <p className="text-xs font-bold text-slate-200 mt-1 max-w-lg leading-relaxed text-justify">
+                    {softwareStep === 0 && "Consola Principal: Explora los canales interactivos disponibles o presiona Siguiente para ir a Meta Ads."}
+                    {softwareStep === 1 && "Meta Ads Manager: Ajusta el slider de presupuesto para ver cómo se calcula el alcance y se actualiza el anuncio de Instagram."}
+                    {softwareStep === 2 && "Marketing Conversacional: Haz clic en las preguntas en el celular de la derecha para simular las respuestas automáticas del chatbot."}
+                    {softwareStep === 3 && "Lead Magnet Studio: Personaliza el botón de descarga y prueba a capturar un lead de prueba en la landing page para sumar prospectos."}
+                    {softwareStep === 4 && "N8N Automatizaciones: Haz clic en 'Ejecutar Integración' para ver cómo viajan los datos del lead a través de n8n con IA y WhatsApp."}
+                    {softwareStep === 5 && "Laboratorio de Analíticas y KPI: Usa los filtros de comunas para ver cambiar los gráficos de conversiones y métricas en tiempo real."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (softwareStep > 0) {
+                      setSoftwareStep(prev => prev - 1);
+                    } else {
+                      setStep('tour-intro');
+                    }
+                  }}
+                  className="flex-1 md:flex-none px-4 py-2.5 bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-200 font-bold uppercase tracking-wider text-[10px] rounded-lg border border-slate-800 transition-all cursor-pointer"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (softwareStep < 5) {
+                      setSoftwareStep(prev => prev + 1);
+                    } else {
+                      setStep('form');
+                    }
+                  }}
+                  className="flex-1 md:flex-none px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:brightness-110 text-white font-black uppercase tracking-wider text-[10px] rounded-lg shadow-md transition-all cursor-pointer"
+                >
+                  {softwareStep === 5 ? 'Registrar Vocación' : 'Siguiente'}
+                </button>
+              </div>
             </div>
           </div>
-        ) : !submitted ? (
+        ) : step === 'form' ? (
           <form onSubmit={handleSubmit} className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
               <span className="w-2 h-6 bg-cyan-500 rounded-full inline-block" />
@@ -855,7 +1582,7 @@ const VocationalFairLanding = () => {
                 <span className="w-2 h-6 bg-purple-500 rounded-full inline-block" />
                 2. Test de Especialidad (El Desafío Influencer)
               </h2>
-              <p className="text-slate-300 font-bold text-sm sm:text-base leading-relaxed">
+              <p className="text-slate-300 font-bold text-sm sm:text-base leading-relaxed text-left text-justify">
                 Imagina que MrBeast te contrata hoy mismo en su equipo de marketing para expandir su marca. ¿Cuál sería tu primera acción estratégica para multiplicar las ventas de sus hamburguesas Beast Burger? *
               </p>
               
@@ -1060,7 +1787,7 @@ const VocationalFairLanding = () => {
               </button>
             </div>
 
-            <div className="text-center text-slate-500 text-xs pt-4">
+            <div className="text-left text-justify text-slate-500 text-xs pt-4">
               <p>Muestra tu credencial al docente del taller para recibir tu premio.</p>
             </div>
           </div>
