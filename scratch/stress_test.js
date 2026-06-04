@@ -1,8 +1,8 @@
 import { argv } from 'process';
 
-// Obtener la URL base desde los argumentos o usar una por defecto
-const targetUrl = argv[2] || 'http://localhost:80/api/leads';
-const concurrentUsers = parseInt(argv[3]) || 50;
+// Obtener la URL base desde los argumentos o usar el dominio real de producción por defecto
+const targetUrl = argv[2] || 'https://softwarespectra.cl/api/leads';
+const concurrentUsers = parseInt(argv[3]) || 150; // 150 por defecto como solicitó el usuario
 
 console.log(`==================================================`);
 console.log(`🚀 INICIANDO PRUEBA DE ESTRÉS DE FERIA VOCACIONAL`);
@@ -31,7 +31,7 @@ const runTest = async () => {
       school: 'Colegio de Prueba',
       email: `test_user_${userId}_${Math.floor(Math.random() * 100000)}@test.com`,
       phone: '+56912345678',
-      favorite_social: ['TikTok', 'Instagram', 'YouTube', 'Twitch'][Math.floor(Math.random() * 4)],
+      favorite_social: ['TikTok', 'Instagram', 'YouTube', 'Twitch', 'Facebook', 'LinkedIn', 'Reddit', 'X', 'Kick'][Math.floor(Math.random() * 9)],
       test_answer: ['A', 'B', 'C', 'D', 'E', 'F'][Math.floor(Math.random() * 6)]
     };
 
