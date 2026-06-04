@@ -174,13 +174,30 @@ app.post('/api/recover-password', async (req, res) => {
   }
   try {
     // Buscar si el usuario existe
-    const userExists = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+    const userExists = await pool.query('SELECT id, email, full_name FROM users WHERE email = $1', [email]);
     if (userExists.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'El correo electrónico no está registrado.' });
     }
 
-    // Generar nueva contraseña temporal de 6 caracteres
-    const tmpPassword = Math.random().toString(36).slice(-6).toUpperCase();
+    // Buscar información en la tabla 'leads' para obtener nombre y teléfono
+    let first_name = '';
+    let last_name = '';
+    let phone = '';
+    let full_name = userExists.rows[0].full_name;
+
+    const leadInfo = await pool.query(
+      'SELECT first_name, last_name, phone FROM leads WHERE email = $1 ORDER BY created_at DESC LIMIT 1',
+      [email]
+    );
+    if (leadInfo.rows.length > 0) {
+      first_name = leadInfo.rows[0].first_name;
+      last_name = leadInfo.rows[0].last_name;
+      phone = leadInfo.rows[0].phone || '';
+      full_name = `${first_name} ${last_name}`;
+    }
+
+    // Generar nueva contraseña temporal de 6 caracteres alfanuméricos
+    const tmpPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     // Actualizar la contraseña y forzar el cambio
     await pool.query(
@@ -197,12 +214,16 @@ app.post('/api/recover-password', async (req, res) => {
           email: email,
           new_password: tmpPassword,
           Correo: email,
-          "Contraseña temporal": tmpPassword
+          "Contraseña temporal": tmpPassword,
+          Nombre: full_name,
+          first_name: first_name,
+          last_name: last_name,
+          "Numero de telefono": phone,
+          phone: phone
         })
       });
     } catch (webhookErr) {
       console.error('Error al disparar webhook de recuperación en n8n:', webhookErr);
-      // Continuamos de todas formas ya que el cambio de contraseña en DB fue exitoso
     }
 
     res.json({ success: true, message: 'Se ha generado y enviado una nueva contraseña temporal.' });
