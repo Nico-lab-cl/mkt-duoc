@@ -23,6 +23,7 @@ import {
   Info,
   ShieldCheck
 } from 'lucide-react';
+import { useProject } from '../context/ProjectContext';
 
 const CITIES = [
   'Valparaíso',
@@ -237,6 +238,7 @@ const CHILEAN_NAMES = [
 ];
 
 const VocationalFairLanding = () => {
+  const { setCurrentUser } = useProject();
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -409,7 +411,7 @@ const VocationalFairLanding = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!formData.first_name || !formData.last_name || !formData.email || !formData.city || formData.favorite_social.length === 0 || !formData.test_answer) {
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.city || formData.favorite_social.length === 0) {
       setErrorMsg('Por favor completa todos los campos requeridos marcados con *');
       return;
     }
@@ -437,19 +439,13 @@ const VocationalFairLanding = () => {
       
       if (data.success) {
         setAssignedLead(data.lead);
-        
-        // Iniciar secuencia de decodificación interactiva cyberpunk
-        setIsDecoding(true);
-        setDecodingStep(0);
-        
-        // Simular progreso de análisis paso a paso en la Matrix
-        setTimeout(() => setDecodingStep(1), 700);
-        setTimeout(() => setDecodingStep(2), 1400);
-        setTimeout(() => setDecodingStep(3), 2100);
-        setTimeout(() => {
-          setIsDecoding(false);
-          setStep('credential');
-        }, 2800);
+        setCurrentUser({
+          id: data.lead.id,
+          full_name: `${data.lead.first_name} ${data.lead.last_name}`,
+          email: data.lead.email,
+          role: 'guest',
+          group_id: 999
+        });
       } else {
         setErrorMsg(data.error || 'Error al guardar tus datos. Inténtalo nuevamente.');
       }
@@ -662,7 +658,7 @@ const VocationalFairLanding = () => {
                   }`}
                 >
                   <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                  4. N8N Automación
+                  4. N8N Automatizaciones
                 </button>
                 <button
                   type="button"
@@ -672,7 +668,7 @@ const VocationalFairLanding = () => {
                   }`}
                 >
                   <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                  5. Lab Analíticas
+                  5. Lab Analíticas y KPI
                 </button>
               </div>
 
@@ -936,7 +932,7 @@ const VocationalFairLanding = () => {
                       {/* Interactive Image Box - showing rankaspect image */}
                       <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-slate-805/80 shadow-inner group">
                         <img 
-                          src="/meta-ads-optimize.png" 
+                          src="/meta-ads-optimize.jpg" 
                           className="w-full h-full object-cover" 
                           alt="Meta Ads Optimize" 
                         />
@@ -1522,7 +1518,7 @@ const VocationalFairLanding = () => {
           <form onSubmit={handleSubmit} className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
               <span className="w-2 h-6 bg-cyan-500 rounded-full inline-block" />
-              1. Datos de Registro Martech
+              Datos de Registro Martech
             </h2>
 
             {errorMsg && (
@@ -1690,47 +1686,6 @@ const VocationalFairLanding = () => {
               </div>
             </div>
 
-            {/* Test de Especialidad Martech */}
-            <div className="space-y-4 pt-4 border-t border-slate-800">
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
-                <span className="w-2 h-6 bg-purple-500 rounded-full inline-block" />
-                2. Test de Especialidad (El Desafío Influencer)
-              </h2>
-              <p className="text-slate-300 font-bold text-sm sm:text-base leading-relaxed text-left text-justify">
-                Imagina que MrBeast te contrata hoy mismo en su equipo de marketing para expandir su marca. ¿Cuál sería tu primera acción estratégica para multiplicar las ventas de sus hamburguesas Beast Burger? *
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                {TEST_OPTIONS.map(opt => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handleSelectOption(opt.id)}
-                    className={`flex flex-col text-left p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${
-                      formData.test_answer === opt.id 
-                        ? 'border-purple-500 bg-purple-950/20 text-slate-100 shadow-[0_0_15px_rgba(168,85,247,0.15)]' 
-                        : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 hover:bg-slate-900/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
-                        formData.test_answer === opt.id ? 'bg-purple-500 text-white' : 'bg-slate-850 text-slate-400'
-                      }`}>
-                        {opt.id}
-                      </span>
-                      <span className={`text-[10px] font-black uppercase tracking-wider ${
-                        formData.test_answer === opt.id ? 'text-purple-400' : 'text-slate-500'
-                      }`}>
-                        {opt.badge}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm font-semibold leading-relaxed">
-                      {opt.text}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* BOTÓN SUBMIT */}
             <div className="pt-6">
@@ -1742,11 +1697,11 @@ const VocationalFairLanding = () => {
                 {loading ? (
                   <>
                     <RefreshCw className="animate-spin" size={18} />
-                    <span>Calculando tu clase en la Matrix...</span>
+                    <span>Registrando tu acceso...</span>
                   </>
                 ) : (
                   <>
-                    <span>Generar Credencial Digital</span>
+                    <span>Registrarme y Acceder al Software</span>
                     <Sparkles className="group-hover:scale-125 transition-transform" size={18} />
                   </>
                 )}

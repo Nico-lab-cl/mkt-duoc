@@ -33,11 +33,18 @@ const AppContent = () => {
 
   // Determinar la vista inicial o transiciones automáticas
   useEffect(() => {
-    if (currentUser && view !== 'identidad-view') {
-      if (!currentUser.group_id && currentUser.role === 'student') {
-        setView('group-selection');
-      } else if (view === 'login') {
+    if (currentUser) {
+      if (currentUser.role === 'guest') {
         setView('dashboard');
+        if (window.location.pathname !== '/') {
+          window.history.pushState(null, '', '/');
+        }
+      } else if (view !== 'identidad-view') {
+        if (!currentUser.group_id && currentUser.role === 'student') {
+          setView('group-selection');
+        } else if (view === 'login') {
+          setView('dashboard');
+        }
       }
     }
   }, [currentUser, view]);

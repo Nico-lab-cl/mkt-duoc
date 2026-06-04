@@ -112,7 +112,13 @@ const Login = ({ onNext }) => {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+        <div className="mt-8 pt-6 border-t border-slate-100 text-center space-y-4">
+          <a 
+            href="/identidad"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-indigo-600 text-white font-bold uppercase tracking-widest text-xs rounded-xl shadow-lg hover:brightness-110 transition-all"
+          >
+            🎓 Invitado — Feria Vocacional
+          </a>
           <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">
             Sandbox de Simulación Estratégica v2.0
           </p>

@@ -26,7 +26,8 @@ import {
   AlertCircle,
   BarChart,
   Zap,
-  Copy
+  Copy,
+  Lock
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
@@ -198,19 +199,37 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
     </button>
   );
 
-  const ExternalSidebarItem = ({ icon: Icon, label, href, badge, onClick }) => (
-    <a 
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-slate-500 hover:bg-slate-100"
+  const ExternalSidebarItem = ({ icon: Icon, label, href, badge, onClick, disabled }) => (
+    disabled ? (
+      <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-slate-450 opacity-40 cursor-not-allowed select-none">
+        <Icon size={20} className="text-slate-500" />
+        <span className="font-bold text-sm flex-grow text-left text-slate-500">{label}</span>
+        <Lock size={14} className="text-slate-400" />
+      </div>
+    ) : (
+      <a 
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onClick}
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-slate-500 hover:bg-slate-100"
+      >
+        <Icon size={20} />
+        <span className="font-bold text-sm flex-grow text-left">{label}</span>
+        {badge && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{badge}</span>}
+        <ExternalLink size={14} className="text-slate-400" />
+      </a>
+    )
+  );
+
+  const NavigationSidebarItem = ({ icon: Icon, label, platformId }) => (
+    <button 
+      onClick={() => onSelectPlatform(platformId)}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-slate-500 hover:bg-slate-100 cursor-pointer"
     >
       <Icon size={20} />
       <span className="font-bold text-sm flex-grow text-left">{label}</span>
-      {badge && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{badge}</span>}
-      <ExternalLink size={14} className="text-slate-400" />
-    </a>
+    </button>
   );
 
   return (
@@ -230,11 +249,39 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
         <nav className="flex-grow">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-4">Simulación</p>
           <SidebarItem icon={Home} label="Dashboard" view="home" />
-          <ExternalSidebarItem icon={Zap} label="N8N AUTOMATIZACIONES" href="https://n8n-n8n.db8enk.easypanel.host/" />
+          
+          <NavigationSidebarItem 
+            icon={Layout} 
+            label="Meta Ads" 
+            platformId="meta" 
+          />
+          <NavigationSidebarItem 
+            icon={MessageSquare} 
+            label="M. Conversacional" 
+            platformId="chatflow" 
+          />
+          <NavigationSidebarItem 
+            icon={Wand2} 
+            label="Lead Magnet" 
+            platformId="leadmagnet" 
+          />
+          <NavigationSidebarItem 
+            icon={BarChart} 
+            label="Lab Analíticas y KPI" 
+            platformId="kpi" 
+          />
+
+          <ExternalSidebarItem 
+            icon={Zap} 
+            label="N8N AUTOMATIZACIONES" 
+            href="https://n8n-n8n.db8enk.easypanel.host/" 
+            disabled={currentUser?.role === 'guest'}
+          />
           <ExternalSidebarItem 
             icon={MessageCircle} 
             label="WHATSAPP INTEGRACION" 
             href="http://evolution-api-evolution-api.db8enk.easypanel.host/manager" 
+            disabled={currentUser?.role === 'guest'}
             onClick={(e) => {
               e.preventDefault();
               setShowWhatsappModal(true);
@@ -260,7 +307,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
               </div>
               <div className="flex flex-col truncate">
                  <span className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{currentUser?.full_name}</span>
-                 <span className="text-[10px] text-slate-400 font-bold uppercase truncate">{currentUser?.role}</span>
+                 <span className="text-[10px] text-slate-400 font-bold uppercase truncate">{currentUser?.role === 'guest' ? 'Invitado' : currentUser?.role}</span>
               </div>
            </div>
            <button 
@@ -311,33 +358,60 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
-                {platforms.map((platform, index) => (
-                  <motion.button
-                    key={platform.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => {
-                      if (platform.id === 'whatsapp') {
-                        setShowWhatsappModal(true);
-                      } else if (platform.status === 'external') {
-                        window.open(platform.url, '_blank');
-                      } else if (platform.status === 'active') {
-                        onSelectPlatform(platform.id);
-                      }
-                    }}
-                    className={`group p-8 rounded-3xl bg-white border border-slate-200 text-left shadow-sm transition-all ${(platform.status === 'active' || platform.status === 'external') ? 'hover:shadow-2xl hover:border-blue-500 cursor-pointer' : 'opacity-50 grayscale cursor-not-allowed'}`}
-                  >
-                    <div className={`w-12 h-12 ${platform.color} rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform`}>
-                      {platform.icon}
-                    </div>
-                    <h3 className="text-2xl font-black text-slate-800 tracking-tighter mb-2">{platform.name}</h3>
-                    <p className="text-slate-500 text-sm mb-6 leading-relaxed">{platform.description}</p>
-                    <div className={`flex items-center gap-2 font-black text-xs uppercase tracking-widest ${(platform.status === 'active' || platform.status === 'external') ? 'text-blue-600' : 'text-slate-400'}`}>
-                      {platform.status === 'active' ? 'Iniciar Simulación' : platform.status === 'external' ? 'Abrir Plataforma' : 'Próximamente'} <ArrowRight size={16} />
-                    </div>
-                  </motion.button>
-                ))}
+                {platforms.map((platform, index) => {
+                  const isLockedGuest = currentUser?.role === 'guest' && (platform.id === 'n8n' || platform.id === 'whatsapp');
+                  const isActive = (platform.status === 'active' || platform.status === 'external') && !isLockedGuest;
+                  
+                  return (
+                    <motion.button
+                      key={platform.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      disabled={!isActive}
+                      onClick={() => {
+                        if (!isActive) return;
+                        if (platform.id === 'whatsapp') {
+                          setShowWhatsappModal(true);
+                        } else if (platform.status === 'external') {
+                          window.open(platform.url, '_blank');
+                        } else if (platform.status === 'active') {
+                          onSelectPlatform(platform.id);
+                        }
+                      }}
+                      className={`group p-8 rounded-3xl bg-white border border-slate-200 text-left shadow-sm transition-all ${isActive ? 'hover:shadow-2xl hover:border-blue-500 cursor-pointer' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    >
+                      <div className={`w-12 h-12 ${platform.color} rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform`}>
+                        {platform.icon}
+                      </div>
+                      <h3 className="text-2xl font-black text-slate-800 tracking-tighter mb-2">{platform.name}</h3>
+                      <p className="text-slate-500 text-sm mb-6 leading-relaxed">{platform.description}</p>
+                      <div className={`flex items-center gap-2 font-black text-xs uppercase tracking-widest ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                        {isLockedGuest ? (
+                          <>
+                            <Lock size={14} className="text-slate-400" />
+                            <span>Solo para Alumnos</span>
+                          </>
+                        ) : platform.status === 'active' ? (
+                          <>
+                            <span>Iniciar Simulación</span>
+                            <ArrowRight size={16} />
+                          </>
+                        ) : platform.status === 'external' ? (
+                          <>
+                            <span>Abrir Plataforma</span>
+                            <ArrowRight size={16} />
+                          </>
+                        ) : (
+                          <>
+                            <span>Próximamente</span>
+                            <ArrowRight size={16} />
+                          </>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
                </div>
 
                {/* Mis Entregas (Personal) */}

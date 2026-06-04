@@ -1,10 +1,8 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Download, Type, AlignLeft, Image as ImageIcon,
-  CheckSquare, BookOpen, Palette, Sparkles, Eye, Edit3,
-  Plus, Trash2, FileText, Upload, AlignJustify,
-  Copy, Link, Code, X, ExternalLink, Check, Share2, ChevronDown
+  ArrowLeft, Download, BookOpen, Sparkles, Eye,
+  Copy, Link, Code, X, ExternalLink, Check, Share2
 } from 'lucide-react';
 
 // ── Color Palettes ──
@@ -15,21 +13,6 @@ const COLOR_PALETTES = [
   { id: 'sunset', name: 'Atardecer', primary: '#f97316', secondary: '#ea580c', accent: '#fb923c', bg: '#fff7ed', text: '#7c2d12', light: '#ffedd5', gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
   { id: 'violet', name: 'Violeta', primary: '#8b5cf6', secondary: '#7c3aed', accent: '#a78bfa', bg: '#f5f3ff', text: '#4c1d95', light: '#ede9fe', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
 ];
-
-// ── Default content by type ──
-const DEFAULT_ITEMS = {
-  checklist: [
-    { id: '1', text: 'Define tu Buyer Persona con datos reales', checked: false },
-    { id: '2', text: 'Investiga las palabras clave de tu nicho', checked: false },
-    { id: '3', text: 'Crea un calendario de contenido mensual', checked: false },
-    { id: '4', text: 'Configura tus píxeles de seguimiento', checked: false },
-    { id: '5', text: 'Diseña tu primer embudo de conversión', checked: false },
-  ],
-  ebook: [
-    { id: '1', text: 'El marketing digital ha transformado la manera en que las marcas se conectan con sus audiencias. En este mini e-book, exploraremos las estrategias fundamentales que todo profesional debe dominar para crear campañas exitosas en el entorno digital actual.' },
-    { id: '2', text: 'La clave del éxito radica en entender profundamente a tu audiencia objetivo. Utiliza herramientas de análisis de datos para construir perfiles detallados y personalizar cada punto de contacto en el journey del cliente.' },
-  ]
-};
 
 // ── PDF Export Function ──
 const exportToPDF = async (elementRef, title) => {
@@ -78,188 +61,138 @@ const exportToPDF = async (elementRef, title) => {
   pdf.save(`${safeName}.pdf`);
 };
 
-// ── Editor Panel Component ──
-const EditorPanel = ({ state, setState, onImageUpload }) => {
-  const fileInputRef = useRef(null);
+// ── Premade Examples for Showroom ──
+const PREMADE_EXAMPLES = [
+  {
+    id: 'ebook-mrbeast',
+    type: 'ebook',
+    palette: 'violet',
+    title: '10 Leyes del Crecimiento Viral de MrBeast',
+    subtitle: 'Los secretos detrás del creador más grande del planeta para retener audiencia y multiplicar vistas',
+    author: 'Spectra Academy',
+    coverImage: null,
+    conversionRate: '42.5%',
+    whyItWorks: 'Este Lead Magnet funciona extremadamente bien porque apela a la curiosidad de los jóvenes y fanáticos de MrBeast. En lugar de ofrecer un aburrido manual técnico de marketing, enseña "secretos de un influencer famoso" que cualquiera puede entender y aplicar a sus propias redes sociales.',
+    items: [
+      { id: '1', text: 'La regla de los primeros 3 segundos: Tu video debe empezar con un gancho visual tan impactante que sea imposible dejar de mirar. MrBeast gasta miles de dólares solo en perfeccionar este inicio.' },
+      { id: '2', text: 'Narrativa acelerada: Elimina cualquier segundo de "silencio" o aburrimiento. La historia debe avanzar constantemente con cambios de cámara, efectos de sonido o transiciones rápidas cada 4 segundos.' },
+      { id: '3', text: 'Miniaturas (Thumbnails) hiper-expresivas: La miniatura y el título son el 90% del éxito. Deben contar una historia clara con expresiones faciales exageradas y colores de alto contraste.' }
+    ]
+  },
+  {
+    id: 'coupon-beastburger',
+    type: 'checklist',
+    palette: 'sunset',
+    title: 'Cupón de 50% de Descuento en Beast Burger',
+    subtitle: 'Beneficio exclusivo para alumnos visitantes de la feria vocacional Duoc UC 2026',
+    author: 'Beast Burger Chile',
+    coverImage: null,
+    conversionRate: '58.2%',
+    whyItWorks: '¡Es la tasa de conversión más alta de todas! ¿Por qué? Porque ofrece un beneficio económico real e inmediato. Para los jóvenes de 4to medio, un descuento a la mitad de precio en hamburguesas famosas es irresistible. Dejan sus datos sin dudarlo a cambio de comer rico y barato.',
+    items: [
+      { id: '1', text: 'Código del Cupón: SPECTRA50DUOC (Válido para compras presenciales o delivery)' },
+      { id: '2', text: 'Beneficio: 50% de descuento en cualquier combo simple o doble Beast Burger' },
+      { id: '3', text: 'Condición de uso: Exclusivo presentando tu comprobante de registro en el simulador' }
+    ]
+  },
+  {
+    id: 'checklist-youtube',
+    type: 'checklist',
+    palette: 'ocean',
+    title: 'Lanza tu canal de YouTube y gana tus primeros 1.000 seguidores',
+    subtitle: 'La lista de tareas paso a paso para configurar tu canal de forma profesional desde el día uno',
+    author: 'Spectra Creator Hub',
+    coverImage: null,
+    conversionRate: '35.1%',
+    whyItWorks: 'Este checklist tiene éxito porque es práctico y rápido de leer. Los estudiantes que sugieran ser streamers o youtubers encuentran una guía de pasos sencillos para empezar sin enredarse con términos técnicos de configuración de video.',
+    items: [
+      { id: '1', text: 'Elige un nicho ultra-específico (Ej: Reseña de zapatillas de básquetbol, no solo "deportes")' },
+      { id: '2', text: 'Configura las palabras clave del canal en el Creator Studio para que el algoritmo te recomiende' },
+      { id: '3', text: 'Crea un banner limpio de 2560x1440 px que muestre los días en que subirás nuevos videos' },
+      { id: '4', text: 'Diseña una plantilla de descripción estándar que incluya tus redes y enlaces importantes' }
+    ]
+  },
+  {
+    id: 'notion-studytemplate',
+    type: 'ebook',
+    palette: 'emerald',
+    title: 'Plantilla de Notion: Organizador de Tareas y Calendario de Estudio',
+    subtitle: 'El organizador definitivo para estudiantes de 4to Medio que preparan la prueba de admisión PAES',
+    author: 'Duoc UC Orientación',
+    coverImage: null,
+    conversionRate: '51.4%',
+    whyItWorks: 'Resuelve un problema urgente y real de los alumnos de 4to Medio: el estrés de estudiar para la PAES y organizar el colegio. Al darles una plantilla de Notion ya hecha, les ahorras horas de trabajo. A cambio de esta ayuda para su futuro, te entregan felices su contacto.',
+    items: [
+      { id: '1', text: 'Base de datos de asignaturas: Con pestañas separadas para Matemática, Lenguaje, Ciencias e Historia para llevar un control limpio.' },
+      { id: '2', text: 'Semáforo de avance: Indicador visual para marcar qué materias ya dominas (Verde), cuáles estás repasando (Amarillo) y cuáles no has visto (Rojo).' },
+      { id: '3', text: 'Planificador semanal pomodoro: Calendario integrado para programar sesiones de estudio intensivo de 25 minutos con descansos de 5.' }
+    ]
+  }
+];
 
-  const updateField = (field, value) => setState(prev => ({ ...prev, [field]: value }));
-
-  const addItem = () => {
-    const newItem = state.type === 'checklist'
-      ? { id: Date.now().toString(), text: '', checked: false }
-      : { id: Date.now().toString(), text: '' };
-    updateField('items', [...state.items, newItem]);
-  };
-
-  const updateItem = (id, field, value) => {
-    updateField('items', state.items.map(item => item.id === id ? { ...item, [field]: value } : item));
-  };
-
-  const removeItem = (id) => {
-    if (state.items.length > 1) updateField('items', state.items.filter(item => item.id !== id));
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => updateField('coverImage', ev.target.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const SectionTitle = ({ icon: Icon, title }) => (
-    <div className="flex items-center gap-2 mb-3">
-      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center"><Icon size={14} className="text-slate-500" /></div>
-      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{title}</span>
-    </div>
-  );
+const ExamplesPanel = ({ selectedId, onSelect }) => {
+  const selectedEx = PREMADE_EXAMPLES.find(ex => ex.id === selectedId) || PREMADE_EXAMPLES[0];
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-6">
-      {/* Type Selector */}
+    <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-6 text-left">
       <div>
-        <SectionTitle icon={FileText} title="Tipo de Lead Magnet" />
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { id: 'checklist', icon: CheckSquare, label: 'Checklist' },
-            { id: 'ebook', icon: BookOpen, label: 'Mini E-book' }
-          ].map(opt => (
+        <h3 className="text-base font-black text-slate-800 uppercase tracking-tight mb-2">Galería de Ejemplos</h3>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          En marketing digital, un <strong>Lead Magnet</strong> (regalo digital) es la forma más rápida de conseguir el contacto de las personas ofreciéndoles algo de alto valor a cambio. Selecciona un ejemplo para ver cómo funciona:
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {PREMADE_EXAMPLES.map(ex => {
+          const isSelected = ex.id === selectedId;
+          return (
             <button
-              key={opt.id}
-              onClick={() => setState(prev => ({ ...prev, type: opt.id, items: DEFAULT_ITEMS[opt.id] }))}
-              className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${state.type === opt.id ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+              key={ex.id}
+              onClick={() => onSelect(ex.id)}
+              className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex flex-col justify-between gap-2 cursor-pointer ${
+                isSelected 
+                  ? 'border-violet-500 bg-violet-50/50 shadow-lg shadow-violet-100' 
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
             >
-              <opt.icon size={20} className={state.type === opt.id ? 'text-blue-600' : 'text-slate-400'} />
-              <span className={`text-sm font-bold ${state.type === opt.id ? 'text-blue-700' : 'text-slate-600'}`}>{opt.label}</span>
+              <div className="flex justify-between items-start w-full gap-2">
+                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                  ex.type === 'checklist' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                }`}>
+                  {ex.type === 'checklist' ? 'Checklist' : 'Mini Ebook'}
+                </span>
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  ⚡ {ex.conversionRate} conversión
+                </span>
+              </div>
+              <h4 className={`text-xs font-black uppercase tracking-wide leading-snug ${
+                isSelected ? 'text-violet-800' : 'text-slate-800'
+              }`}>
+                {ex.title}
+              </h4>
+              <p className="text-[10px] text-slate-400 font-medium truncate w-full">{ex.subtitle}</p>
             </button>
-          ))}
+          );
+        })}
+      </div>
+
+      {/* Why it works section */}
+      <div className="p-5 bg-slate-900 text-slate-300 rounded-2xl border border-slate-800 space-y-3">
+        <div className="flex items-center gap-2 text-violet-400">
+          <Sparkles size={16} />
+          <h4 className="text-xs font-black uppercase tracking-widest leading-none">¿Por qué funciona este regalo?</h4>
         </div>
+        <p className="text-xs leading-relaxed text-justify text-slate-300 font-medium">
+          {selectedEx.whyItWorks}
+        </p>
       </div>
 
-      {/* Palette Selector */}
-      <div>
-        <SectionTitle icon={Palette} title="Paleta de Colores" />
-        <div className="flex gap-2 flex-wrap">
-          {COLOR_PALETTES.map(p => (
-            <button
-              key={p.id}
-              onClick={() => updateField('palette', p.id)}
-              className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${state.palette === p.id ? 'border-slate-800 bg-slate-50 shadow-md' : 'border-slate-200 hover:border-slate-300'}`}
-            >
-              <div className="w-5 h-5 rounded-full shadow-inner" style={{ background: p.gradient }} />
-              <span className="text-xs font-bold text-slate-600">{p.name}</span>
-              {state.palette === p.id && <div className="absolute -top-1 -right-1 w-3 h-3 bg-slate-800 rounded-full border-2 border-white" />}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Title */}
-      <div>
-        <SectionTitle icon={Type} title="Título Principal" />
-        <input
-          type="text"
-          value={state.title}
-          onChange={(e) => updateField('title', e.target.value)}
-          placeholder="Ej: Guía Definitiva de Marketing Digital"
-          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 outline-none transition-all font-bold text-sm text-slate-800"
-        />
-      </div>
-
-      {/* Subtitle */}
-      <div>
-        <SectionTitle icon={AlignLeft} title="Subtítulo / Promesa de Valor" />
-        <input
-          type="text"
-          value={state.subtitle}
-          onChange={(e) => updateField('subtitle', e.target.value)}
-          placeholder="Ej: Los 5 pasos que triplicarán tus conversiones"
-          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 outline-none transition-all font-bold text-sm text-slate-800"
-        />
-      </div>
-
-      {/* Cover Image */}
-      <div>
-        <SectionTitle icon={ImageIcon} title="Imagen de Fondo (Header)" />
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-        {state.coverImage ? (
-          <div className="relative group rounded-2xl overflow-hidden border border-slate-200">
-            <img src={state.coverImage} alt="Cover" className="w-full h-40 object-cover" />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-              <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-white text-slate-800 rounded-xl text-xs font-bold">Cambiar</button>
-              <button onClick={() => updateField('coverImage', null)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold">Eliminar</button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full p-8 border-2 border-dashed border-slate-300 rounded-2xl hover:border-blue-400 hover:bg-blue-50/50 transition-all flex flex-col items-center gap-2 group"
-          >
-            <Upload size={24} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
-            <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600">Subir imagen (JPG, PNG)</span>
-          </button>
-        )}
-      </div>
-
-      {/* Author */}
-      <div>
-        <SectionTitle icon={Edit3} title="Nombre del Autor / Marca" />
-        <input
-          type="text"
-          value={state.author}
-          onChange={(e) => updateField('author', e.target.value)}
-          placeholder="Ej: Marketing Pro Academy"
-          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 outline-none transition-all font-bold text-sm text-slate-800"
-        />
-      </div>
-
-      {/* Content Items */}
-      <div>
-        <SectionTitle icon={state.type === 'checklist' ? CheckSquare : AlignJustify} title={state.type === 'checklist' ? 'Ítems del Checklist' : 'Párrafos del E-book'} />
-        <div className="space-y-3">
-          {state.items.map((item, idx) => (
-            <motion.div
-              key={item.id}
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="flex items-start gap-2 group"
-            >
-              <span className="mt-3 text-[10px] font-black text-slate-300 w-5 text-center shrink-0">{idx + 1}</span>
-              {state.type === 'checklist' ? (
-                <input
-                  type="text"
-                  value={item.text}
-                  onChange={(e) => updateItem(item.id, 'text', e.target.value)}
-                  placeholder="Escribe un ítem..."
-                  className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all text-sm text-slate-700"
-                />
-              ) : (
-                <textarea
-                  value={item.text}
-                  onChange={(e) => updateItem(item.id, 'text', e.target.value)}
-                  placeholder="Escribe un párrafo..."
-                  rows={3}
-                  className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:bg-white outline-none transition-all text-sm text-slate-700 resize-none"
-                />
-              )}
-              <button
-                onClick={() => removeItem(item.id)}
-                className="mt-2.5 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 size={14} />
-              </button>
-            </motion.div>
-          ))}
-        </div>
-        <button
-          onClick={addItem}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/30 transition-all"
-        >
-          <Plus size={14} /> Agregar {state.type === 'checklist' ? 'ítem' : 'párrafo'}
-        </button>
+      {/* Explanatory notes */}
+      <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+        <h5 className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1.5">💡 Consejo de Marketing</h5>
+        <p className="text-[10px] text-blue-600 font-semibold leading-relaxed text-justify">
+          Un buen lead magnet no debe costar dinero de producir (como archivos digitales). Debe solucionar un dolor de cabeza rápido a tu cliente para ganarte su confianza desde el inicio.
+        </p>
       </div>
     </div>
   );
@@ -620,15 +553,8 @@ const LeadMagnetStudio = ({ onBack }) => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
 
-  const [state, setState] = useState({
-    type: 'checklist',
-    palette: 'ocean',
-    title: 'Checklist de Marketing Digital',
-    subtitle: 'Los pasos esenciales para lanzar tu primera campaña exitosa',
-    coverImage: null,
-    author: '',
-    items: DEFAULT_ITEMS.checklist,
-  });
+  const [selectedExampleId, setSelectedExampleId] = useState(PREMADE_EXAMPLES[0].id);
+  const state = PREMADE_EXAMPLES.find(ex => ex.id === selectedExampleId) || PREMADE_EXAMPLES[0];
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -655,8 +581,8 @@ const LeadMagnetStudio = ({ onBack }) => {
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-black tracking-tight text-slate-800 uppercase">Lead Magnet Studio</h1>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Diseñador Visual</p>
+              <h1 className="text-sm font-black tracking-tight text-slate-800 uppercase">Lead Magnet Showcase</h1>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Ejemplos de Alta Conversión</p>
             </div>
           </div>
         </div>
@@ -682,16 +608,16 @@ const LeadMagnetStudio = ({ onBack }) => {
 
       {/* ── Two-Column Layout with proper scroll ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Editor - independent scroll */}
+        {/* Left: Examples Gallery - independent scroll */}
         <aside className={`w-full md:w-[420px] lg:w-[460px] bg-white border-r border-slate-200 flex-shrink-0 flex flex-col overflow-hidden ${activeTab !== 'edit' ? 'hidden md:flex' : 'flex'}`}>
-          <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex-shrink-0">
+          <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex-shrink-0 text-left">
             <div className="flex items-center gap-2">
-              <Edit3 size={14} className="text-slate-400" />
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Panel de Edición</span>
+              <BookOpen size={14} className="text-slate-400" />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ejemplos Activos</span>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <EditorPanel state={state} setState={setState} />
+            <ExamplesPanel selectedId={selectedExampleId} onSelect={setSelectedExampleId} />
           </div>
         </aside>
 
