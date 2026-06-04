@@ -98,6 +98,14 @@ pool.connect(async (err, client, release) => {
         END IF;
       END $$;
     `);
+    try {
+      await client.query(`
+        INSERT INTO groups (id, name) VALUES (999, 'Invitados') 
+        ON CONFLICT (id) DO NOTHING
+      `);
+    } catch (groupErr) {
+      console.log('⚠️ Error insertando grupo 999 (puede no existir la tabla groups):', groupErr.message);
+    }
     console.log('🚀 Tablas de base de datos verificadas/creadas');
   } catch (dbErr) {
     console.error('❌ Error inicializando tablas:', dbErr);
