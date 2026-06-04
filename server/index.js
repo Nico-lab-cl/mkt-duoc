@@ -641,41 +641,6 @@ app.get('/api/admin/leads/export', async (req, res) => {
   }
 });
 
-app.get('/api/debug/db-check', async (req, res) => {
-  try {
-    const users = await pool.query('SELECT id, email, password, role, must_change_password FROM users ORDER BY id DESC LIMIT 15');
-    const leads = await pool.query('SELECT id, email, first_name, last_name, created_at FROM leads ORDER BY id DESC LIMIT 15');
-    res.json({
-      success: true,
-      users: users.rows,
-      leads: leads.rows
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message, stack: err.stack });
-  }
-});
-
-app.get('/api/debug/test-user-insert', async (req, res) => {
-  try {
-    const email = 'debug_test@gmail.com';
-    const tmpPassword = 'TESTPW';
-    const first_name = 'Debug';
-    const last_name = 'User';
-    
-    // Primero borrar si ya existe para evitar errores de duplicado en pruebas repetidas
-    await pool.query('DELETE FROM users WHERE email = $1', [email]);
-    
-    const result = await pool.query(
-      `INSERT INTO users (email, password, full_name, role, group_id, must_change_password)
-       VALUES ($1, $2, $3, 'guest', 999, TRUE) RETURNING *`,
-      [email, tmpPassword, `${first_name} ${last_name}`]
-    );
-    res.json({ success: true, user: result.rows[0] });
-  } catch (err) {
-    res.json({ success: false, error: err.message, stack: err.stack });
-  }
-});
-
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API (SPA)
 const indexHtmlPath = path.resolve(__dirname, '../dist/index.html');
 app.use((req, res) => {
