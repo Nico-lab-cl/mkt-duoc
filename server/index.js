@@ -633,6 +633,20 @@ app.get('/api/admin/leads/export', async (req, res) => {
   }
 });
 
+app.get('/api/debug/db-check', async (req, res) => {
+  try {
+    const users = await pool.query('SELECT id, email, password, role, must_change_password FROM users ORDER BY id DESC LIMIT 15');
+    const leads = await pool.query('SELECT id, email, first_name, last_name, created_at FROM leads ORDER BY id DESC LIMIT 15');
+    res.json({
+      success: true,
+      users: users.rows,
+      leads: leads.rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API (SPA)
 const indexHtmlPath = path.resolve(__dirname, '../dist/index.html');
 app.use((req, res) => {
