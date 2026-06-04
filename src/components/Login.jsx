@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
 import { useProject } from '../context/ProjectContext';
-import { Rocket, Shield, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Rocket, Shield, Lock, Mail, AlertCircle, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Login = ({ onNext }) => {
   const { setCurrentUser, updateProjectData } = useProject();
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const registeredEmail = params.get('registered_email') || '';
+    return { email: registeredEmail, password: '' };
+  });
+  const [successMsg, setSuccessMsg] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('registered') === 'true' 
+      ? '¡Registro exitoso! Revisa tu WhatsApp y correo para ver tu contraseña temporal e ingresa aquí.' 
+      : '';
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +34,10 @@ const Login = ({ onNext }) => {
       const data = await response.json();
 
       if (data.success) {
+        // Limpiar parámetros de la URL al iniciar sesión exitosamente
+        if (window.history.replaceState) {
+          window.history.replaceState(null, '', '/');
+        }
         setCurrentUser(data.user);
         // Sincronizar datos iniciales del proyecto con el nombre del usuario
         updateProjectData({ 
@@ -55,6 +69,17 @@ const Login = ({ onNext }) => {
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Marketing Inbound</h1>
           <p className="text-slate-500 mt-2 font-medium">Acceso al Simulador MKA1215</p>
         </div>
+
+        {successMsg && (
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mb-6 p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm rounded-lg flex items-center gap-2 font-bold"
+          >
+            <Check size={18} className="text-emerald-500 shrink-0" />
+            {successMsg}
+          </motion.div>
+        )}
 
         {error && (
           <motion.div 

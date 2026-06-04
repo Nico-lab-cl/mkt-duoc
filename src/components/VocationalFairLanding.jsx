@@ -438,18 +438,9 @@ const VocationalFairLanding = () => {
       const data = await response.json();
       
       if (data.success) {
-        setAssignedLead(data.lead);
-        setCurrentUser({
-          id: data.lead.id,
-          full_name: `${data.lead.first_name} ${data.lead.last_name}`,
-          email: data.lead.email,
-          role: 'guest',
-          group_id: 999
-        });
-        
         // Disparar Webhook a N8N
         try {
-          fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/d930aa86-d4eb-4609-8513-3c89dfd3f7dd', {
+          await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/d930aa86-d4eb-4609-8513-3c89dfd3f7dd', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -459,11 +450,13 @@ const VocationalFairLanding = () => {
               "Numero de telefono": data.lead.phone,
               "Contraseña temporal": data.tmpPassword || 'Sin contraseña'
             })
-          }).catch(console.error); // Fallback silencioso si el webhook falla
+          });
         } catch (e) {
           console.error("Error trigger webhook:", e);
         }
         
+        // Redirigir inmediatamente a la pantalla de login
+        window.location.href = `/?registered=true&registered_email=${encodeURIComponent(data.lead.email)}`;
       } else {
         setErrorMsg(data.error || 'Error al guardar tus datos. Inténtalo nuevamente.');
       }
