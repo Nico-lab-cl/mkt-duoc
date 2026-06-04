@@ -69,6 +69,21 @@ pool.connect(async (err, client, release) => {
         data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS leads (
+        id SERIAL PRIMARY KEY,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        age INTEGER,
+        region TEXT,
+        city TEXT,
+        school TEXT,
+        email TEXT NOT NULL,
+        phone TEXT,
+        favorite_social TEXT,
+        test_answer CHAR(1),
+        range_assigned TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
       DO $$ 
       BEGIN 
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='user_id') THEN
@@ -367,6 +382,108 @@ app.get('/api/lead-magnets/:id', async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener lead magnet' });
+  }
+});
+
+// --- VOCATIONAL FAIR LEADS ENDPOINTS ---
+
+app.post('/api/leads', async (req, res) => {
+  const { first_name, last_name, age, region, city, school, email, phone, favorite_social, test_answer } = req.body;
+  
+  if (!first_name || !last_name || !email) {
+    return res.status(400).json({ success: false, error: 'Nombre, apellido y correo son obligatorios' });
+  }
+
+  // Lógica de asignación de rangos según respuesta del test
+  let range_assigned = 'Social Media Content';
+  switch (test_answer) {
+    case 'A':
+      range_assigned = 'Social Media Content';
+      break;
+    case 'B':
+      range_assigned = 'Community Manager';
+      break;
+    case 'C':
+      range_assigned = 'Trafficker / Paid Media';
+      break;
+    case 'D':
+      range_assigned = 'Especialista SEM';
+      break;
+    case 'E':
+      range_assigned = 'Consultor SEO';
+      break;
+    case 'F':
+      range_assigned = 'Data Analyst';
+      break;
+    default:
+      range_assigned = 'Social Media Content';
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO leads (first_name, last_name, age, region, city, school, email, phone, favorite_social, test_answer, range_assigned)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [first_name, last_name, parseInt(age) || null, region || null, city || null, school || null, email, phone || null, favorite_social || null, test_answer || null, range_assigned]
+    );
+    res.json({ success: true, lead: result.rows[0] });
+  } catch (err) {
+    console.error('Error saving lead:', err);
+    res.status(500).json({ success: false, error: 'Error al registrar el lead en la base de datos' });
+  }
+});
+
+app.get('/api/admin/leads', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM leads ORDER BY created_at DESC');
+    res.json(result.rows || []);
+  } catch (err) {
+    console.error('Error getting leads:', err);
+    res.status(500).json({ error: 'Error al obtener leads' });
+  }
+});
+
+app.get('/api/admin/leads/export', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM leads ORDER BY created_at DESC');
+    const leads = result.rows || [];
+
+    // Definición de cabeceras
+    const headers = [
+      'ID', 'Nombre', 'Apellido', 'Edad', 'Región', 'Comuna / Ciudad', 
+      'Colegio', 'Email', 'Teléfono', 'Red Social Favorita', 
+      'Respuesta Test', 'Rango Asignado', 'Fecha de Registro'
+    ];
+
+    // Convertir a formato CSV
+    const rows = leads.map(lead => [
+      lead.id,
+      `"${(lead.first_name || '').replace(/"/g, '""')}"`,
+      `"${(lead.last_name || '').replace(/"/g, '""')}"`,
+      lead.age || '',
+      `"${(lead.region || '').replace(/"/g, '""')}"`,
+      `"${(lead.city || '').replace(/"/g, '""')}"`,
+      `"${(lead.school || '').replace(/"/g, '""')}"`,
+      `"${(lead.email || '').replace(/"/g, '""')}"`,
+      `"${(lead.phone || '').replace(/"/g, '""')}"`,
+      `"${(lead.favorite_social || '').replace(/"/g, '""')}"`,
+      lead.test_answer || '',
+      `"${(lead.range_assigned || '').replace(/"/g, '""')}"`,
+      new Date(lead.created_at).toLocaleString('es-CL')
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(e => e.join(','))
+    ].join('\n');
+
+    // Añadir UTF-8 BOM (\ufeff) para que Excel abra correctamente los caracteres en español (ej: acentos)
+    const bom = '\ufeff';
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=leads_feria_vocacional.csv');
+    res.status(200).send(bom + csvContent);
+  } catch (err) {
+    console.error('Error exporting leads:', err);
+    res.status(500).json({ error: 'Error al exportar leads' });
   }
 });
 

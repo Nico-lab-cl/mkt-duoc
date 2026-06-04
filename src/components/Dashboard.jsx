@@ -3,6 +3,7 @@ import { useProject } from '../context/ProjectContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Layout, 
+  Download,
   Search, 
   Video, 
   ArrowRight, 
@@ -106,6 +107,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme } = useProject();
   const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
   const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [], evaluations: [], lead_magnets: [] });
+  const [leads, setLeads] = useState([]);
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -154,11 +156,16 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   useEffect(() => {
     if (currentUser?.role === 'admin' && activeView === 'admin') {
       setLoading(true);
-      fetch('/api/admin/all')
-        .then(res => res.json())
-        .then(data => {
-          if (data && !data.error) {
-            setAdminData(data);
+      Promise.all([
+        fetch('/api/admin/all').then(res => res.json()),
+        fetch('/api/admin/leads').then(res => res.json())
+      ])
+        .then(([allData, leadsData]) => {
+          if (allData && !allData.error) {
+            setAdminData(allData);
+          }
+          if (leadsData && !leadsData.error) {
+            setLeads(leadsData);
           }
           setLoading(false);
         })
@@ -364,6 +371,67 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
 
           {activeView === 'admin' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+               
+               {/* SECCIÓN FERIA VOCACIONAL LEADS */}
+               <div className="bg-slate-900 text-white rounded-[2rem] p-8 shadow-xl relative overflow-hidden">
+                  <div className="absolute right-0 top-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" />
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+                     <div>
+                        <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block mb-1">Actividad en Vivo</span>
+                        <h3 className="text-3xl font-black tracking-tighter italic">Feria Vocacional - Leads</h3>
+                        <p className="text-slate-300 font-medium text-sm mt-1">Monitorea y descarga en tiempo real los datos capturados de los alumnos de colegios.</p>
+                     </div>
+                     <div className="flex items-center gap-4">
+                        <div className="bg-slate-800 px-6 py-4 rounded-2xl border border-slate-700/50 flex flex-col items-center">
+                           <span className="text-[10px] font-bold text-slate-400 uppercase">Leads Totales</span>
+                           <span className="text-2xl font-black text-cyan-400">{leads.length}</span>
+                        </div>
+                        <a 
+                          href="/api/admin/leads/export" 
+                          target="_blank"
+                          rel="noreferrer"
+                          className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-6 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                           <Download size={16} /> Exportar CSV (Excel)
+                        </a>
+                     </div>
+                  </div>
+
+                  {leads.length > 0 && (
+                     <div className="mt-8 border-t border-slate-800 pt-6">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Últimos Registros</h4>
+                        <div className="overflow-x-auto">
+                           <table className="w-full text-left text-xs font-semibold text-slate-300">
+                              <thead>
+                                 <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800/80">
+                                    <th className="pb-3 text-slate-400">Nombre</th>
+                                    <th className="pb-3 text-slate-400">Email</th>
+                                    <th className="pb-3 text-slate-400">Colegio</th>
+                                    <th className="pb-3 text-slate-400">Comuna</th>
+                                    <th className="pb-3 text-slate-400">Red Social</th>
+                                    <th className="pb-3 text-slate-400">Rango Asignado</th>
+                                    <th className="pb-3 text-slate-400">Fecha</th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 {leads.slice(0, 5).map(lead => (
+                                    <tr key={lead.id} className="border-b border-slate-800/50 hover:bg-slate-850/50">
+                                       <td className="py-3 font-bold text-white">{lead.first_name} {lead.last_name}</td>
+                                       <td className="py-3 text-slate-400">{lead.email}</td>
+                                       <td className="py-3">{lead.school || '-'}</td>
+                                       <td className="py-3 text-cyan-400">{lead.city}</td>
+                                       <td className="py-3 text-purple-400 font-bold">{lead.favorite_social}</td>
+                                       <td className="py-3 font-black text-emerald-400">{lead.range_assigned}</td>
+                                       <td className="py-3 text-slate-500">{new Date(lead.created_at).toLocaleTimeString('es-CL')}</td>
+                                    </tr>
+                                 ))}
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
+                  )}
+               </div>
+
                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {[1, 2, 3].map(groupId => (
                     <div key={groupId} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">

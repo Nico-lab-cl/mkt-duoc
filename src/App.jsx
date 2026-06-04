@@ -11,6 +11,7 @@ import LeadMagnetStudio from './components/PageBuilder';
 import N8NModule from './components/N8NModule';
 
 import PagePublicView from './components/PageBuilder/PagePublicView';
+import VocationalFairLanding from './components/VocationalFairLanding';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser } = useProject();
@@ -19,20 +20,27 @@ const AppContent = () => {
   const path = window.location.pathname;
   const isPublicPage = path.startsWith('/p/');
   const publicPageId = isPublicPage ? path.split('/p/')[1] : null;
+  const isIdentidadPage = path.startsWith('/identidad') || path.startsWith('/registro') || path.startsWith('/martech');
 
-  const [view, setView] = useState(isPublicPage ? 'public-view' : (currentUser ? (currentUser.group_id || currentUser.role === 'admin' ? 'dashboard' : 'group-selection') : 'login')); 
+  const [view, setView] = useState(
+    isPublicPage 
+      ? 'public-view' 
+      : isIdentidadPage 
+        ? 'identidad-view' 
+        : (currentUser ? (currentUser.group_id || currentUser.role === 'admin' ? 'dashboard' : 'group-selection') : 'login')
+  ); 
   const [selectedPlatform, setSelectedPlatform] = useState(null);
 
   // Determinar la vista inicial o transiciones automáticas
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && view !== 'identidad-view') {
       if (!currentUser.group_id && currentUser.role === 'student') {
         setView('group-selection');
       } else if (view === 'login') {
         setView('dashboard');
       }
     }
-  }, [currentUser]);
+  }, [currentUser, view]);
 
   const handleSelectPlatform = (platform) => {
     setSelectedPlatform(platform);
@@ -101,6 +109,10 @@ const AppContent = () => {
 
       {view === 'public-view' && (
         <PagePublicView id={publicPageId} />
+      )}
+
+      {view === 'identidad-view' && (
+        <VocationalFairLanding />
       )}
 
       {view === 'success' && (
