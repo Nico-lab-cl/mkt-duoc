@@ -35,6 +35,7 @@ import {
 
 import GroupsManagement from './GroupsManagement';
 import QRManager from './QRManager';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 
 const platforms = [
@@ -109,8 +110,9 @@ const platforms = [
 
 
 const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
-  const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme } = useProject();
+  const { projectData, updateProjectData, currentUser, setCurrentUser, theme, setTheme, logActivity } = useProject();
   const [activeView, setActiveView] = useState('home'); // 'home' | 'admin' | 'config' | 'groups'
+  const [adminTab, setAdminTab] = useState('live'); // 'live' | 'stats'
   const [adminData, setAdminData] = useState({ campaigns: [], chatflows: [], evaluations: [], lead_magnets: [] });
   const [leads, setLeads] = useState([]);
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
@@ -223,9 +225,12 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
     }
   }, [currentUser, activeView]);
 
-  const SidebarItem = ({ icon: Icon, label, view, badge }) => (
+  const SidebarItem = ({ icon: Icon, label, view, badge, onClick }) => (
     <button 
-      onClick={() => setActiveView(view)}
+      onClick={() => {
+        setActiveView(view);
+        if (onClick) onClick();
+      }}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 ${activeView === view ? 'text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
       style={activeView === view ? { backgroundColor: 'var(--primary)' } : {}}
     >
@@ -306,13 +311,23 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
             label="Lab Analíticas y KPI" 
             platformId="kpi" 
           />
-          <SidebarItem icon={QrCode} label="Generador & Métricas QR" view="qr" />
+          <SidebarItem 
+            icon={QrCode} 
+            label="Generador & Métricas QR" 
+            view="qr" 
+            onClick={() => {
+              if (logActivity) logActivity('open_module', 'qr');
+            }}
+          />
 
           <ExternalSidebarItem 
             icon={Zap} 
             label="N8N AUTOMATIZACIONES" 
             href="https://n8n-n8n.db8enk.easypanel.host/" 
             disabled={currentUser?.role === 'guest'}
+            onClick={() => {
+              if (logActivity) logActivity('open_module', 'n8n');
+            }}
           />
           <ExternalSidebarItem 
             icon={MessageCircle} 
@@ -476,138 +491,168 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                        </a>
                      ))}
                    </div>
-                 </motion.div>
-               )}
-            </motion.div>
-          )}
+                  </motion.div>
+                )}
+             </motion.div>
+           )}
 
           {activeView === 'admin' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
                
-               {/* SECCIÓN FERIA VOCACIONAL LEADS */}
-               <div className="bg-slate-900 text-white rounded-[2rem] p-8 shadow-xl relative overflow-hidden">
-                  <div className="absolute right-0 top-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" />
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-                     <div>
-                        <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block mb-1">Actividad en Vivo</span>
-                        <h3 className="text-3xl font-black tracking-tighter italic">Feria Vocacional - Leads</h3>
-                        <p className="text-slate-300 font-medium text-sm mt-1">Monitorea y descarga en tiempo real los datos capturados de los alumnos de colegios.</p>
-                     </div>
-                     <div className="flex items-center gap-4">
-                        <div className="bg-slate-800 px-6 py-4 rounded-2xl border border-slate-700/50 flex flex-col items-center">
-                           <span className="text-[10px] font-bold text-slate-400 uppercase">Leads Totales</span>
-                           <span className="text-2xl font-black text-cyan-400">{leads.length}</span>
-                        </div>
-                        <a 
-                          href="/api/admin/leads/export" 
-                          target="_blank"
-                          rel="noreferrer"
-                          className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-6 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 cursor-pointer"
-                        >
-                           <Download size={16} /> Exportar CSV (Excel)
-                        </a>
-                     </div>
-                  </div>
-
-                  {leads.length > 0 && (
-                     <div className="mt-8 border-t border-slate-800 pt-6">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Últimos Registros</h4>
-                        <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
-                           <table className="w-full text-left text-xs font-semibold text-slate-300">
-                              <thead className="sticky top-0 bg-slate-900">
-                                 <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800/80">
-                                    <th className="pb-3 text-slate-400">Nombre</th>
-                                    <th className="pb-3 text-slate-400">Email</th>
-                                    <th className="pb-3 text-slate-400">Colegio</th>
-                                    <th className="pb-3 text-slate-400">Comuna</th>
-                                    <th className="pb-3 text-slate-400">Red Social</th>
-                                    <th className="pb-3 text-slate-400">Rango Asignado</th>
-                                    <th className="pb-3 text-slate-400">Fecha</th>
-                                    <th className="pb-3 text-slate-400 text-right">Acciones</th>
-                                 </tr>
-                              </thead>
-                              <tbody>
-                                 {leads.map(lead => (
-                                    <tr key={lead.id} className="border-b border-slate-800/50 hover:bg-slate-850/50">
-                                       <td className="py-3 font-bold text-white">{lead.first_name} {lead.last_name}</td>
-                                       <td className="py-3 text-slate-400">{lead.email}</td>
-                                       <td className="py-3">{lead.school || '-'}</td>
-                                       <td className="py-3 text-cyan-400">{lead.city}</td>
-                                       <td className="py-3 text-purple-400 font-bold">{lead.favorite_social}</td>
-                                       <td className="py-3 font-black text-emerald-400">{lead.range_assigned}</td>
-                                       <td className="py-3 text-slate-500">{new Date(lead.created_at).toLocaleTimeString('es-CL')}</td>
-                                       <td className="py-3 text-right">
-                                          <button
-                                             type="button"
-                                             onClick={() => handleDeleteLead(lead.id)}
-                                             className="p-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-300 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center border border-red-900/30"
-                                             title="Eliminar Lead"
-                                          >
-                                             <Trash2 size={13} />
-                                          </button>
-                                       </td>
-                                    </tr>
-                                 ))}
-                              </tbody>
-                           </table>
-                        </div>
-                     </div>
-                  )}
+               {/* Pestañas de Administración */}
+               <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 max-w-md shadow-sm">
+                 <button
+                   onClick={() => setAdminTab('live')}
+                   className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                     adminTab === 'live'
+                       ? 'bg-slate-900 text-white shadow-md'
+                       : 'text-slate-500 hover:text-slate-800'
+                   }`}
+                 >
+                   📡 Monitoreo en Vivo
+                 </button>
+                 <button
+                   onClick={() => setAdminTab('stats')}
+                   className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                     adminTab === 'stats'
+                       ? 'bg-slate-900 text-white shadow-md'
+                       : 'text-slate-500 hover:text-slate-800'
+                   }`}
+                 >
+                   📈 Estadísticas y Analíticas
+                 </button>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {[1, 2, 3].map(groupId => (
-                    <div key={groupId} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
-                       <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
-                          <h4 className="font-black italic tracking-tighter text-xl uppercase">Grupo {groupId}</h4>
-                          <span className="bg-green-500 w-2 h-2 rounded-full animate-pulse" />
-                       </div>
-                       <div className="p-6 flex-grow overflow-y-auto custom-scrollbar space-y-4">
-                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Entregas de Campañas (Meta)</h5>
-                          {(adminData.campaigns || []).filter(c => c.group_id === groupId).map(camp => (
-                            <div key={camp.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-blue-200 transition-all cursor-pointer">
-                               <p className="text-sm font-bold text-slate-800 mb-1">{camp.name}</p>
-                               <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-blue-600 uppercase italic">{camp.student_name}</span>
-                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-blue-500" />
-                               </div>
+               {adminTab === 'live' ? (
+                 <>
+                   {/* SECCIÓN FERIA VOCACIONAL LEADS */}
+                   <div className="bg-slate-900 text-white rounded-[2rem] p-8 shadow-xl relative overflow-hidden">
+                      <div className="absolute right-0 top-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" />
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+                         <div>
+                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block mb-1">Actividad en Vivo</span>
+                            <h3 className="text-3xl font-black tracking-tighter italic">Feria Vocacional - Leads</h3>
+                            <p className="text-slate-300 font-medium text-sm mt-1">Monitorea y descarga en tiempo real los datos capturados de los alumnos de colegios.</p>
+                         </div>
+                         <div className="flex items-center gap-4">
+                            <div className="bg-slate-800 px-6 py-4 rounded-2xl border border-slate-700/50 flex flex-col items-center">
+                               <span className="text-[10px] font-bold text-slate-400 uppercase">Leads Totales</span>
+                               <span className="text-2xl font-black text-cyan-400">{leads.length}</span>
                             </div>
-                          ))}
-                          
-                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Estrategias Conversacionales</h5>
-                          {(adminData.chatflows || []).filter(ch => ch.group_id === groupId).map(flow => (
-                            <div key={flow.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-green-200 transition-all cursor-pointer">
-                               <p className="text-sm font-bold text-slate-800 mb-1">{flow.name}</p>
-                               <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-green-600 uppercase italic">{flow.student_name}</span>
-                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-green-500" />
-                               </div>
-                            </div>
-                          ))}
-                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Evaluaciones de Métricas</h5>
-                          {(adminData.evaluations || []).filter(ev => ev.group_id === groupId).map(ev => (
-                            <div key={ev.id} onClick={() => setSelectedEvaluation(ev)} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-purple-200 transition-all cursor-pointer">
-                               <p className="text-sm font-bold text-slate-800 mb-1">Evaluación: {ev.score}/10</p>
-                               <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-purple-600 uppercase italic">{ev.student_name}</span>
-                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-purple-500" />
-                               </div>
-                            </div>
-                          ))}
-                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Landings & Lead Magnets</h5>
-                          {(adminData.lead_magnets || []).filter(lm => lm.group_id === groupId).map(lm => (
-                            <a key={lm.id} href={`/p/${lm.id}`} target="_blank" rel="noreferrer" className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-violet-200 transition-all cursor-pointer block">
-                               <p className="text-sm font-bold text-slate-800 mb-1 truncate">{lm.title || 'Sin Título'}</p>
-                               <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-violet-600 uppercase italic">{lm.student_name}</span>
-                                  <ExternalLink size={14} className="text-slate-300 group-hover:text-violet-500" />
-                               </div>
+                            <a 
+                              href="/api/admin/leads/export" 
+                              target="_blank"
+                              rel="noreferrer"
+                              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-6 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 cursor-pointer"
+                            >
+                               <Download size={16} /> Exportar CSV (Excel)
                             </a>
-                          ))}
-                       </div>
-                    </div>
-                  ))}
-               </div>
+                         </div>
+                      </div>
+
+                      {leads.length > 0 && (
+                         <div className="mt-8 border-t border-slate-800 pt-6">
+                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Últimos Registros</h4>
+                            <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
+                               <table className="w-full text-left text-xs font-semibold text-slate-300">
+                                  <thead className="sticky top-0 bg-slate-900">
+                                     <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800/80">
+                                        <th className="pb-3 text-slate-400">Nombre</th>
+                                        <th className="pb-3 text-slate-400">Email</th>
+                                        <th className="pb-3 text-slate-400">Colegio</th>
+                                        <th className="pb-3 text-slate-400">Comuna</th>
+                                        <th className="pb-3 text-slate-400">Red Social</th>
+                                        <th className="pb-3 text-slate-400">Rango Asignado</th>
+                                        <th className="pb-3 text-slate-400">Fecha</th>
+                                        <th className="pb-3 text-slate-400 text-right">Acciones</th>
+                                     </tr>
+                                  </thead>
+                                  <tbody>
+                                     {leads.map(lead => (
+                                        <tr key={lead.id} className="border-b border-slate-800/50 hover:bg-slate-850/50">
+                                           <td className="py-3 font-bold text-white">{lead.first_name} {lead.last_name}</td>
+                                           <td className="py-3 text-slate-400">{lead.email}</td>
+                                           <td className="py-3">{lead.school || '-'}</td>
+                                           <td className="py-3 text-cyan-400">{lead.city}</td>
+                                           <td className="py-3 text-purple-400 font-bold">{lead.favorite_social}</td>
+                                           <td className="py-3 font-black text-emerald-400">{lead.range_assigned}</td>
+                                           <td className="py-3 text-slate-500">{new Date(lead.created_at).toLocaleTimeString('es-CL')}</td>
+                                           <td className="py-3 text-right">
+                                              <button
+                                                 type="button"
+                                                 onClick={() => handleDeleteLead(lead.id)}
+                                                 className="p-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-300 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center border border-red-900/30"
+                                                 title="Eliminar Lead"
+                                              >
+                                                 <Trash2 size={13} />
+                                              </button>
+                                           </td>
+                                        </tr>
+                                     ))}
+                                  </tbody>
+                               </table>
+                            </div>
+                         </div>
+                      )}
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      {[1, 2, 3].map(groupId => (
+                        <div key={groupId} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
+                           <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+                              <h4 className="font-black italic tracking-tighter text-xl uppercase">Grupo {groupId}</h4>
+                              <span className="bg-green-500 w-2 h-2 rounded-full animate-pulse" />
+                           </div>
+                           <div className="p-6 flex-grow overflow-y-auto custom-scrollbar space-y-4">
+                              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Entregas de Campañas (Meta)</h5>
+                              {(adminData.campaigns || []).filter(c => c.group_id === groupId).map(camp => (
+                                <div key={camp.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-blue-200 transition-all cursor-pointer">
+                                   <p className="text-sm font-bold text-slate-800 mb-1">{camp.name}</p>
+                                   <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-blue-600 uppercase italic">{camp.student_name}</span>
+                                      <ExternalLink size={14} className="text-slate-300 group-hover:text-blue-500" />
+                                   </div>
+                                </div>
+                              ))}
+                              
+                              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Estrategias Conversacionales</h5>
+                              {(adminData.chatflows || []).filter(ch => ch.group_id === groupId).map(flow => (
+                                <div key={flow.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-green-200 transition-all cursor-pointer">
+                                   <p className="text-sm font-bold text-slate-800 mb-1">{flow.name}</p>
+                                   <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-green-600 uppercase italic">{flow.student_name}</span>
+                                      <ExternalLink size={14} className="text-slate-300 group-hover:text-green-500" />
+                                   </div>
+                                </div>
+                              ))}
+                              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Evaluaciones de Métricas</h5>
+                              {(adminData.evaluations || []).filter(ev => ev.group_id === groupId).map(ev => (
+                                <div key={ev.id} onClick={() => setSelectedEvaluation(ev)} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-purple-200 transition-all cursor-pointer">
+                                   <p className="text-sm font-bold text-slate-800 mb-1">Evaluación: {ev.score}/10</p>
+                                   <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-purple-600 uppercase italic">{ev.student_name}</span>
+                                      <ExternalLink size={14} className="text-slate-300 group-hover:text-purple-500" />
+                                   </div>
+                                </div>
+                              ))}
+                              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 pt-6">Landings & Lead Magnets</h5>
+                              {(adminData.lead_magnets || []).filter(lm => lm.group_id === groupId).map(lm => (
+                                <a key={lm.id} href={`/p/${lm.id}`} target="_blank" rel="noreferrer" className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-violet-200 transition-all cursor-pointer block">
+                                   <p className="text-sm font-bold text-slate-800 mb-1 truncate">{lm.title || 'Sin Título'}</p>
+                                   <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-violet-600 uppercase italic">{lm.student_name}</span>
+                                      <ExternalLink size={14} className="text-slate-300 group-hover:text-violet-500" />
+                                   </div>
+                                </a>
+                              ))}
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                 </>
+               ) : (
+                 <AnalyticsDashboard />
+               )}
             </motion.div>
           )}
 
@@ -837,7 +882,10 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                       href="http://evolution-api-evolution-api.db8enk.easypanel.host/manager"
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => setShowWhatsappModal(false)}
+                      onClick={() => {
+                        setShowWhatsappModal(false);
+                        if (logActivity) logActivity('open_module', 'whatsapp');
+                      }}
                       className="flex-1 py-3 bg-[#25D366] hover:bg-[#20ba59] text-white text-center rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-green-100 flex items-center justify-center gap-2"
                     >
                       Continuar <ArrowRight size={14} />

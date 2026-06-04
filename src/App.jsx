@@ -14,7 +14,7 @@ import PagePublicView from './components/PageBuilder/PagePublicView';
 import VocationalFairLanding from './components/VocationalFairLanding';
 
 const AppContent = () => {
-  const { currentUser, setCurrentUser } = useProject();
+  const { currentUser, setCurrentUser, logActivity } = useProject();
   
   // Check for public page view in URL
   const path = window.location.pathname;
@@ -53,6 +53,12 @@ const AppContent = () => {
 
   const handleSelectPlatform = (platform) => {
     setSelectedPlatform(platform);
+
+    // Log platform access
+    if (logActivity) {
+      logActivity('open_module', platform);
+    }
+    
     if (platform === 'chatflow') {
       setView('chatflow');
     } else if (platform === 'kpi') {

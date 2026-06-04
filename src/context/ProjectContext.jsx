@@ -53,6 +53,24 @@ export const ProjectProvider = ({ children }) => {
     });
   };
 
+  const logActivity = async (action, details = '') => {
+    if (!currentUser) return;
+    try {
+      fetch('/api/activity-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          groupId: currentUser.group_id,
+          action,
+          details
+        })
+      }).catch(err => console.error('Error recording activity:', err));
+    } catch (err) {
+      console.error('Error logging activity:', err);
+    }
+  };
+
   return (
     <ProjectContext.Provider value={{ 
       projectData, 
@@ -61,7 +79,8 @@ export const ProjectProvider = ({ children }) => {
       currentUser, 
       setCurrentUser,
       theme,
-      setTheme
+      setTheme,
+      logActivity
     }}>
       {children}
     </ProjectContext.Provider>
