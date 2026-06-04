@@ -557,6 +557,29 @@ app.get('/api/admin/leads', async (req, res) => {
   }
 });
 
+app.delete('/api/admin/leads/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // 1. Obtener el email del lead antes de eliminarlo para poder borrar su cuenta de usuario también
+    const leadResult = await pool.query('SELECT email FROM leads WHERE id = $1', [id]);
+    if (leadResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Lead no encontrado' });
+    }
+    const leadEmail = leadResult.rows[0].email;
+
+    // 2. Eliminar el lead de la tabla 'leads'
+    await pool.query('DELETE FROM leads WHERE id = $1', [id]);
+
+    // 3. Eliminar la cuenta de usuario de tipo 'guest' (invitado) vinculada a ese correo si existe
+    await pool.query("DELETE FROM users WHERE email = $1 AND role = 'guest'", [leadEmail]);
+
+    res.json({ success: true, message: 'Lead y cuenta de invitado eliminados correctamente' });
+  } catch (err) {
+    console.error('Error al eliminar lead:', err);
+    res.status(500).json({ error: 'Error en el servidor al eliminar el lead' });
+  }
+});
+
 app.get('/api/admin/leads/export', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM leads ORDER BY created_at DESC');

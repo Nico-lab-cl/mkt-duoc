@@ -27,7 +27,8 @@ import {
   BarChart,
   Zap,
   Copy,
-  Lock
+  Lock,
+  Trash2
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
@@ -151,6 +152,27 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
       }
     } catch (error) {
       setConfigMessage({ type: 'error', text: 'Error al actualizar perfil' });
+    }
+  };
+
+  const handleDeleteLead = async (leadId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este lead? También se eliminará su cuenta de invitado asociada.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/leads/${leadId}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setLeads(prev => prev.filter(lead => lead.id !== leadId));
+      } else {
+        alert(data.message || 'Error al eliminar el lead');
+      }
+    } catch (err) {
+      console.error('Error deleting lead:', err);
+      alert('Error de red al intentar eliminar el lead');
     }
   };
 
@@ -485,6 +507,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                                     <th className="pb-3 text-slate-400">Red Social</th>
                                     <th className="pb-3 text-slate-400">Rango Asignado</th>
                                     <th className="pb-3 text-slate-400">Fecha</th>
+                                    <th className="pb-3 text-slate-400 text-right">Acciones</th>
                                  </tr>
                               </thead>
                               <tbody>
@@ -497,6 +520,16 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                                        <td className="py-3 text-purple-400 font-bold">{lead.favorite_social}</td>
                                        <td className="py-3 font-black text-emerald-400">{lead.range_assigned}</td>
                                        <td className="py-3 text-slate-500">{new Date(lead.created_at).toLocaleTimeString('es-CL')}</td>
+                                       <td className="py-3 text-right">
+                                          <button
+                                             type="button"
+                                             onClick={() => handleDeleteLead(lead.id)}
+                                             className="p-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-300 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center border border-red-900/30"
+                                             title="Eliminar Lead"
+                                          >
+                                             <Trash2 size={13} />
+                                          </button>
+                                       </td>
                                     </tr>
                                  ))}
                               </tbody>
