@@ -85,6 +85,22 @@ pool.connect(async (err, client, release) => {
         range_assigned TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS qr_codes (
+        id VARCHAR(10) PRIMARY KEY,
+        user_id INTEGER,
+        name TEXT NOT NULL,
+        destination_url TEXT NOT NULL,
+        color TEXT DEFAULT '#0f172a',
+        scan_count INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS qr_scans (
+        id SERIAL PRIMARY KEY,
+        qr_code_id VARCHAR(10) REFERENCES qr_codes(id) ON DELETE CASCADE,
+        scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        user_agent TEXT,
+        ip TEXT
+      );
       DO $$ 
       BEGIN 
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='user_id') THEN
@@ -95,6 +111,9 @@ pool.connect(async (err, client, release) => {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='must_change_password') THEN
           ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='qr_codes' AND column_name='color') THEN
+          ALTER TABLE qr_codes ADD COLUMN color TEXT DEFAULT '#0f172a';
         END IF;
       END $$;
     `);
@@ -664,6 +683,108 @@ app.get('/api/admin/leads/export', async (req, res) => {
   } catch (err) {
     console.error('Error exporting leads:', err);
     res.status(500).json({ error: 'Error al exportar leads' });
+  }
+});
+
+// --- QR CODE REDIRECT & API ENDPOINTS ---
+
+// REDIRECT QR: Intercepta /qr/:id para contar escaneos y redirigir
+app.get('/qr/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const qrResult = await pool.query('SELECT destination_url FROM qr_codes WHERE id = $1', [id]);
+    if (qrResult.rows.length === 0) {
+      return res.redirect('/');
+    }
+
+    const destination = qrResult.rows[0].destination_url;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+    // Incrementar contador e insertar en el historial de escaneos
+    await pool.query('UPDATE qr_codes SET scan_count = scan_count + 1 WHERE id = $1', [id]);
+    await pool.query(
+      'INSERT INTO qr_scans (qr_code_id, user_agent, ip) VALUES ($1, $2, $3)',
+      [id, userAgent, ip]
+    );
+
+    res.redirect(destination);
+  } catch (err) {
+    console.error('Error en redirección QR:', err);
+    res.redirect('/');
+  }
+});
+
+// Crear un QR acortador
+app.post('/api/qr', async (req, res) => {
+  const { name, destination_url, color, user_id } = req.body;
+  if (!name || !destination_url) {
+    return res.status(400).json({ success: false, error: 'Nombre y URL de destino son obligatorios' });
+  }
+  try {
+    // Generar ID único de 6 caracteres alfanuméricos
+    const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+    await pool.query(
+      'INSERT INTO qr_codes (id, user_id, name, destination_url, color) VALUES ($1, $2, $3, $4, $5)',
+      [id, user_id || null, name, destination_url, color || '#0f172a']
+    );
+    res.json({ success: true, qr: { id, user_id, name, destination_url, color: color || '#0f172a', scan_count: 0 } });
+  } catch (err) {
+    console.error('Error al crear QR:', err);
+    res.status(500).json({ success: false, error: 'Error al crear código QR' });
+  }
+});
+
+// Listar QRs del usuario
+app.get('/api/qr', async (req, res) => {
+  const { user_id } = req.query;
+  try {
+    let result;
+    if (user_id) {
+      result = await pool.query('SELECT * FROM qr_codes WHERE user_id = $1 ORDER BY created_at DESC', [user_id]);
+    } else {
+      result = await pool.query('SELECT * FROM qr_codes ORDER BY created_at DESC');
+    }
+    res.json(result.rows || []);
+  } catch (err) {
+    console.error('Error al listar QRs:', err);
+    res.status(500).json({ error: 'Error al obtener códigos QR' });
+  }
+});
+
+// Eliminar un QR
+app.delete('/api/qr/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM qr_codes WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Código QR eliminado' });
+  } catch (err) {
+    console.error('Error al eliminar QR:', err);
+    res.status(500).json({ error: 'Error al eliminar código QR' });
+  }
+});
+
+// Obtener estadísticas y scans detallados
+app.get('/api/qr/stats/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const qrResult = await pool.query('SELECT * FROM qr_codes WHERE id = $1', [id]);
+    if (qrResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Código QR no encontrado' });
+    }
+
+    const scansResult = await pool.query(
+      'SELECT scanned_at, user_agent, ip FROM qr_scans WHERE qr_code_id = $1 ORDER BY scanned_at DESC LIMIT 100',
+      [id]
+    );
+
+    res.json({
+      qr: qrResult.rows[0],
+      scans: scansResult.rows || []
+    });
+  } catch (err) {
+    console.error('Error al obtener estadísticas de QR:', err);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
   }
 });
 

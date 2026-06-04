@@ -28,10 +28,13 @@ import {
   Zap,
   Copy,
   Lock,
-  Trash2
+  Trash2,
+  QrCode,
+  Gift
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
+import QRManager from './QRManager';
 
 
 const platforms = [
@@ -120,6 +123,17 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
   const [configMessage, setConfigMessage] = useState(null);
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showPrizeModal, setShowPrizeModal] = useState(false);
+
+  // Mostrar modal de premio a invitados la primera vez en la sesión
+  useEffect(() => {
+    if (currentUser?.role === 'guest') {
+      const hasSeen = localStorage.getItem(`prize_seen_${currentUser.id}`);
+      if (!hasSeen) {
+        setShowPrizeModal(true);
+      }
+    }
+  }, [currentUser]);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -292,6 +306,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
             label="Lab Analíticas y KPI" 
             platformId="kpi" 
           />
+          <SidebarItem icon={QrCode} label="Generador & Métricas QR" view="qr" />
 
           <ExternalSidebarItem 
             icon={Zap} 
@@ -350,6 +365,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
              {activeView === 'admin' && 'Control de Proyectos Alumnos'}
              {activeView === 'groups' && 'Gestión de Equipos y Usuarios'}
              {activeView === 'config' && 'Ajustes de Perfil'}
+             {activeView === 'qr' && 'Generador & Métricas de Códigos QR'}
            </h2>
            
            <div className="flex items-center gap-4">
@@ -700,6 +716,12 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                )}
             </motion.div>
           )}
+
+          {activeView === 'qr' && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <QRManager userId={currentUser?.id} />
+            </motion.div>
+          )}
         </div>
 
         {/* EVALUATION MODAL */}
@@ -821,6 +843,66 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                       Continuar <ArrowRight size={14} />
                     </a>
                   </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* WELCOME PRIZE MODAL */}
+        <AnimatePresence>
+          {showPrizeModal && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+                className="bg-slate-900 border border-indigo-500/30 text-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl shadow-indigo-500/10 flex flex-col p-8 text-center relative"
+              >
+                {/* Decorative neon blob */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl -z-10" />
+
+                <div className="flex justify-center mb-6">
+                  <motion.div
+                    animate={{ rotate: [0, -10, 10, -10, 10, 0], scale: [1, 1.1, 1.1, 1.1, 1.1, 1] }}
+                    transition={{ repeat: Infinity, repeatDelay: 3, duration: 1.2 }}
+                    className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30 border border-indigo-400/40"
+                  >
+                    <Gift size={40} className="animate-pulse" />
+                  </motion.div>
+                </div>
+
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-2">Acceso Exclusivo Activado</span>
+                <h3 className="text-3xl font-black tracking-tighter uppercase italic leading-none mb-4">
+                  ¡Tenemos un Premio!
+                </h3>
+                
+                <p className="text-slate-350 text-sm leading-relaxed mb-8">
+                  Te hemos desbloqueado una herramienta exclusiva: el <strong className="text-white">Generador de Códigos QR & Analíticas</strong>. 
+                  Crea códigos QR personalizados para tus campañas, acorta tus enlaces y mide cuántos escaneos reciben en tiempo real, sin depender de software de terceros.
+                </p>
+
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => {
+                      localStorage.setItem(`prize_seen_${currentUser.id}`, 'true');
+                      setShowPrizeModal(false);
+                      setActiveView('qr');
+                    }}
+                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-indigo-500/25 active:scale-98 cursor-pointer"
+                  >
+                    🚀 ¡Comenzar a Crear QRs!
+                  </button>
+                  <button 
+                    onClick={() => {
+                      localStorage.setItem(`prize_seen_${currentUser.id}`, 'true');
+                      setShowPrizeModal(false);
+                    }}
+                    className="w-full py-3 bg-transparent hover:bg-white/5 text-slate-400 hover:text-white rounded-xl font-bold text-xs tracking-wide transition-all cursor-pointer"
+                  >
+                    Quizás más tarde
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
