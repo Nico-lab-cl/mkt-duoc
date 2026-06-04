@@ -118,10 +118,11 @@ pool.connect(async (err, client, release) => {
 
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
+  const emailNormalized = email ? email.trim().toLowerCase() : '';
   try {
     const result = await pool.query(
-      'SELECT id, email, full_name, role, group_id, must_change_password FROM users WHERE email = $1 AND password = $2',
-      [email, password]
+      'SELECT id, email, full_name, role, group_id, must_change_password FROM users WHERE LOWER(email) = $1 AND password = $2',
+      [emailNormalized, password]
     );
 
     if (result.rows.length > 0) {
@@ -144,11 +145,12 @@ app.post('/api/change-password', async (req, res) => {
   if (!email || !currentPassword || !newPassword) {
     return res.status(400).json({ success: false, error: 'Todos los campos son obligatorios' });
   }
+  const emailNormalized = email ? email.trim().toLowerCase() : '';
   try {
     // Verificar que la contraseña actual (temporal) coincida
     const checkUser = await pool.query(
-      'SELECT id, email, full_name, role, group_id FROM users WHERE email = $1 AND password = $2',
-      [email, currentPassword]
+      'SELECT id, email, full_name, role, group_id FROM users WHERE LOWER(email) = $1 AND password = $2',
+      [emailNormalized, currentPassword]
     );
     if (checkUser.rows.length === 0) {
       return res.status(401).json({ success: false, message: 'Contraseña actual incorrecta.' });
@@ -172,9 +174,10 @@ app.post('/api/recover-password', async (req, res) => {
   if (!email) {
     return res.status(400).json({ success: false, error: 'El correo electrónico es obligatorio' });
   }
+  const emailNormalized = email.trim().toLowerCase();
   try {
     // Buscar si el usuario existe
-    const userExists = await pool.query('SELECT id, email, full_name FROM users WHERE email = $1', [email]);
+    const userExists = await pool.query('SELECT id, email, full_name FROM users WHERE LOWER(email) = $1', [emailNormalized]);
     if (userExists.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'El correo electrónico no está registrado.' });
     }
@@ -186,8 +189,8 @@ app.post('/api/recover-password', async (req, res) => {
     let full_name = userExists.rows[0].full_name;
 
     const leadInfo = await pool.query(
-      'SELECT first_name, last_name, phone FROM leads WHERE email = $1 ORDER BY created_at DESC LIMIT 1',
-      [email]
+      'SELECT first_name, last_name, phone FROM leads WHERE LOWER(email) = $1 ORDER BY created_at DESC LIMIT 1',
+      [emailNormalized]
     );
     if (leadInfo.rows.length > 0) {
       first_name = leadInfo.rows[0].first_name;
@@ -201,8 +204,8 @@ app.post('/api/recover-password', async (req, res) => {
 
     // Actualizar la contraseña y forzar el cambio
     await pool.query(
-      'UPDATE users SET password = $1, must_change_password = TRUE WHERE email = $2',
-      [tmpPassword, email]
+      'UPDATE users SET password = $1, must_change_password = TRUE WHERE LOWER(email) = $2',
+      [tmpPassword, emailNormalized]
     );
 
     // Disparar Webhook a n8n
@@ -504,6 +507,8 @@ app.post('/api/leads', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Nombre, apellido y correo son obligatorios' });
   }
 
+  const emailNormalized = email.trim().toLowerCase();
+
   // Lógica de asignación de rangos según respuesta del test
   let range_assigned = 'Social Media Content';
   switch (test_answer) {
@@ -533,28 +538,28 @@ app.post('/api/leads', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO leads (first_name, last_name, age, region, city, school, email, phone, favorite_social, test_answer, range_assigned)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [first_name, last_name, parseInt(age) || null, region || null, city || null, school || null, email, phone || null, favorite_social || null, test_answer || null, range_assigned]
+      [first_name, last_name, parseInt(age) || null, region || null, city || null, school || null, emailNormalized, phone || null, favorite_social || null, test_answer || null, range_assigned]
     );
 
     // Generar contraseña temporal de 6 caracteres alfanuméricos
-    const tmpPassword = Math.random().toString(36).slice(-6).toUpperCase();
+    const tmpPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     // Crear o actualizar el usuario asociado al lead
     try {
-      const userExists = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+      const userExists = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [emailNormalized]);
       if (userExists.rows.length === 0) {
         await pool.query(
           `INSERT INTO users (email, password, full_name, role, group_id, must_change_password)
            VALUES ($1, $2, $3, 'guest', 999, TRUE)`,
-          [email, tmpPassword, `${first_name} ${last_name}`]
+          [emailNormalized, tmpPassword, `${first_name} ${last_name}`]
         );
       } else {
         // Si el usuario ya existe, actualizamos su contraseña temporal y forzamos el cambio
         await pool.query(
           `UPDATE users 
            SET password = $1, must_change_password = TRUE, full_name = $2, role = 'guest', group_id = 999 
-           WHERE email = $3`,
-          [tmpPassword, `${first_name} ${last_name}`, email]
+           WHERE LOWER(email) = $3`,
+          [tmpPassword, `${first_name} ${last_name}`, emailNormalized]
         );
       }
     } catch (userErr) {
@@ -608,7 +613,7 @@ app.delete('/api/admin/leads/:id', async (req, res) => {
     await pool.query('DELETE FROM leads WHERE id = $1', [id]);
 
     // 3. Eliminar la cuenta de usuario de tipo 'guest' (invitado) vinculada a ese correo si existe
-    await pool.query("DELETE FROM users WHERE email = $1 AND role = 'guest'", [leadEmail]);
+    await pool.query("DELETE FROM users WHERE LOWER(email) = LOWER($1) AND role = 'guest'", [leadEmail]);
 
     res.json({ success: true, message: 'Lead y cuenta de invitado eliminados correctamente' });
   } catch (err) {
