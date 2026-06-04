@@ -186,6 +186,78 @@ const SOCIAL_MEDIA = [
   }
 ];
 
+const TOUR_SLIDES = [
+  {
+    title: "Bienvenido a la Matrix del Marketing",
+    subtitle: "INGENIERÍA EN MARKETING DIGITAL DUOC UC",
+    description: "Hoy vas a sumergirte en el software que usan nuestros estudiantes universitarios. Aprenderás a dominar los canales digitales que mueven millones de dólares en el mundo real.",
+    accent: "from-cyan-500 to-blue-500",
+    shadow: "shadow-cyan-500/20",
+    border: "border-cyan-500/30",
+    icon: (
+      <svg className="w-16 h-16 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+    )
+  },
+  {
+    title: "1. Meta Ads: Caza de Clientes",
+    subtitle: "ANUNCIOS EN INSTAGRAM Y TIKTOK",
+    description: "Aprende a controlar la pauta publicitaria. En Duoc UC simulamos campañas reales, segmentamos el público ideal y gestionamos presupuestos para perseguir a los compradores por toda la web.",
+    accent: "from-blue-500 to-indigo-600",
+    shadow: "shadow-blue-500/20",
+    border: "border-blue-500/30",
+    icon: (
+      <svg className="w-16 h-16 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <line x1="9" y1="3" x2="9" y2="21"/>
+        <line x1="15" y1="3" x2="15" y2="21"/>
+        <line x1="3" y1="9" x2="21" y2="9"/>
+        <line x1="3" y1="15" x2="21" y2="15"/>
+      </svg>
+    )
+  },
+  {
+    title: "2. Chatbots y WhatsApp API",
+    subtitle: "MARKETING CONVERSACIONAL E INTELIGENTE",
+    description: "Diseña flujos de conversación que venden en piloto automático 24/7. Conectamos la API de WhatsApp para interactuar en tiempo real, resolver dudas y cerrar ventas de forma instantánea.",
+    accent: "from-green-500 to-emerald-600",
+    shadow: "shadow-green-500/20",
+    border: "border-green-500/30",
+    icon: (
+      <svg className="w-16 h-16 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    )
+  },
+  {
+    title: "3. Automatizaciones con N8N",
+    subtitle: "CONECTA LA MATRIX DIGITAL",
+    description: "Conecta plataformas como HubSpot, WhatsApp, OpenAI y bases de datos para crear flujos automatizados que trabajan por ti. Enviamos correos segmentados en el instante preciso.",
+    accent: "from-orange-500 to-red-600",
+    shadow: "shadow-orange-500/20",
+    border: "border-orange-500/30",
+    icon: (
+      <svg className="w-16 h-16 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    )
+  },
+  {
+    title: "4. Analítica y Laboratorio de KPIs",
+    subtitle: "EL CEREBRO DETRÁS DE LOS NÚMEROS",
+    description: "Analizamos el rendimiento en vivo: visitas, CTR, conversiones y retorno de inversión (ROI). Los números te dicen exactamente si tu estrategia está funcionando o qué debes cambiar para ganar.",
+    accent: "from-purple-500 to-indigo-600",
+    shadow: "shadow-purple-500/20",
+    border: "border-purple-500/30",
+    icon: (
+      <svg className="w-16 h-16 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M18 20V10M12 20V4M6 20v-6"/>
+      </svg>
+    )
+  }
+];
+
 const VocationalFairLanding = () => {
   const [formData, setFormData] = useState({
     first_name: '',
@@ -199,6 +271,9 @@ const VocationalFairLanding = () => {
     favorite_social: [], // Ahora es un array para selección múltiple
     test_answer: ''
   });
+
+  const [tourIndex, setTourIndex] = useState(0);
+  const [showTour, setShowTour] = useState(true);
 
   const [whatsappDigits, setWhatsappDigits] = useState(''); // Solo 8 dígitos
   const [loading, setLoading] = useState(false);
@@ -347,7 +422,86 @@ const VocationalFairLanding = () => {
 
       {/* MAIN CONTAINER */}
       <div className="w-full max-w-4xl z-10 pb-16">
-        {!submitted ? (
+        {showTour ? (
+          /* RECORRIDO ESTUDIANTIL */
+          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col items-center text-center space-y-8 animate-fade-in relative overflow-hidden">
+            {/* Elementos neón del slide */}
+            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${TOUR_SLIDES[tourIndex].accent} opacity-5 rounded-full blur-2xl pointer-events-none`} />
+
+            {/* Header del Slide */}
+            <div className="w-full flex justify-between items-center pb-4 border-b border-slate-850">
+              <span className="text-[10px] font-black text-slate-555 uppercase tracking-widest">
+                RECORRIDO MARTECH • PASO {tourIndex + 1} DE {TOUR_SLIDES.length}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setShowTour(false)}
+                className="text-xs font-black text-cyan-400 hover:text-cyan-300 uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Saltar Recorrido ➔
+              </button>
+            </div>
+
+            {/* Icono de Módulo */}
+            <div className={`w-28 h-28 rounded-[2rem] bg-slate-950 border ${TOUR_SLIDES[tourIndex].border} flex items-center justify-center shadow-2xl ${TOUR_SLIDES[tourIndex].shadow} transition-transform duration-500 hover:scale-105`}>
+              {TOUR_SLIDES[tourIndex].icon}
+            </div>
+
+            {/* Título y Subtítulo */}
+            <div className="space-y-2">
+              <span className={`text-[10px] sm:text-xs font-black bg-gradient-to-r ${TOUR_SLIDES[tourIndex].accent} bg-clip-text text-transparent uppercase tracking-widest block`}>
+                {TOUR_SLIDES[tourIndex].subtitle}
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight italic leading-tight">
+                {TOUR_SLIDES[tourIndex].title}
+              </h2>
+            </div>
+
+            {/* Descripción */}
+            <p className="text-slate-300 text-sm sm:text-base font-medium max-w-xl leading-relaxed">
+              {TOUR_SLIDES[tourIndex].description}
+            </p>
+
+            {/* Indicadores de Progreso */}
+            <div className="flex gap-2">
+              {TOUR_SLIDES.map((_, idx) => (
+                <div 
+                  key={idx}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    idx === tourIndex ? `w-8 bg-gradient-to-r ${TOUR_SLIDES[tourIndex].accent}` : 'w-2 bg-slate-800'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Botones de Navegación del Tour */}
+            <div className="w-full pt-4 flex gap-4">
+              {tourIndex > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setTourIndex(prev => prev - 1)}
+                  className="flex-1 py-3.5 bg-slate-950 hover:bg-slate-900 text-slate-300 font-bold uppercase tracking-wider text-xs rounded-xl border border-slate-800 transition-all cursor-pointer"
+                >
+                  Anterior
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (tourIndex < TOUR_SLIDES.length - 1) {
+                    setTourIndex(prev => prev + 1);
+                  } else {
+                    setShowTour(false);
+                  }
+                }}
+                className={`flex-1 py-3.5 bg-gradient-to-r ${TOUR_SLIDES[tourIndex].accent} hover:brightness-110 text-white font-black uppercase tracking-wider text-xs rounded-xl shadow-lg transition-all cursor-pointer`}
+              >
+                {tourIndex === TOUR_SLIDES.length - 1 ? 'Iniciar Desafío' : 'Siguiente Módulo'}
+              </button>
+            </div>
+          </div>
+        ) : !submitted ? (
           <form onSubmit={handleSubmit} className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
               <span className="w-2 h-6 bg-cyan-500 rounded-full inline-block" />
