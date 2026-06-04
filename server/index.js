@@ -426,7 +426,25 @@ app.post('/api/leads', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
       [first_name, last_name, parseInt(age) || null, region || null, city || null, school || null, email, phone || null, favorite_social || null, test_answer || null, range_assigned]
     );
-    res.json({ success: true, lead: result.rows[0] });
+
+    // Generar contraseña temporal de 6 caracteres alfanuméricos
+    const tmpPassword = Math.random().toString(36).slice(-6).toUpperCase();
+
+    // Crear el usuario asociado al lead
+    try {
+      const userExists = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+      if (userExists.rows.length === 0) {
+        await pool.query(
+          `INSERT INTO users (email, password, full_name, role, group_id)
+           VALUES ($1, $2, $3, 'guest', 999)`,
+          [email, tmpPassword, `${first_name} ${last_name}`]
+        );
+      }
+    } catch (userErr) {
+      console.error('Error al crear usuario para el lead:', userErr);
+    }
+
+    res.json({ success: true, lead: result.rows[0], tmpPassword });
   } catch (err) {
     console.error('Error saving lead:', err);
     // FALLBACK LOCAL MOCK: Si falla la conexión a la base de datos (por ejemplo, en desarrollo local), devolvemos un mock exitoso para que la simulación de usuario continúe sin problemas

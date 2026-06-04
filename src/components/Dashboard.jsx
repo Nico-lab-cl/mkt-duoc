@@ -474,9 +474,9 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                   {leads.length > 0 && (
                      <div className="mt-8 border-t border-slate-800 pt-6">
                         <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Últimos Registros</h4>
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
                            <table className="w-full text-left text-xs font-semibold text-slate-300">
-                              <thead>
+                              <thead className="sticky top-0 bg-slate-900">
                                  <tr className="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800/80">
                                     <th className="pb-3 text-slate-400">Nombre</th>
                                     <th className="pb-3 text-slate-400">Email</th>
@@ -488,7 +488,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
                                  </tr>
                               </thead>
                               <tbody>
-                                 {leads.slice(0, 5).map(lead => (
+                                 {leads.map(lead => (
                                     <tr key={lead.id} className="border-b border-slate-800/50 hover:bg-slate-850/50">
                                        <td className="py-3 font-bold text-white">{lead.first_name} {lead.last_name}</td>
                                        <td className="py-3 text-slate-400">{lead.email}</td>

@@ -1,0 +1,224 @@
+{
+  "name": "Creacion de contacto en CRM - Profe nico",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{ $json.Correo }}",
+        "additionalFields": {
+          "firstName": "={{ $json.Nombre }}",
+          "lastName": "={{ $json.Apellido }}",
+          "whatsappPhoneNumber": "={{ $json['Numero de telefono'] }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "cde8e42f-879d-49a9-8f12-a0b0e64ee2e6",
+      "name": "Create or update a contact",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "vrGDh8QuOHOLv6tI",
+          "name": "Hubspot profe nico"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.Correo }}",
+        "subject": "Bienvenido a spectra ",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333333; }\n        .container { max-width: 600px; margin: 20px auto; border: 1px solid #eeeeee; padding: 20px; border-radius: 8px; }\n        .header { text-align: center; color: #ff7a59; }\n        .button { display: inline-block; padding: 12px 24px; background-color: #ff7a59; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 20px; }\n        .footer { font-size: 12px; color: #888888; margin-top: 30px; text-align: center; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <h1 class=\"header\">¡Bienvenido/a a la comunidad!</h1>\n        <p>Hola <strong>{{ $('Edit Fields').item.json.Nombre }}</strong>,</p>\n        \n        <p>Muchas gracias por descargar nuestro material. En <strong>[Nombre de tu empresa/Proyecto]</strong>, nuestra misión es ayudarte a simplificar tus procesos y alcanzar tus objetivos de manera estratégica.</p>\n        \n        <p>Como prometido, aquí tienes acceso directo a tu recurso:</p>\n        \n        <center>\n            <a href=\"\" class=\"button\">Descargar mi material</a>\n        </center>\n\n        <p>Mientras lo revisas, te invito a seguir conectado/a con nosotros. Estaremos compartiendo tips prácticos, casos de éxito y tendencias que te ayudarán a escalar tu estrategia.</p>\n        \n        <p>¿Tienes alguna duda o te gustaría que profundizáramos en algún tema específico? ¡Solo responde a este correo!</p>\n        \n        <p>Saludos cordiales,<br>\n        <strong>El equipo de Spectra</strong></p>\n\n        <div class=\"footer\">\n            <p>© 2026 Spectra. Todos los derechos reservados.</p>\n            <p><a href=\"#\">Cancelar suscripción</a></p>\n        </div>\n    </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        0
+      ],
+      "id": "85af2ae8-5e17-42cf-a8ef-2070d71bc8e2",
+      "name": "Send a message",
+      "webhookId": "03bcdaea-7681-4ab9-85a9-a55d7421a4f2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wIlsrrD8ukVznXo3",
+          "name": "Gmail Profe nico"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "edf190bb-9b69-4175-8ed7-3fcb3371fca4",
+              "name": "Nombre",
+              "value": "={{ $json.Nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "2235c6d6-59df-471b-bc4c-b945046ccd08",
+              "name": "Apellido",
+              "value": "={{ $json.Apellido }}",
+              "type": "string"
+            },
+            {
+              "id": "539ec89b-a538-41a9-8251-7b2137b3de31",
+              "name": "Correo",
+              "value": "={{ $json.Correo }}",
+              "type": "string"
+            },
+            {
+              "id": "02a7a455-3d0a-4dde-b34d-fbb872851e58",
+              "name": "Numero de telefono",
+              "value": "={{ $json['Numero de telefono'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e23bc38d-8ad9-4b4e-b701-45b04e8c75fd",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "125599af-2779-4767-a368-46559eb1aebf",
+      "name": "Wait",
+      "webhookId": "14e19bd8-276d-4e21-8a35-d2ac97c3421b",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolution-api-evolution-api.db8enk.easypanel.host/message/sendText/julieta",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "429683C4C977415CAAFCCE10F7D57E11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('Edit Fields').item.json['Numero de telefono'].replace('+', '') }}\",\n  \"text\": \"Hola, este es un mensaje de prueba automatizado.\",\n  \"options\": {\n    \"delay\": 1200,\n    \"presence\": \"composing\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1104,
+        0
+      ],
+      "id": "ddaabe05-b47e-4486-9898-19c27a486acf",
+      "name": "Envio whatsapp"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "d930aa86-d4eb-4609-8513-3c89dfd3f7dd",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5fac4038-09bc-4893-bf91-7b6b25a6b8de",
+      "name": "Webhook",
+      "webhookId": "d930aa86-d4eb-4609-8513-3c89dfd3f7dd"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Create or update a contact": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Create or update a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Envio whatsapp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c14505c7-62ed-4354-b780-015ccf62566c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f5ecd5a4ad1fae4c9ba29b649d2d02c2b204ca7918ecbfc390062fdc5838cca5"
+  },
+  "id": "zTQPBy8KNKDVJuBY",
+  "tags": []
+}

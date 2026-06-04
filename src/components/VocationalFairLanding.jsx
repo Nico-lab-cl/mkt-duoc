@@ -446,6 +446,24 @@ const VocationalFairLanding = () => {
           role: 'guest',
           group_id: 999
         });
+        
+        // Disparar Webhook a N8N
+        try {
+          fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/d930aa86-d4eb-4609-8513-3c89dfd3f7dd', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              Nombre: data.lead.first_name,
+              Apellido: data.lead.last_name,
+              Correo: data.lead.email,
+              "Numero de telefono": data.lead.phone,
+              "Contraseña temporal": data.tmpPassword || 'Sin contraseña'
+            })
+          }).catch(console.error); // Fallback silencioso si el webhook falla
+        } catch (e) {
+          console.error("Error trigger webhook:", e);
+        }
+        
       } else {
         setErrorMsg(data.error || 'Error al guardar tus datos. Inténtalo nuevamente.');
       }
