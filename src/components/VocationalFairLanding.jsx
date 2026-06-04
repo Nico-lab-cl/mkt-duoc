@@ -448,14 +448,14 @@ const VocationalFairLanding = () => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-900/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* HEADER */}
-      <div className="w-full max-w-4xl text-center mb-8 sm:mb-12 mt-4 z-10">
+      <div className="w-full max-w-4xl text-left mb-8 sm:mb-12 mt-4 z-10 flex flex-col items-start">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-cyan-400 text-xs font-black uppercase tracking-widest mb-4 animate-pulse">
           <Sparkles size={12} /> Feria Vocacional Duoc UC
         </div>
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight uppercase leading-none bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500 bg-clip-text text-transparent italic">
           Genera tu Identidad Digital
         </h1>
-        <p className="text-slate-400 mt-3 text-sm sm:text-base font-semibold max-w-2xl mx-auto">
+        <p className="text-slate-400 mt-3 text-sm sm:text-base font-semibold max-w-2xl text-left">
           Ingeniería en Marketing Digital • Descubre tu rol en la Matrix digital y descarga tu credencial Cyberpunk personalizada.
         </p>
       </div>
@@ -464,12 +464,12 @@ const VocationalFairLanding = () => {
       <div className="w-full max-w-4xl z-10 pb-16">
         {showTour ? (
           /* RECORRIDO ESTUDIANTIL */
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col items-center text-center space-y-8 animate-fade-in relative overflow-hidden">
+          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col items-start text-left space-y-6 animate-fade-in relative overflow-hidden">
             {/* Elementos neón del slide */}
             <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${TOUR_SLIDES[tourIndex].accent} opacity-5 rounded-full blur-2xl pointer-events-none`} />
 
             {/* Header del Slide */}
-            <div className="w-full flex justify-center items-center pb-4 border-b border-slate-850">
+            <div className="w-full flex justify-start items-center pb-4 border-b border-slate-850">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 RECORRIDO MARTECH • PASO {tourIndex + 1} DE {TOUR_SLIDES.length}
               </span>
@@ -491,7 +491,7 @@ const VocationalFairLanding = () => {
             </div>
 
             {/* Descripción */}
-            <p className="text-slate-300 text-sm sm:text-base font-medium max-w-xl leading-relaxed">
+            <p className="text-slate-300 text-sm sm:text-base font-medium max-w-xl leading-relaxed text-justify">
               {TOUR_SLIDES[tourIndex].description}
             </p>
 
