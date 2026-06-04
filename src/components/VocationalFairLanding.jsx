@@ -46,7 +46,12 @@ const TEST_OPTIONS = [
     badge: 'Viral Video Specialist',
     rpgClass: 'VIRAL VIDEO SPECIALIST',
     color: 'from-green-400 to-emerald-600',
-    textNeon: 'text-green-400'
+    textNeon: 'text-green-400',
+    skills: [
+      { name: 'Viralidad / Hooks', val: 95 },
+      { name: 'Creatividad Visual', val: 90 },
+      { name: 'Edición TikTok/Reels', val: 85 }
+    ]
   },
   {
     id: 'B',
@@ -55,7 +60,12 @@ const TEST_OPTIONS = [
     badge: 'Community Architect',
     rpgClass: 'COMMUNITY ARCHITECT',
     color: 'from-pink-400 to-rose-600',
-    textNeon: 'text-pink-400'
+    textNeon: 'text-pink-400',
+    skills: [
+      { name: 'Engagement / Sorteos', val: 92 },
+      { name: 'Estrategia Social', val: 90 },
+      { name: 'Gestión de Discord', val: 85 }
+    ]
   },
   {
     id: 'C',
@@ -64,7 +74,12 @@ const TEST_OPTIONS = [
     badge: 'Growth Ads Specialist',
     rpgClass: 'GROWTH ADS SPECIALIST',
     color: 'from-cyan-400 to-blue-600',
-    textNeon: 'text-cyan-400'
+    textNeon: 'text-cyan-400',
+    skills: [
+      { name: 'Retorno Inversión (ROI)', val: 95 },
+      { name: 'Segmentación de Públicos', val: 92 },
+      { name: 'Paid Ads (Meta/TikTok)', val: 88 }
+    ]
   },
   {
     id: 'D',
@@ -73,7 +88,12 @@ const TEST_OPTIONS = [
     badge: 'SEM Manager',
     rpgClass: 'SEM MANAGER',
     color: 'from-yellow-400 to-amber-600',
-    textNeon: 'text-yellow-400'
+    textNeon: 'text-yellow-400',
+    skills: [
+      { name: 'Optimización AdWords', val: 94 },
+      { name: 'Análisis de Pujas', val: 90 },
+      { name: 'Copywriting Comercial', val: 85 }
+    ]
   },
   {
     id: 'E',
@@ -82,7 +102,12 @@ const TEST_OPTIONS = [
     badge: 'SEO Growth Hacker',
     rpgClass: 'SEO GROWTH HACKER',
     color: 'from-orange-400 to-red-600',
-    textNeon: 'text-orange-400'
+    textNeon: 'text-orange-400',
+    skills: [
+      { name: 'Tráfico Orgánico', val: 96 },
+      { name: 'Link Building', val: 88 },
+      { name: 'Auditoría Técnica Web', val: 90 }
+    ]
   },
   {
     id: 'F',
@@ -91,7 +116,12 @@ const TEST_OPTIONS = [
     badge: 'Data Analytics Guru',
     rpgClass: 'DATA ANALYTICS GURU',
     color: 'from-purple-400 to-indigo-600',
-    textNeon: 'text-purple-400'
+    textNeon: 'text-purple-400',
+    skills: [
+      { name: 'Visualización Looker', val: 95 },
+      { name: 'Modelado de Atribución', val: 90 },
+      { name: 'KPIs & Dashboards', val: 92 }
+    ]
   }
 ];
 
@@ -260,16 +290,20 @@ const TOUR_SLIDES = [
     shadow: "shadow-orange-500/20",
     border: "border-orange-500/30",
     icon: (
-      <div className="flex gap-4 items-center justify-center p-1 text-slate-100 select-none">
+      <div className="flex gap-3 items-center justify-center p-1 text-slate-100 select-none">
+        {/* n8n Logo */}
+        <svg className="w-10 h-6 text-[#FF6D5A] drop-shadow-[0_0_6px_rgba(255,109,90,0.5)]" viewBox="0 0 228 120" fill="currentColor">
+          <path fillRule="evenodd" clipRule="evenodd" d="M204 48C192.817 48 183.42 40.3514 180.756 30H153.248C147.382 30 142.376 34.241 141.412 40.0272L140.425 45.9456C139.489 51.5648 136.646 56.4554 132.626 60C136.646 63.5446 139.489 68.4352 140.425 74.0544L141.412 79.9728C142.376 85.759 147.382 90 153.248 90H156.756C159.42 79.6486 168.817 72 180 72C193.255 72 204 82.7452 204 96C204 109.255 193.255 120 180 120C168.817 120 159.42 112.351 156.756 102H153.248C141.516 102 131.504 93.5181 129.575 81.9456L128.588 76.0272C127.624 70.241 122.618 66 116.752 66H107.244C104.58 76.3514 95.183 84 84 84C72.817 84 63.4204 76.3514 60.7561 66H47.2439C44.5796 76.3514 35.183 84 24 84C10.7452 84 0 73.2548 0 60C0 46.7452 10.7452 36 24 36C35.183 36 44.5796 43.6486 47.2439 54H60.7561C63.4204 43.6486 72.817 36 84 36C95.183 36 104.58 43.6486 107.244 54H116.752C122.618 54 127.624 49.759 128.588 43.9728L129.575 38.0544C131.504 26.4819 141.516 18 153.248 18L180.756 18C183.42 7.64864 192.817 0 204 0C217.255 0 228 10.7452 228 24C228 37.2548 217.255 48 204 48ZM204 36C210.627 36 216 30.6274 216 24C216 17.3726 210.627 12 204 12C197.373 12 192 17.3726 192 24C192 30.6274 197.373 36 204 36ZM24 72C30.6274 72 36 66.6274 36 60C36 53.3726 30.6274 48 24 48C17.3726 48 12 53.3726 12 60C12 66.6274 17.3726 72 24 72ZM96 60C96 66.6274 90.6274 72 84 72C77.3726 72 72 66.6274 72 60C72 53.3726 77.3726 48 84 48C90.6274 48 96 53.3726 96 60ZM192 96C192 102.627 186.627 108 180 108C173.373 108 168 102.627 168 96C168 89.3726 173.373 84 180 84C186.627 84 192 89.3726 192 96Z" />
+        </svg>
         {/* Zapier Underscore */}
-        <svg className="w-8 h-8 text-[#FF4F00] drop-shadow-[0_0_6px_rgba(255,79,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
+        <svg className="w-6 h-6 text-[#FF4F00] drop-shadow-[0_0_6px_rgba(255,79,0,0.4)]" viewBox="0 0 24 24" fill="currentColor">
           <rect x="2" y="16" width="20" height="5" rx="1.5" />
         </svg>
         {/* Make overlapping dots */}
-        <div className="flex items-center justify-center w-8 h-8 relative drop-shadow-[0_0_6px_rgba(138,43,226,0.4)]">
-          <circle cx="7" cy="14" r="5.5" fill="#4B0082" />
-          <circle cx="15" cy="9" r="5" fill="#8A2BE2" opacity="0.95" />
-          <circle cx="16" cy="16" r="4.5" fill="#DA70D6" opacity="0.85" />
+        <div className="flex items-center justify-center w-7 h-7 relative drop-shadow-[0_0_6px_rgba(138,43,226,0.4)]">
+          <circle cx="6" cy="14" r="5" fill="#4B0082" />
+          <circle cx="14" cy="9" r="4.5" fill="#8A2BE2" opacity="0.95" />
+          <circle cx="15" cy="15" r="4" fill="#DA70D6" opacity="0.85" />
         </div>
       </div>
     )
@@ -321,6 +355,33 @@ const VocationalFairLanding = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [assignedLead, setAssignedLead] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [isDecoding, setIsDecoding] = useState(false);
+  const [decodingStep, setDecodingStep] = useState(0);
+  const [rotate, setRotate] = useState({ x: 0, y: 0 });
+  const [shine, setShine] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e) => {
+    const card = e.currentTarget;
+    const box = card.getBoundingClientRect();
+    const x = e.clientX - box.left - (box.width / 2);
+    const y = e.clientY - box.top - (box.height / 2);
+    
+    // Rotación suave 3D de máx 12 grados
+    const factorX = -(y / (box.height / 2)) * 12;
+    const factorY = (x / (box.width / 2)) * 12;
+    
+    // Posición del reflejo lumínico
+    const shineX = ((e.clientX - box.left) / box.width) * 100;
+    const shineY = ((e.clientY - box.top) / box.height) * 100;
+
+    setRotate({ x: factorX, y: factorY });
+    setShine({ x: shineX, y: shineY });
+  };
+
+  const handleMouseLeave = () => {
+    setRotate({ x: 0, y: 0 });
+    setShine({ x: 50, y: 50 });
+  };
 
   React.useEffect(() => {
     // Habilitar scroll vertical en el body
@@ -384,7 +445,19 @@ const VocationalFairLanding = () => {
       
       if (data.success) {
         setAssignedLead(data.lead);
-        setSubmitted(true);
+        
+        // Iniciar secuencia de decodificación interactiva cyberpunk
+        setIsDecoding(true);
+        setDecodingStep(0);
+        
+        // Simular progreso de análisis paso a paso en la Matrix
+        setTimeout(() => setDecodingStep(1), 700);
+        setTimeout(() => setDecodingStep(2), 1400);
+        setTimeout(() => setDecodingStep(3), 2100);
+        setTimeout(() => {
+          setIsDecoding(false);
+          setSubmitted(true);
+        }, 2800);
       } else {
         setErrorMsg(data.error || 'Error al guardar tus datos. Inténtalo nuevamente.');
       }
@@ -532,6 +605,76 @@ const VocationalFairLanding = () => {
               >
                 {tourIndex === TOUR_SLIDES.length - 1 ? 'Iniciar Desafío' : 'Siguiente Módulo'}
               </button>
+            </div>
+          </div>
+        ) : isDecoding ? (
+          /* PANTALLA INTERACTIVA DECODIFICADOR NEURONAL */
+          <div className="bg-slate-900/60 backdrop-blur-xl border border-cyan-500/30 rounded-3xl p-8 sm:p-12 shadow-2xl flex flex-col items-center text-center space-y-8 animate-pulse relative overflow-hidden min-h-[420px] justify-center">
+            {/* Escáner de líneas Cyberpunk */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(0,255,255,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%] pointer-events-none" />
+            
+            <style dangerouslySetInnerHTML={{__html: `
+              @keyframes scan {
+                0% { top: 0%; }
+                50% { top: 100%; }
+                100% { top: 0%; }
+              }
+              .animate-scan {
+                position: absolute;
+                animation: scan 2.5s linear infinite;
+              }
+            `}} />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-cyan-500/40 shadow-[0_0_12px_#06b6d4] animate-scan pointer-events-none" />
+            
+            {/* Animación de Radar */}
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-ping" />
+              <div className="absolute w-16 h-16 rounded-full border-2 border-dashed border-cyan-400 animate-spin" />
+              <Sparkles className="w-8 h-8 text-cyan-400 animate-bounce" />
+            </div>
+
+            <div className="space-y-4 max-w-md w-full">
+              <h2 className="text-xl sm:text-2xl font-black text-cyan-400 tracking-wider uppercase animate-pulse">
+                DECODIFICANDO ROL EN LA MATRIX
+              </h2>
+              
+              {/* Typewriter terminal content based on decodingStep */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 font-mono text-[11px] text-left text-slate-300 space-y-2.5 min-h-[140px] shadow-inner">
+                <div className="flex items-center gap-2 text-cyan-400">
+                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping" />
+                  <span>[SYSTEM]: Sincronización Matrix establecida...</span>
+                </div>
+                {decodingStep >= 1 && (
+                  <div className="text-emerald-400 flex items-center gap-2">
+                    <span>✔</span>
+                    <span>[ANALYSIS]: Evaluando respuestas de MrBeast...</span>
+                  </div>
+                )}
+                {decodingStep >= 2 && (
+                  <div className="text-purple-400 flex items-center gap-2">
+                    <span>✔</span>
+                    <span>[CALCULUS]: Asignando clase RPG en base a afinidad...</span>
+                  </div>
+                )}
+                {decodingStep >= 3 && (
+                  <div className="text-cyan-400 animate-pulse flex items-center gap-2">
+                    <span className="animate-spin inline-block">⚙</span>
+                    <span>[VIP]: Generando credencial digital única Duoc UC...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-850">
+                <div 
+                  className="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 transition-all duration-700 ease-out"
+                  style={{ width: `${(decodingStep + 1) * 25}%` }}
+                />
+              </div>
+              
+              <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black">
+                Procesando variables. Mantén tu conexión estable.
+              </p>
             </div>
           </div>
         ) : !submitted ? (
@@ -771,15 +914,27 @@ const VocationalFairLanding = () => {
           </form>
         ) : (
           /* PESTAÑA CREDENCIAL GENERADA */
-          <div className="flex flex-col items-center space-y-8 animate-fade-in">
+          <div className="flex flex-col items-center space-y-8 animate-fade-in w-full">
             {/* CREDENCIAL CARD CONTENEDOR */}
             <div 
               id="digital-credential"
-              className="w-full max-w-lg aspect-[1.6/1] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden select-none"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              className="w-full max-w-lg aspect-[1.6/1] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden select-none cursor-pointer transition-transform duration-100 ease-out"
               style={{
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(6, 182, 212, 0.05)'
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(6, 182, 212, 0.05)',
+                transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
+                transformStyle: 'preserve-3d'
               }}
             >
+              {/* Reflejo lumínico dinámico */}
+              <div 
+                className="absolute inset-0 pointer-events-none opacity-20 mix-blend-color-dodge transition-opacity duration-300"
+                style={{
+                  background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.8) 0%, transparent 60%)`
+                }}
+              />
+
               {/* Luz neón estática */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
@@ -844,6 +999,35 @@ const VocationalFairLanding = () => {
                 <div className="flex items-center gap-1.5 text-slate-500 text-[8px] font-mono">
                   <QrCode size={10} className="text-slate-600" /> ID_{Math.floor(100000 + Math.random() * 900000)}
                 </div>
+              </div>
+            </div>
+
+            {/* STATS BARS */}
+            <div className="w-full max-w-lg bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-cyan-400" /> Atributos de Especialidad
+                </h4>
+                <span className={`text-[10px] font-black uppercase tracking-widest bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 ${selectedOptDetails.textNeon}`}>
+                  {selectedOptDetails.badge}
+                </span>
+              </div>
+              <div className="space-y-4">
+                {selectedOptDetails.skills?.map((skill, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between text-xs font-black uppercase tracking-wider">
+                      <span className="text-slate-400">{skill.name}</span>
+                      <span className={selectedOptDetails.textNeon}>{skill.val}%</span>
+                    </div>
+                    <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-850">
+                      {/* Animated neon progress bar */}
+                      <div 
+                        className={`h-full bg-gradient-to-r ${selectedOptDetails.color} rounded-full transition-all duration-1000 ease-out`}
+                        style={{ width: `${skill.val}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
