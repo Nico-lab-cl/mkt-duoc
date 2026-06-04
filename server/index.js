@@ -504,6 +504,26 @@ app.get('/api/admin/leads/export', async (req, res) => {
   }
 });
 
+// Admin: Eliminar registros de stress test
+app.delete('/api/admin/leads/test-cleanup', async (req, res) => {
+  try {
+    const countResult = await pool.query(
+      "SELECT COUNT(*) FROM leads WHERE first_name LIKE 'TestName%' OR email LIKE 'test_user_%@test.com'"
+    );
+    const deleteResult = await pool.query(
+      "DELETE FROM leads WHERE first_name LIKE 'TestName%' OR email LIKE 'test_user_%@test.com'"
+    );
+    res.json({ 
+      success: true, 
+      found: parseInt(countResult.rows[0].count), 
+      deleted: deleteResult.rowCount 
+    });
+  } catch (err) {
+    console.error('Error cleaning test leads:', err);
+    res.status(500).json({ error: 'Error al limpiar leads de prueba' });
+  }
+});
+
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API (SPA)
 const indexHtmlPath = path.resolve(__dirname, '../dist/index.html');
 app.use((req, res) => {
