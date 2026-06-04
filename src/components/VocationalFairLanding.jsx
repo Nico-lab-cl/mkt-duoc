@@ -207,6 +207,14 @@ const VocationalFairLanding = () => {
   const [assignedLead, setAssignedLead] = useState(null);
   const [downloading, setDownloading] = useState(false);
 
+  React.useEffect(() => {
+    // Habilitar scroll vertical en el body
+    document.body.style.setProperty('overflow', 'auto', 'important');
+    return () => {
+      document.body.style.removeProperty('overflow');
+    };
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
