@@ -138,8 +138,11 @@ pool.connect(async (err, client, release) => {
         mime_type TEXT,
         file_size BIGINT,
         file_data BYTEA NOT NULL,
+        category TEXT DEFAULT 'otros',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE briefing_files ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'otros';
+      CREATE INDEX IF NOT EXISTS idx_briefing_files_category ON briefing_files(category);
       CREATE INDEX IF NOT EXISTS idx_briefing_files_token ON briefing_files(briefing_token);
       CREATE INDEX IF NOT EXISTS idx_briefing_files_briefing ON briefing_files(briefing_id);
       CREATE INDEX IF NOT EXISTS idx_briefings_slug ON briefings(form_slug);
@@ -1095,7 +1098,7 @@ const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB por archivo
 
 // Subir un archivo (foto, video, documento). Llega en base64 dentro del JSON.
 app.post('/api/briefing-files', async (req, res) => {
-  const { token, file_name, mime_type, file_size, data_base64 } = req.body;
+  const { token, file_name, mime_type, file_size, data_base64, category } = req.body;
 
   if (!token || !file_name || !data_base64) {
     return res.status(400).json({ success: false, error: 'Faltan datos del archivo (token, nombre o contenido)' });
@@ -1121,10 +1124,10 @@ app.post('/api/briefing-files', async (req, res) => {
     const briefingId = existing.rows.length > 0 ? existing.rows[0].id : null;
 
     const result = await pool.query(
-      `INSERT INTO briefing_files (briefing_token, briefing_id, file_name, mime_type, file_size, file_data)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, briefing_token, file_name, mime_type, file_size, created_at`,
-      [token, briefingId, file_name, mime_type || 'application/octet-stream', buffer.length, buffer]
+      `INSERT INTO briefing_files (briefing_token, briefing_id, file_name, mime_type, file_size, file_data, category)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, briefing_token, file_name, mime_type, file_size, category, created_at`,
+      [token, briefingId, file_name, mime_type || 'application/octet-stream', buffer.length, buffer, category || 'otros']
     );
 
     res.json({ success: true, file: result.rows[0] });
@@ -1140,7 +1143,7 @@ app.get('/api/briefing-files', async (req, res) => {
   if (!token) return res.status(400).json({ error: 'Token requerido' });
   try {
     const result = await pool.query(
-      `SELECT id, briefing_token, file_name, mime_type, file_size, created_at
+      `SELECT id, briefing_token, file_name, mime_type, file_size, category, created_at
        FROM briefing_files WHERE briefing_token = $1 ORDER BY created_at ASC`,
       [token]
     );
@@ -1199,8 +1202,10 @@ app.post('/api/briefing', async (req, res) => {
   if (!token) {
     return res.status(400).json({ success: false, error: 'Token de formulario requerido' });
   }
-  if (!contact_email || !contact_name) {
-    return res.status(400).json({ success: false, error: 'Nombre y correo de contacto son obligatorios' });
+  // El nombre y correo del contacto suelen venir de la entrevista previa, por eso
+  // no bloquean el envío. Lo que identifica al briefing es el nombre de la clínica.
+  if (!clinic_name || !String(clinic_name).trim()) {
+    return res.status(400).json({ success: false, error: 'El nombre de la clínica es obligatorio' });
   }
 
   try {
@@ -1219,9 +1224,9 @@ app.post('/api/briefing', async (req, res) => {
       [
         token,
         form_slug || 'clinica-conectamedica',
-        clinic_name || null,
-        contact_name,
-        String(contact_email).trim().toLowerCase(),
+        clinic_name,
+        contact_name || null,
+        contact_email ? String(contact_email).trim().toLowerCase() : null,
         contact_phone || null,
         JSON.stringify(answers || {})
       ]
@@ -1278,8 +1283,8 @@ app.get('/api/admin/briefings/:id', async (req, res) => {
       return res.status(404).json({ error: 'Formulario no encontrado' });
     }
     const files = await pool.query(
-      `SELECT id, file_name, mime_type, file_size, created_at
-       FROM briefing_files WHERE briefing_id = $1 ORDER BY created_at ASC`,
+      `SELECT id, file_name, mime_type, file_size, category, created_at
+       FROM briefing_files WHERE briefing_id = $1 ORDER BY category, created_at ASC`,
       [id]
     );
     res.json({ briefing: briefing.rows[0], files: files.rows || [] });
