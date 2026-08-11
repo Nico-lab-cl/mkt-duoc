@@ -16,7 +16,15 @@ const port = process.env.PORT || 80;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+
+// La subida de archivos del briefing viaja en base64 dentro del JSON, por eso
+// necesita un límite mucho mayor que el resto de los endpoints.
+const jsonStandard = express.json({ limit: '5mb' });
+const jsonUploads = express.json({ limit: '80mb' });
+app.use((req, res, next) => {
+  if (req.path === '/api/briefing-files') return jsonUploads(req, res, next);
+  return jsonStandard(req, res, next);
+});
 
 // Servir archivos estáticos del build de React
 app.use(express.static(path.join(__dirname, '../dist')));
@@ -109,8 +117,34 @@ pool.connect(async (err, client, release) => {
         user_agent TEXT,
         ip TEXT
       );
-      DO $$ 
-      BEGIN 
+      CREATE TABLE IF NOT EXISTS briefings (
+        id SERIAL PRIMARY KEY,
+        token VARCHAR(40) UNIQUE NOT NULL,
+        form_slug TEXT NOT NULL DEFAULT 'clinica-conectamedica',
+        clinic_name TEXT,
+        contact_name TEXT,
+        contact_email TEXT,
+        contact_phone TEXT,
+        status TEXT NOT NULL DEFAULT 'completed',
+        answers JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS briefing_files (
+        id SERIAL PRIMARY KEY,
+        briefing_token VARCHAR(40) NOT NULL,
+        briefing_id INTEGER REFERENCES briefings(id) ON DELETE CASCADE,
+        file_name TEXT NOT NULL,
+        mime_type TEXT,
+        file_size BIGINT,
+        file_data BYTEA NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_briefing_files_token ON briefing_files(briefing_token);
+      CREATE INDEX IF NOT EXISTS idx_briefing_files_briefing ON briefing_files(briefing_id);
+      CREATE INDEX IF NOT EXISTS idx_briefings_slug ON briefings(form_slug);
+      DO $$
+      BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='user_id') THEN
           ALTER TABLE lead_magnets ADD COLUMN user_id INTEGER;
         END IF;
@@ -1051,6 +1085,207 @@ app.get('/api/qr/stats/:id', async (req, res) => {
   } catch (err) {
     console.error('Error al obtener estadísticas de QR:', err);
     res.status(500).json({ error: 'Error al obtener estadísticas' });
+  }
+});
+
+// --- BRIEFING CLÍNICA CONECTA MÉDICA ---
+// Formulario público en /formulario-clinica-conectamedica
+
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB por archivo
+
+// Subir un archivo (foto, video, documento). Llega en base64 dentro del JSON.
+app.post('/api/briefing-files', async (req, res) => {
+  const { token, file_name, mime_type, file_size, data_base64 } = req.body;
+
+  if (!token || !file_name || !data_base64) {
+    return res.status(400).json({ success: false, error: 'Faltan datos del archivo (token, nombre o contenido)' });
+  }
+
+  let buffer;
+  try {
+    buffer = Buffer.from(data_base64, 'base64');
+  } catch {
+    return res.status(400).json({ success: false, error: 'El archivo no pudo ser decodificado' });
+  }
+
+  if (buffer.length === 0) {
+    return res.status(400).json({ success: false, error: 'El archivo está vacío' });
+  }
+  if (buffer.length > MAX_UPLOAD_BYTES) {
+    return res.status(413).json({ success: false, error: `El archivo supera el máximo de ${MAX_UPLOAD_BYTES / 1024 / 1024} MB` });
+  }
+
+  try {
+    // Si ya existe un briefing con ese token (reenvío o edición), se enlaza de inmediato
+    const existing = await pool.query('SELECT id FROM briefings WHERE token = $1', [token]);
+    const briefingId = existing.rows.length > 0 ? existing.rows[0].id : null;
+
+    const result = await pool.query(
+      `INSERT INTO briefing_files (briefing_token, briefing_id, file_name, mime_type, file_size, file_data)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, briefing_token, file_name, mime_type, file_size, created_at`,
+      [token, briefingId, file_name, mime_type || 'application/octet-stream', buffer.length, buffer]
+    );
+
+    res.json({ success: true, file: result.rows[0] });
+  } catch (err) {
+    console.error('Error al guardar archivo de briefing:', err);
+    res.status(500).json({ success: false, error: 'Error al guardar el archivo en la base de datos' });
+  }
+});
+
+// Listar los archivos ya subidos con un token (para recuperar la sesión si recarga)
+app.get('/api/briefing-files', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: 'Token requerido' });
+  try {
+    const result = await pool.query(
+      `SELECT id, briefing_token, file_name, mime_type, file_size, created_at
+       FROM briefing_files WHERE briefing_token = $1 ORDER BY created_at ASC`,
+      [token]
+    );
+    res.json(result.rows || []);
+  } catch (err) {
+    console.error('Error al listar archivos de briefing:', err);
+    res.status(500).json({ error: 'Error al obtener los archivos' });
+  }
+});
+
+// Eliminar un archivo antes de enviar el formulario (requiere el token de quien lo subió)
+app.delete('/api/briefing-files/:id', async (req, res) => {
+  const { id } = req.params;
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ success: false, error: 'Token requerido' });
+  try {
+    const result = await pool.query(
+      'DELETE FROM briefing_files WHERE id = $1 AND briefing_token = $2 RETURNING id',
+      [id, token]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Archivo no encontrado' });
+    }
+    res.json({ success: true, message: 'Archivo eliminado' });
+  } catch (err) {
+    console.error('Error al eliminar archivo de briefing:', err);
+    res.status(500).json({ success: false, error: 'Error al eliminar el archivo' });
+  }
+});
+
+// Descargar / visualizar un archivo guardado
+app.get('/api/briefing-files/:id/download', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT file_name, mime_type, file_data FROM briefing_files WHERE id = $1',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+    const file = result.rows[0];
+    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.file_name)}"`);
+    res.send(file.file_data);
+  } catch (err) {
+    console.error('Error al descargar archivo de briefing:', err);
+    res.status(500).json({ error: 'Error al obtener el archivo' });
+  }
+});
+
+// Guardar / actualizar el briefing completo
+app.post('/api/briefing', async (req, res) => {
+  const { token, form_slug, clinic_name, contact_name, contact_email, contact_phone, answers } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ success: false, error: 'Token de formulario requerido' });
+  }
+  if (!contact_email || !contact_name) {
+    return res.status(400).json({ success: false, error: 'Nombre y correo de contacto son obligatorios' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO briefings (token, form_slug, clinic_name, contact_name, contact_email, contact_phone, answers, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed')
+       ON CONFLICT (token) DO UPDATE SET
+         clinic_name = EXCLUDED.clinic_name,
+         contact_name = EXCLUDED.contact_name,
+         contact_email = EXCLUDED.contact_email,
+         contact_phone = EXCLUDED.contact_phone,
+         answers = EXCLUDED.answers,
+         status = 'completed',
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING id, token, created_at`,
+      [
+        token,
+        form_slug || 'clinica-conectamedica',
+        clinic_name || null,
+        contact_name,
+        String(contact_email).trim().toLowerCase(),
+        contact_phone || null,
+        JSON.stringify(answers || {})
+      ]
+    );
+
+    const briefing = result.rows[0];
+
+    // Enlazar los archivos que se subieron con ese token antes de existir el briefing
+    await pool.query(
+      'UPDATE briefing_files SET briefing_id = $1 WHERE briefing_token = $2 AND briefing_id IS NULL',
+      [briefing.id, token]
+    );
+
+    res.json({ success: true, briefing });
+  } catch (err) {
+    console.error('Error al guardar briefing:', err);
+    res.status(500).json({ success: false, error: 'Error al guardar el formulario' });
+  }
+});
+
+// Listado de briefings recibidos (sin el contenido binario de los archivos)
+app.get('/api/admin/briefings', async (req, res) => {
+  const { slug } = req.query;
+  try {
+    const params = [];
+    let query = `
+      SELECT b.id, b.token, b.form_slug, b.clinic_name, b.contact_name, b.contact_email,
+             b.contact_phone, b.status, b.created_at, b.updated_at,
+             COUNT(f.id)::int AS files_count,
+             COALESCE(SUM(f.file_size), 0)::bigint AS files_bytes
+      FROM briefings b
+      LEFT JOIN briefing_files f ON f.briefing_id = b.id
+    `;
+    if (slug) {
+      params.push(slug);
+      query += ' WHERE b.form_slug = $1';
+    }
+    query += ' GROUP BY b.id ORDER BY b.created_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows || []);
+  } catch (err) {
+    console.error('Error al listar briefings:', err);
+    res.status(500).json({ error: 'Error al obtener los formularios' });
+  }
+});
+
+// Detalle de un briefing con la metadata de sus archivos
+app.get('/api/admin/briefings/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const briefing = await pool.query('SELECT * FROM briefings WHERE id = $1', [id]);
+    if (briefing.rows.length === 0) {
+      return res.status(404).json({ error: 'Formulario no encontrado' });
+    }
+    const files = await pool.query(
+      `SELECT id, file_name, mime_type, file_size, created_at
+       FROM briefing_files WHERE briefing_id = $1 ORDER BY created_at ASC`,
+      [id]
+    );
+    res.json({ briefing: briefing.rows[0], files: files.rows || [] });
+  } catch (err) {
+    console.error('Error al obtener briefing:', err);
+    res.status(500).json({ error: 'Error al obtener el formulario' });
   }
 });
 
