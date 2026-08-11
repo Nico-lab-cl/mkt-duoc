@@ -491,6 +491,20 @@ const ClinicaBriefingForm = () => {
   const step = STEPS[stepIndex];
   const progress = useMemo(() => Math.round(((stepIndex) / STEPS.length) * 100), [stepIndex]);
 
+  // El simulador aplica `overflow-hidden` al body porque es de pantalla fija.
+  // Este formulario es una página larga, así que devolvemos el scroll mientras
+  // está montado y restauramos el estado original al salir.
+  useEffect(() => {
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
+
   // Guardar borrador local para que el cliente no pierda lo escrito
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(answers));
