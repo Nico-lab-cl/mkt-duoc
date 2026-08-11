@@ -1,16 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Stethoscope,
-  Briefcase,
-  Users,
-  Search,
-  ShieldAlert,
-  Award,
-  Star,
-  Megaphone,
-  Target,
-  Palette,
-  Settings,
+  Building2,
+  ClipboardList,
+  HeartPulse,
+  UserCheck,
+  Monitor,
   UploadCloud,
   Check,
   ChevronLeft,
@@ -23,21 +18,19 @@ import {
   AlertCircle,
   Send,
   Save,
-  FolderOpen,
-  Lightbulb
+  FolderOpen
 } from 'lucide-react';
 
 /**
- * Briefing estratégico para el sitio web de Clínica Conecta Médica.
+ * Briefing para el sitio web de una clínica nueva.
  * Ruta pública: /formulario-clinica-conectamedica
  *
- * El cuestionario no levanta requerimientos técnicos, levanta insights: por qué
- * compra el paciente, qué lo frena y qué hace distinta a la clínica. Esas
- * respuestas son las que definen después el copy, la estructura y la jerarquía
- * del sitio.
+ * Lo responde un médico, no un encargado de marketing: preguntas concretas,
+ * mayoría de selección, sin jerga publicitaria y sin dar por hecho un historial
+ * que una clínica recién abierta todavía no tiene.
  *
- * Admite prellenado por URL para no repreguntar lo que ya se supo en entrevista:
- *   /formulario-clinica-conectamedica?clinica=Conecta%20Medica&nombre=Juan&email=juan@clinica.cl
+ * Los datos de contacto no se preguntan: viajan en el link y quedan guardados.
+ *   /formulario-clinica-conectamedica?nombre=Dr.%20Perez&email=...&telefono=...
  */
 
 const MAX_FILE_MB = 50;
@@ -48,689 +41,445 @@ const makeToken = () =>
   `${Date.now().toString(36)}${Math.random().toString(36).substring(2, 10)}`.toUpperCase().slice(0, 32);
 
 const FILE_CATEGORIES = [
-  { id: 'logo', label: 'Logo e identidad', hint: 'Logo en alta, manual de marca, tipografías' },
-  { id: 'instalaciones', label: 'Fotos de la clínica', hint: 'Fachada, recepción, boxes, equipamiento' },
-  { id: 'equipo', label: 'Fotos del equipo', hint: 'Médicos y personal, retratos' },
-  { id: 'videos', label: 'Videos', hint: 'Institucional, testimonios, procedimientos' },
-  { id: 'documentos', label: 'Documentos', hint: 'Precios, textos, certificados, convenios' },
-  { id: 'otros', label: 'Otros', hint: 'Cualquier material adicional' }
+  { id: 'logo', label: 'Logo e identidad', hint: 'Logo, colores, manual de marca' },
+  { id: 'instalaciones', label: 'Fotos del local', hint: 'Fachada, espera, boxes, equipos' },
+  { id: 'equipo', label: 'Fotos del equipo', hint: 'Suya y de quienes trabajarán con usted' },
+  { id: 'videos', label: 'Videos', hint: 'Cualquier video que tenga' },
+  { id: 'documentos', label: 'Documentos', hint: 'Aranceles, títulos, convenios, textos' },
+  { id: 'otros', label: 'Otros', hint: 'Lo que no calce en las anteriores' }
 ];
 
 // --- Cuestionario ------------------------------------------------------------
 
 const STEPS = [
   {
-    id: 'negocio',
-    title: 'El negocio detrás del sitio',
-    subtitle: 'Un sitio web es una inversión comercial. Primero hay que saber qué debe mover.',
-    icon: Briefcase,
+    id: 'clinica',
+    title: 'La clínica',
+    subtitle: 'Lo básico para armar la ficha: dónde, cuándo y con quién.',
+    icon: Building2,
     fields: [
-      { key: 'clinic_name', label: 'Nombre comercial de la clínica', type: 'text', required: true },
-      { key: 'contact_name', label: 'Nombre de quien responde', type: 'text' },
-      { key: 'contact_email', label: 'Correo de contacto', type: 'email' },
-      { key: 'contact_phone', label: 'Teléfono / WhatsApp', type: 'tel' },
       {
-        key: 'one_liner',
-        label: 'Complete esta frase: "Somos la clínica que ______ para ______"',
-        type: 'textarea',
-        required: true,
-        rows: 3,
-        help: 'Sin adornos ni palabras de folleto. Si le cuesta, es la señal de que hay que trabajar el posicionamiento antes que el diseño.'
-      },
-      {
-        key: 'profit_services',
-        label: '¿Qué 3 servicios les dejan MÁS rentabilidad?',
-        type: 'textarea',
-        required: true,
-        rows: 3,
-        help: 'Estos son los que van a ocupar el lugar privilegiado en la home. No siempre son los más conocidos.'
-      },
-      {
-        key: 'entry_services',
-        label: '¿Qué servicio trae más pacientes nuevos, aunque deje menos margen?',
-        type: 'textarea',
-        rows: 2,
-        help: 'Es la puerta de entrada: se usa para captar y después el paciente conoce el resto.'
-      },
-      {
-        key: 'idle_capacity',
-        label: '¿Qué horarios, boxes o especialidades están hoy con capacidad ociosa?',
-        type: 'textarea',
-        rows: 2,
-        help: 'Llenar huecos existentes es la forma más rápida de que el sitio se pague solo.'
-      },
-      { key: 'ticket_avg', label: 'Ticket promedio de una primera consulta', type: 'text', placeholder: 'Ej: $35.000' },
-      {
-        key: 'patient_recurrence',
-        label: '¿El paciente vuelve? ¿Cuántas veces al año en promedio?',
-        type: 'text',
-        help: 'Define cuánto se puede invertir en captar a cada paciente nuevo.'
-      },
-      {
-        key: 'growth_target',
-        label: '¿Cuántos pacientes nuevos al mes harían que esta inversión valga la pena?',
-        type: 'text',
-        required: true,
-        help: 'Un número concreto. Es la meta contra la que vamos a medir el proyecto.'
-      },
-      {
-        key: 'capacity_limit',
-        label: 'Si mañana llegaran 100 pacientes nuevos, ¿podrían atenderlos?',
+        key: 'name_status',
+        label: '¿Ya tiene nombre la clínica?',
         type: 'radio',
+        required: true,
+        options: ['Sí, ya está definido', 'Tengo una idea pero no lo decido', 'Todavía no']
+      },
+      { key: 'clinic_name', label: 'Si ya lo tiene, ¿cuál es?', type: 'text' },
+      {
+        key: 'opening',
+        label: '¿Cuándo abre?',
+        type: 'radio',
+        required: true,
+        options: ['Ya estamos atendiendo', 'En menos de un mes', 'En 1 a 3 meses', 'En 3 a 6 meses', 'Aún sin fecha']
+      },
+      {
+        key: 'specialties',
+        label: '¿Qué especialidades se van a atender?',
+        type: 'checkbox',
+        required: true,
         options: [
-          'Sí, tenemos capacidad de sobra',
-          'Sí, pero con esfuerzo',
-          'No, colapsaríamos la agenda',
-          'No, y ese es justamente el problema a resolver'
-        ],
-        help: 'Atraer más demanda de la que se puede atender destruye la reputación más rápido que no tener web.'
-      }
-    ]
-  },
-  {
-    id: 'paciente',
-    title: 'Quién es realmente su paciente',
-    subtitle: 'No la descripción demográfica: la persona concreta, con nombre y situación.',
-    icon: Users,
-    fields: [
+          'Medicina general / familiar',
+          'Pediatría',
+          'Ginecología y obstetricia',
+          'Traumatología',
+          'Kinesiología',
+          'Nutrición',
+          'Psicología',
+          'Psiquiatría',
+          'Dermatología',
+          'Cardiología',
+          'Broncopulmonar',
+          'Otorrinolaringología',
+          'Oftalmología',
+          'Urología',
+          'Endocrinología / diabetes',
+          'Gastroenterología',
+          'Odontología',
+          'Medicina estética',
+          'Toma de exámenes',
+          'Imagenología / ecografía'
+        ]
+      },
+      { key: 'specialties_other', label: '¿Alguna otra que no esté en la lista?', type: 'text' },
+      { key: 'address', label: 'Dirección de la clínica', type: 'text', required: true, placeholder: 'Calle, número, comuna' },
+      { key: 'schedule', label: 'Horario de atención', type: 'text', placeholder: 'Ej: Lun a Vie 09:00–19:00, Sáb 09:00–13:00' },
       {
-        key: 'best_patient',
-        label: 'Piense en el mejor paciente que han tenido este año. Descríbalo.',
-        type: 'textarea',
+        key: 'team_size',
+        label: '¿Cuántos profesionales van a atender?',
+        type: 'radio',
+        options: ['Solo yo', '2 o 3', '4 a 8', 'Más de 8']
+      },
+      { key: 'boxes', label: '¿Cuántos boxes de atención tiene?', type: 'text' },
+      {
+        key: 'insurance',
+        label: '¿Con qué previsiones va a trabajar?',
+        type: 'checkbox',
         required: true,
-        rows: 4,
-        help: 'Edad, con quién vive, en qué trabaja, cómo llegó, por qué volvió. Mientras más concreto, mejor sale el copy.'
+        options: [
+          'Fonasa (libre elección)',
+          'Fonasa (modalidad institucional)',
+          'Isapre con bono',
+          'Isapre por reembolso',
+          'Seguros complementarios',
+          'Convenios con empresas',
+          'Solo particular'
+        ]
       },
       {
-        key: 'worst_patient',
-        label: '¿Qué tipo de paciente NO quieren atraer?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Tan importante como atraer: el sitio también sirve para filtrar y no perder tiempo del equipo.'
-      },
-      {
-        key: 'decision_maker',
-        label: '¿Quién decide y quién agenda? ¿Es la misma persona?',
-        type: 'textarea',
-        required: true,
-        rows: 3,
-        help: 'Muchas veces la hija agenda para la madre, o la empresa decide por el trabajador. Si le hablamos a la persona equivocada, no convierte.'
-      },
-      {
-        key: 'trigger_moment',
-        label: '¿Qué le pasó al paciente el día exacto en que decidió buscar una clínica?',
-        type: 'textarea',
-        required: true,
-        rows: 4,
-        help: 'El detonante. No "necesitaba un médico", sino "se despertó sin poder mover el cuello". Ese momento es el que hay que reflejar en la web.'
-      },
-      {
-        key: 'emotional_state',
-        label: '¿Cómo llega emocionalmente el paciente?',
+        key: 'facilities',
+        label: '¿Qué tiene el local que valga la pena mencionar?',
         type: 'checkbox',
         options: [
-          'Con dolor o molestia física',
-          'Con miedo a un diagnóstico',
-          'Con frustración por no haber sido atendido en otra parte',
-          'Con urgencia, necesita hoy',
-          'Tranquilo, es un control o trámite',
-          'Escéptico, ya lo estafaron antes',
-          'Confundido, no sabe qué especialista necesita'
+          'Estacionamiento propio',
+          'Acceso para silla de ruedas',
+          'Cerca de locomoción / metro',
+          'Sala de espera amplia',
+          'Espacio para niños',
+          'Baño accesible',
+          'Atención sin escaleras'
         ],
-        help: 'El tono de todo el sitio depende de esto. No se le habla igual a alguien asustado que a alguien haciendo un trámite.'
-      },
-      {
-        key: 'alternatives',
-        label: 'Si no van a ustedes, ¿qué hacen en la práctica?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Su competencia real quizás no es otra clínica: puede ser aguantar el dolor, el consultorio, la urgencia o automedicarse.'
-      },
-      { key: 'geo_area', label: '¿De qué comunas viene su paciente hoy y cuáles quieren sumar?', type: 'text' },
-      {
-        key: 'insurance_mix',
-        label: '¿Qué proporción es Fonasa, Isapre y particular?',
-        type: 'text',
-        placeholder: 'Ej: 60% Fonasa, 30% Isapre, 10% particular'
+        help: 'Suena menor, pero para un paciente mayor o con dolor esto decide dónde se atiende.'
       }
     ]
   },
   {
-    id: 'busqueda',
-    title: 'Cómo busca y qué pregunta',
-    subtitle: 'Las palabras exactas del paciente valen más que cualquier redacción publicitaria.',
-    icon: Search,
+    id: 'prestaciones',
+    title: 'Qué se va a atender',
+    subtitle: 'Qué resuelve usted en su box y qué deriva.',
+    icon: ClipboardList,
     fields: [
       {
-        key: 'search_terms',
-        label: '¿Qué cree que escribe literalmente su paciente en Google?',
-        type: 'textarea',
+        key: 'services',
+        label: '¿Qué se va a poder hacer en la clínica?',
+        type: 'checkbox',
         required: true,
-        rows: 4,
-        help: 'Textual, como lo diría él: "traumatologo viña del mar sin espera", "por qué me duele el hombro". Esto define el SEO.'
+        options: [
+          'Consulta médica',
+          'Controles de pacientes crónicos',
+          'Exámenes de sangre',
+          'Electrocardiograma',
+          'Ecografías',
+          'Radiografías',
+          'Curaciones',
+          'Procedimientos menores / cirugía menor',
+          'Infiltraciones',
+          'Vacunas',
+          'Certificados médicos',
+          'Licencias médicas',
+          'Chequeo preventivo',
+          'Control sano del niño',
+          'Salud ocupacional / preocupacional'
+        ]
       },
+      { key: 'derive', label: '¿Qué va a derivar a otro centro?', type: 'text', placeholder: 'Ej: resonancias, cirugías mayores' },
       {
-        key: 'first_questions',
-        label: 'Las 3 primeras preguntas que hacen al llamar o escribir por WhatsApp',
-        type: 'textarea',
+        key: 'ages',
+        label: '¿Qué edades va a atender?',
+        type: 'checkbox',
         required: true,
-        rows: 4,
-        help: 'Copie las palabras reales. Si esas 3 preguntas se responden en la home, el sitio convierte solo.'
+        options: ['Lactantes', 'Niños', 'Adolescentes', 'Adultos', 'Adultos mayores']
       },
       {
-        key: 'faq_exhausting',
-        label: '¿Qué pregunta se repite tanto que ya agota al equipo?',
-        type: 'textarea',
-        rows: 2,
-        help: 'Cada una de estas resuelta en el sitio es tiempo del mesón que se recupera.'
+        key: 'urgency',
+        label: '¿Va a atender sin hora?',
+        type: 'radio',
+        required: true,
+        options: [
+          'Sí, atendemos espontáneos todos los días',
+          'Sí, pero solo en horarios acotados',
+          'No, solo con hora agendada',
+          'Aún no lo decidimos'
+        ]
       },
       {
-        key: 'info_missing',
-        label: '¿Qué información buscan los pacientes y no encuentran hoy en ninguna parte?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Ahí suele estar la oportunidad más grande frente a la competencia.'
+        key: 'appointment_length',
+        label: '¿Cuánto va a durar una consulta?',
+        type: 'radio',
+        options: ['15 minutos', '20 minutos', '30 minutos', '45 minutos o más', 'Depende de la especialidad'],
+        help: 'Si dura más que el promedio, es un argumento fuerte y conviene decirlo en la web.'
       },
       {
-        key: 'comparison_criteria',
-        label: 'Cuando el paciente compara entre una clínica y otra, ¿con qué criterio decide?',
+        key: 'extra_modes',
+        label: '¿Va a ofrecer alguna de estas modalidades?',
+        type: 'checkbox',
+        options: ['Telemedicina', 'Visita domiciliaria', 'Atención a empresas', 'Convenios con colegios', 'Atención de fin de semana']
+      },
+      { key: 'price_consult', label: '¿Cuánto va a costar una consulta particular?', type: 'text', placeholder: 'Ej: $30.000' },
+      {
+        key: 'price_public',
+        label: '¿Publicamos los precios en la web?',
+        type: 'radio',
+        options: ['Sí, todos', 'Solo el valor de la consulta', 'Solo rangos', 'No, que consulten'],
+        help: 'Publicarlos filtra a quien no puede pagar y evita llamadas que no llegan a nada.'
+      }
+    ]
+  },
+  {
+    id: 'pacientes',
+    title: 'Sus pacientes',
+    subtitle: 'A quién va a atender y cómo va a llegar a usted.',
+    icon: HeartPulse,
+    fields: [
+      {
+        key: 'first_patients',
+        label: '¿De dónde cree que van a llegar sus primeros pacientes?',
+        type: 'checkbox',
+        required: true,
+        options: [
+          'Pacientes que ya me siguen de otro centro',
+          'Derivaciones de colegas',
+          'Vecinos del sector',
+          'Convenios con empresas',
+          'Redes sociales',
+          'Google',
+          'Partimos de cero'
+        ]
+      },
+      {
+        key: 'patient_type',
+        label: '¿Qué tipo de paciente espera atender más?',
         type: 'checkbox',
         options: [
-          'Precio',
-          'Rapidez para conseguir hora',
-          'Cercanía y estacionamiento',
-          'Prestigio del médico',
-          'Que le tomen su previsión',
-          'Recomendación de un conocido',
-          'Reseñas en Google',
-          'Que la clínica se vea seria y limpia'
+          'Familias completas',
+          'Adultos mayores',
+          'Trabajadores con poco tiempo',
+          'Pacientes crónicos en control',
+          'Embarazadas',
+          'Niños',
+          'Deportistas',
+          'Pacientes de empresas en convenio'
         ]
-      }
-    ]
-  },
-  {
-    id: 'objeciones',
-    title: 'Miedos, dudas y objeciones',
-    subtitle: 'Una web que no responde objeciones es un folleto caro. Aquí está la conversión.',
-    icon: ShieldAlert,
-    fields: [
+      },
+      { key: 'area', label: '¿De qué comunas espera que vengan?', type: 'text' },
       {
-        key: 'objections',
-        label: '¿Por qué alguien que ya los conoce termina NO agendando?',
+        key: 'patient_questions',
+        label: '¿Qué le preguntan siempre sus pacientes en la consulta?',
         type: 'textarea',
         required: true,
         rows: 4,
-        help: 'Las razones reales que escuchan por teléfono. Cada una debe quedar resuelta en alguna parte del sitio.'
+        help: 'Las dudas que repiten todos. Si las dejamos respondidas en la web, le ahorra explicarlas cien veces.'
       },
       {
-        key: 'price_position',
-        label: 'Frente a la competencia, sus precios son…',
-        type: 'radio',
-        required: true,
+        key: 'why_delay',
+        label: 'Por su experiencia, ¿por qué la gente posterga ir al médico?',
+        type: 'checkbox',
         options: [
-          'Más caros, y lo justificamos con calidad',
-          'Similares al promedio',
-          'Más convenientes',
-          'Variables según el servicio',
-          'No sabemos con certeza'
-        ]
+          'Miedo a que le encuentren algo',
+          'Por plata',
+          'No consigue hora a tiempo',
+          'No sabe a qué especialista ir',
+          'Malas experiencias anteriores',
+          'No tiene tiempo por el trabajo',
+          'Piensa que se le va a pasar solo'
+        ],
+        help: 'Cada uno de estos motivos se puede desarmar con lo que ponemos en la web.'
       },
       {
-        key: 'price_justification',
-        label: 'Si son más caros, ¿qué recibe el paciente que justifique la diferencia?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Sin una respuesta clara aquí, el sitio va a competir solo por precio, que es la peor cancha.'
-      },
-      {
-        key: 'specific_fear',
-        label: '¿Qué miedo concreto tiene el paciente sobre la atención o el procedimiento?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Ej: que duela, que lo deriven, que le descubran algo grave, que sea una pérdida de tiempo.'
-      },
-      {
-        key: 'trust_breakers',
-        label: '¿Qué haría que un paciente desconfíe al entrar a la web?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Precios ocultos, fotos genéricas, no saber quién atiende. Lo evitamos desde el diseño.'
-      },
-      {
-        key: 'real_wait',
-        label: '¿Cuánto se demora hoy en conseguir hora, de verdad?',
-        type: 'text',
-        help: 'Si es rápido, es un argumento potente. Si es lento, hay que manejar la expectativa en el sitio.'
-      }
-    ]
-  },
-  {
-    id: 'posicionamiento',
-    title: 'Diferenciación y promesa',
-    subtitle: 'Qué los hace elegibles cuando el paciente tiene cinco pestañas abiertas.',
-    icon: Award,
-    fields: [
-      {
-        key: 'disappear_test',
-        label: 'Si la clínica cerrara mañana, ¿qué perdería su paciente que no encuentra en otra parte?',
-        type: 'textarea',
-        required: true,
-        rows: 4,
-        help: 'La prueba más dura de diferenciación. Si la respuesta es "nada", el trabajo parte por construirla.'
-      },
-      {
-        key: 'why_competitors_win',
-        label: '¿Por qué un paciente elige a la competencia en lugar de a ustedes?',
-        type: 'textarea',
-        required: true,
-        rows: 3,
-        help: 'La honestidad aquí vale oro. Nadie pierde pacientes por casualidad.'
-      },
-      {
-        key: 'brand_promise',
-        label: '¿Qué promesa pueden cumplir SIEMPRE, sin excepción?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Ej: "nunca lo atendemos con más de 15 minutos de atraso". Una promesa que se cumple siempre vale más que diez que a veces.'
-      },
-      {
-        key: 'unfair_advantage',
-        label: '¿Qué tienen que la competencia no pueda copiar en seis meses?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Equipamiento, un médico específico, una alianza, una ubicación, un método propio.'
-      },
-      {
-        key: 'category_enemy',
-        label: '¿Qué está mal en cómo se atiende la salud hoy, y que ustedes hacen distinto?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Tener un "enemigo común" con el paciente construye identificación inmediata.'
-      },
-      {
-        key: 'competitors',
-        label: 'Nombre 2 o 3 competidores directos y qué hacen bien',
-        type: 'textarea',
-        rows: 4,
-        placeholder: 'Clínica X (web) — su agenda online es muy simple\nCentro Y — están mejor posicionados en Google'
-      }
-    ]
-  },
-  {
-    id: 'prueba',
-    title: 'Prueba social y autoridad',
-    subtitle: 'En salud nadie compra por diseño bonito. Compra por confianza demostrada.',
-    icon: Star,
-    fields: [
-      {
-        key: 'google_reviews',
-        label: '¿Tienen ficha en Google con reseñas? ¿Qué puntaje?',
-        type: 'text',
-        required: true,
-        placeholder: 'Ej: 4,6 con 180 reseñas / No tenemos ficha'
-      },
-      {
-        key: 'testimonials',
-        label: '¿Pueden conseguir testimonios de pacientes reales?',
+        key: 'who_books',
+        label: '¿Quién va a pedir la hora normalmente?',
         type: 'radio',
         options: [
-          'Sí, escritos y en video',
-          'Sí, pero solo escritos',
-          'Sí, pero anónimos',
-          'No, por confidencialidad',
-          'No lo hemos intentado'
+          'El propio paciente',
+          'Un familiar (hijo, pareja, cuidador)',
+          'La secretaria de una empresa',
+          'De todo un poco'
+        ],
+        help: 'Si agenda la hija para la madre, la web le tiene que hablar a la hija.'
+      }
+    ]
+  },
+  {
+    id: 'atencion',
+    title: 'Su forma de atender',
+    subtitle: 'Esto es lo que va a diferenciar a su clínica. Responda como se lo diría a un colega.',
+    icon: UserCheck,
+    fields: [
+      {
+        key: 'why_opened',
+        label: '¿Por qué decidió abrir su propia clínica?',
+        type: 'textarea',
+        required: true,
+        rows: 4,
+        help: 'Con sus palabras. Esta respuesta suele terminar siendo el texto que más conecta con el paciente.'
+      },
+      {
+        key: 'what_annoys',
+        label: '¿Qué le molesta de cómo se atiende a los pacientes en otros centros?',
+        type: 'textarea',
+        required: true,
+        rows: 4,
+        help: 'Sea directo. Lo que a usted le molesta como médico suele ser exactamente lo que al paciente le molesta como paciente.'
+      },
+      {
+        key: 'what_different',
+        label: '¿Qué va a hacer distinto?',
+        type: 'checkbox',
+        required: true,
+        options: [
+          'Consultas más largas, sin apurar',
+          'Dar hora para el mismo día o el siguiente',
+          'Que siempre lo vea el mismo médico',
+          'Explicar en palabras simples, sin tecnicismos',
+          'Entregar resultados rápido',
+          'Precios claros desde el principio',
+          'Responder dudas por WhatsApp',
+          'No pedir exámenes que no se necesitan',
+          'Atender con puntualidad',
+          'Acompañar todo el tratamiento, no solo la consulta'
         ]
       },
       {
-        key: 'patient_faces',
-        label: '¿Pueden mostrar rostros de pacientes con consentimiento firmado?',
-        type: 'radio',
-        options: ['Sí, tenemos consentimientos', 'Podríamos gestionarlos', 'No, preferimos no exponerlos'],
-        help: 'Sin consentimiento escrito no se publica ninguna imagen de paciente. Es un riesgo legal, no un detalle.'
+        key: 'commitment',
+        label: '¿Con qué se compromete siempre, pase lo que pase?',
+        type: 'text',
+        placeholder: 'Ej: nunca atender con más de 20 minutos de atraso',
+        help: 'Una sola cosa que pueda cumplir el 100% de las veces vale más que una lista de buenas intenciones.'
       },
       {
-        key: 'hard_numbers',
-        label: 'Cifras duras que respalden la trayectoria',
-        type: 'textarea',
-        required: true,
-        rows: 3,
-        help: 'Años operando, pacientes atendidos, procedimientos realizados, número de especialistas. Los números concretos convierten más que los adjetivos.'
+        key: 'wont_do',
+        label: '¿Qué no va a hacer nunca en su clínica?',
+        type: 'text',
+        placeholder: 'Ej: vender tratamientos que el paciente no necesita'
       },
       {
         key: 'credentials',
-        label: 'Certificaciones, acreditaciones, tecnología y universidades del equipo',
+        label: 'Su formación y la del equipo',
         type: 'textarea',
-        rows: 3
-      },
-      {
-        key: 'star_doctors',
-        label: '¿Hay médicos con reputación propia que traigan pacientes por su nombre?',
-        type: 'textarea',
-        rows: 2,
-        help: 'Si los hay, conviene darles página propia: la gente busca por nombre de médico.'
-      },
-      { key: 'press', label: '¿Han salido en prensa, radio, TV o convenios reconocibles?', type: 'textarea', rows: 2 }
-    ]
-  },
-  {
-    id: 'canales',
-    title: 'Qué han hecho en marketing',
-    subtitle: 'Para no repetir lo que ya falló y aprovechar lo que sí funcionó.',
-    icon: Megaphone,
-    fields: [
-      {
-        key: 'current_channels',
-        label: '¿Por dónde llegan hoy la mayoría de sus pacientes?',
-        type: 'checkbox',
-        required: true,
-        options: [
-          'Recomendación boca a boca',
-          'Google (búsqueda)',
-          'Instagram / Facebook',
-          'WhatsApp',
-          'Pasan por fuera y entran',
-          'Convenios con empresas',
-          'Derivación de otros médicos',
-          'Publicidad pagada'
-        ]
-      },
-      {
-        key: 'tried_failed',
-        label: '¿Qué han probado en marketing que NO funcionó?',
-        type: 'textarea',
-        required: true,
-        rows: 4,
-        help: 'Agencias, pauta, volantes, influencers. Saber qué falló y por qué evita repetir el gasto.'
-      },
-      {
-        key: 'ad_budget',
-        label: '¿Invierten en publicidad hoy? ¿Cuánto al mes?',
-        type: 'text',
-        placeholder: 'Ej: $200.000 en Meta Ads / No invertimos'
-      },
-      {
-        key: 'who_answers',
-        label: '¿Quién contesta los WhatsApp y llamadas, y en cuánto tiempo?',
-        type: 'textarea',
-        required: true,
         rows: 3,
-        help: 'El mejor sitio del mundo no sirve si el contacto se responde al día siguiente. En salud, después de 30 minutos el paciente ya agendó en otra parte.'
+        help: 'Universidad, especialidad, años de experiencia, dónde trabajó antes, sociedades a las que pertenece.'
       },
       {
-        key: 'lost_leads',
-        label: '¿Qué pasa con quien pregunta y no agenda? ¿Alguien lo vuelve a contactar?',
-        type: 'radio',
-        options: [
-          'Sí, hacemos seguimiento sistemático',
-          'A veces, sin método',
-          'No, se pierde',
-          'Ni siquiera sabemos cuántos son'
-        ]
-      },
-      {
-        key: 'measuring',
-        label: '¿Miden algo hoy? ¿Saben de dónde viene cada paciente?',
-        type: 'radio',
-        options: [
-          'Sí, registramos el origen de cada paciente',
-          'Preguntamos "¿cómo nos conoció?" pero no lo registramos',
-          'No medimos nada',
-          'Tenemos Google Analytics pero nadie lo revisa'
-        ]
-      },
-      { key: 'social_links', label: 'Enlaces a sus redes sociales', type: 'textarea', rows: 3 }
+        key: 'nearby_centers',
+        label: '¿Qué otros centros hay cerca?',
+        type: 'text',
+        help: 'Para saber contra qué compite en el sector.'
+      }
     ]
   },
   {
-    id: 'conversion',
-    title: 'Qué debe lograr el sitio',
-    subtitle: 'Un sitio con cinco objetivos no cumple ninguno.',
-    icon: Target,
+    id: 'web',
+    title: 'Cómo quiere la web',
+    subtitle: 'Lo último antes del material.',
+    icon: Monitor,
     fields: [
       {
         key: 'main_action',
-        label: 'Si el visitante hiciera UNA sola cosa en el sitio, ¿cuál sería?',
+        label: 'Cuando alguien entre a la web, ¿qué quiere que haga?',
         type: 'radio',
         required: true,
         options: [
-          'Agendar su hora directamente online',
-          'Escribir por WhatsApp',
-          'Dejar sus datos en un formulario',
-          'Llamar por teléfono',
-          'Conocer la clínica y confiar antes de decidir'
-        ],
-        help: 'Todo el diseño se va a jerarquizar en torno a esta acción.'
-      },
-      {
-        key: 'secondary_actions',
-        label: 'Acciones secundarias que también deben estar disponibles',
-        type: 'checkbox',
-        options: [
-          'Ver precios y convenios',
-          'Conocer al equipo médico',
-          'Descargar indicaciones o preparaciones de examen',
-          'Consultar resultados',
-          'Postular a trabajar con nosotros',
-          'Solicitar convenio para empresa',
-          'Suscribirse a contenido de salud'
+          'Que pida hora ahí mismo',
+          'Que escriba por WhatsApp',
+          'Que llame por teléfono',
+          'Que deje sus datos y lo contactamos',
+          'Que conozca la clínica y decida después'
         ]
       },
-      {
-        key: 'lead_destination',
-        label: '¿A dónde debe llegar cada contacto que entre por el sitio?',
-        type: 'textarea',
-        required: true,
-        rows: 2,
-        help: 'Correos concretos, un WhatsApp específico, un CRM. Si no hay destino claro, se pierden.'
-      },
-      {
-        key: 'response_commitment',
-        label: '¿En cuánto tiempo se comprometen a responder un contacto del sitio?',
-        type: 'radio',
-        options: ['Menos de 15 minutos', 'Dentro de la hora', 'El mismo día', 'Al día hábil siguiente', 'No podemos comprometer un plazo']
-      },
-      {
-        key: 'success_6m',
-        label: '¿Cómo sabremos en 6 meses que el sitio fue un éxito?',
-        type: 'textarea',
-        required: true,
-        rows: 3,
-        help: 'En números. "Que se vea bonito" no es medible ni defendible.'
-      },
-      {
-        key: 'must_not_do',
-        label: '¿Qué NO debe hacer el sitio bajo ninguna circunstancia?',
-        type: 'textarea',
-        rows: 3,
-        help: 'Ej: prometer resultados médicos, mostrar imágenes fuertes, publicar precios, parecer un hospital frío.'
-      }
-    ]
-  },
-  {
-    id: 'marca',
-    title: 'Marca, tono y estética',
-    subtitle: 'Cómo se debe ver y, sobre todo, cómo se debe sentir.',
-    icon: Palette,
-    fields: [
-      {
-        key: 'brand_personality',
-        label: 'Si la clínica fuera una persona, ¿cómo sería?',
-        type: 'textarea',
-        required: true,
-        rows: 3,
-        help: 'Ej: "un médico de familia de 50 años, tranquilo, que explica sin apuro". Esto define el tono de todos los textos.'
-      },
-      {
-        key: 'tone',
-        label: '¿Cómo le habla la clínica al paciente?',
-        type: 'radio',
-        options: ['Formal y profesional (de usted)', 'Cercano y humano (de tú)', 'Mixto según la sección']
-      },
-      {
-        key: 'style_preference',
-        label: 'Dirección visual preferida',
-        type: 'radio',
-        required: true,
-        options: [
-          'Clínico y sobrio: blanco, azul, mucho aire',
-          'Cálido y humano: fotos de personas, tonos suaves',
-          'Moderno y tecnológico: alto contraste, movimiento',
-          'Premium: tipografía elegante, tonos profundos'
-        ]
-      },
-      {
-        key: 'references',
-        label: 'Pegue 2 o 3 sitios que les gusten y diga exactamente qué les gusta',
-        type: 'textarea',
-        required: true,
-        rows: 4,
-        help: 'De cualquier rubro. "Me gusta cómo se ve" no sirve: diga si es el orden, los colores, la simpleza del agendamiento.'
-      },
-      {
-        key: 'dislikes',
-        label: '¿Qué NO quieren ver en su sitio bajo ninguna circunstancia?',
-        type: 'textarea',
-        rows: 3
-      },
-      {
-        key: 'brandbook',
-        label: '¿Tienen identidad visual definida?',
-        type: 'radio',
-        required: true,
-        options: [
-          'Sí, manual de marca completo',
-          'Tenemos logo y colores, sin manual',
-          'Solo el logo',
-          'No tenemos nada, hay que crearlo'
-        ]
-      },
-      { key: 'brand_colors', label: 'Colores corporativos (código HEX si lo conoce)', type: 'text' },
-      {
-        key: 'accessibility',
-        label: '¿Su público incluye adultos mayores o personas con baja visión?',
-        type: 'radio',
-        options: [
-          'Sí, es parte importante de nuestros pacientes',
-          'Algunos, conviene considerarlo',
-          'No es nuestro público principal'
-        ],
-        help: 'Cambia tamaños de texto, contraste y tamaño de los botones en todo el sitio.'
-      }
-    ]
-  },
-  {
-    id: 'operacion',
-    title: 'Operación, plazos y accesos',
-    subtitle: 'Lo práctico: sin esto el proyecto se traba a mitad de camino.',
-    icon: Settings,
-    fields: [
       {
         key: 'booking_system',
-        label: '¿Qué sistema de agenda usan hoy?',
-        type: 'text',
-        required: true,
-        placeholder: 'Ej: Reservo, Agendapro, Medilink, planilla Excel, agenda en papel'
-      },
-      {
-        key: 'booking_integration',
-        label: '¿La reserva online debe conectarse a ese sistema?',
+        label: '¿Cómo va a manejar la agenda?',
         type: 'radio',
+        required: true,
         options: [
-          'Sí, debe integrarse con el actual',
-          'No, basta con que el contacto llegue por correo o WhatsApp',
-          'Queremos que ustedes propongan la mejor opción',
-          'No habrá reserva online'
+          'Con un sistema de agenda (Reservo, Agendapro, Medilink u otro)',
+          'Por WhatsApp',
+          'Por teléfono con una secretaria',
+          'Con una planilla propia',
+          'Todavía no lo defino'
+        ]
+      },
+      { key: 'booking_detail', label: 'Si usa un sistema, ¿cuál?', type: 'text' },
+      { key: 'whatsapp', label: '¿Qué número va a recibir los WhatsApp de pacientes?', type: 'text' },
+      { key: 'lead_email', label: '¿A qué correo quiere que lleguen las solicitudes de hora?', type: 'text' },
+      {
+        key: 'sections',
+        label: '¿Qué quiere que tenga la web?',
+        type: 'checkbox',
+        required: true,
+        options: [
+          'Inicio',
+          'Especialidades',
+          'Quién soy / el equipo',
+          'Pedir hora',
+          'Precios y convenios',
+          'Preguntas frecuentes',
+          'Cómo llegar y estacionamiento',
+          'Contacto',
+          'Blog de salud',
+          'Trabaja con nosotros'
         ]
       },
       {
-        key: 'specialties_list',
-        label: 'Liste todas las especialidades y servicios que ofrecen',
-        type: 'textarea',
-        required: true,
-        rows: 5,
-        help: 'Una por línea. Cada una puede ser una página que capte búsquedas propias.'
-      },
-      { key: 'branches', label: 'Direcciones y horarios de cada sede', type: 'textarea', required: true, rows: 4 },
-      {
-        key: 'domain',
-        label: '¿Tienen el dominio comprado y a nombre de quién está?',
-        type: 'text',
-        required: true,
-        help: 'Si está a nombre de un tercero o de una agencia anterior, hay que resolverlo antes de publicar.'
-      },
-      { key: 'hosting', label: '¿Dónde está alojado el sitio actual? ¿Tienen los accesos?', type: 'textarea', rows: 2 },
-      {
-        key: 'sensitive_data',
-        label: '¿El sitio va a recoger datos de salud del paciente (síntomas, exámenes, diagnósticos)?',
+        key: 'style',
+        label: '¿Cómo quiere que se vea?',
         type: 'radio',
         required: true,
         options: [
-          'Sí, en la reserva o en una pre-consulta',
-          'Sí, en un área privada de pacientes',
-          'No, solo datos de contacto básicos',
-          'Aún no lo definimos'
-        ],
-        help: 'Los datos de salud son datos sensibles bajo la Ley 19.628 y exigen resguardos adicionales de almacenamiento y consentimiento.'
+          'Limpia y sobria: blanco, azul, ordenada',
+          'Cálida y cercana: fotos de personas, colores suaves',
+          'Moderna: colores fuertes, movimiento',
+          'Elegante y seria: tonos oscuros, tipografía fina'
+        ]
+      },
+      { key: 'references', label: '¿Alguna web que le guste? Pegue el link', type: 'textarea', rows: 3 },
+      { key: 'dislikes', label: '¿Algo que no quiera ver en su web?', type: 'text', placeholder: 'Ej: fotos de bancos de imágenes, imágenes de sangre' },
+      {
+        key: 'logo_status',
+        label: '¿Tiene logo?',
+        type: 'radio',
+        required: true,
+        options: ['Sí, con manual de marca', 'Sí, solo el logo', 'Lo están haciendo', 'No tengo, hay que crearlo']
+      },
+      { key: 'colors', label: '¿Colores que quiera usar?', type: 'text' },
+      {
+        key: 'domain',
+        label: '¿Ya compró el dominio (la dirección .cl)?',
+        type: 'radio',
+        required: true,
+        options: ['Sí, ya lo tengo', 'No, necesito que lo compren', 'No sé qué es eso']
+      },
+      { key: 'domain_name', label: 'Si lo tiene, ¿cuál es?', type: 'text' },
+      {
+        key: 'sensitive_data',
+        label: '¿La web va a pedirle al paciente que cuente sus síntomas o antecedentes?',
+        type: 'radio',
+        options: ['Sí, en el formulario de hora', 'No, solo nombre y teléfono', 'Aún no lo defino'],
+        help: 'Los datos de salud son datos sensibles por ley y hay que resguardarlos de otra forma. Conviene saberlo desde ahora.'
       },
       {
-        key: 'legal_docs',
-        label: '¿Qué documentos legales tienen ya redactados?',
-        type: 'checkbox',
-        options: ['Política de privacidad', 'Términos y condiciones', 'Política de cookies', 'Consentimiento informado', 'Ninguno']
+        key: 'deadline',
+        label: '¿Para cuándo la necesita?',
+        type: 'radio',
+        required: true,
+        options: ['Lo antes posible', 'Para la apertura', 'En 1 mes', 'En 2 o 3 meses', 'Sin apuro']
       },
       {
         key: 'who_updates',
-        label: '¿Quién va a actualizar el sitio después de publicado?',
+        label: '¿Quién va a actualizar la web después?',
         type: 'radio',
-        options: [
-          'Nosotros, necesitamos panel autoadministrable',
-          'Ustedes, con plan de mantención',
-          'Mixto',
-          'Aún no lo definimos'
-        ]
-      },
-      { key: 'deadline', label: '¿Para cuándo lo necesitan publicado y por qué esa fecha?', type: 'text', required: true },
-      {
-        key: 'budget_range',
-        label: 'Rango de presupuesto considerado',
-        type: 'radio',
-        options: [
-          'Menos de $500.000',
-          '$500.000 – $1.000.000',
-          '$1.000.000 – $2.500.000',
-          '$2.500.000 – $5.000.000',
-          'Más de $5.000.000',
-          'Prefieren que propongamos según alcance'
-        ]
-      },
-      {
-        key: 'maintenance_budget',
-        label: '¿Contemplan presupuesto mensual de mantención y contenidos?',
-        type: 'radio',
-        options: ['Sí', 'No', 'Depende de la propuesta']
+        options: ['Prefiero poder editarla yo', 'Prefiero que ustedes la mantengan', 'Todavía no lo pienso']
       }
     ]
   },
   {
     id: 'material',
-    title: 'Carga de material',
-    subtitle: 'Suba todo de una vez: puede seleccionar carpetas completas o arrastrar decenas de archivos.',
+    title: 'Material',
+    subtitle: 'Suba lo que tenga. Puede arrastrar muchos archivos o una carpeta completa.',
     icon: UploadCloud,
     fields: [
       { key: 'files', type: 'files' },
       {
         key: 'files_pending',
-        label: '¿Hay material que no pudo subir? Indique dónde está',
-        type: 'textarea',
-        rows: 2,
-        placeholder: 'Enlace a Drive, WeTransfer, se envía por correo…'
+        label: '¿Hay material que no pudo subir? Díganos dónde está',
+        type: 'text',
+        placeholder: 'Un link de Drive, o "lo envío por correo"'
       },
       {
         key: 'final_comments',
-        label: '¿Algo más que debamos saber antes de empezar?',
+        label: '¿Algo más que quiera decirnos?',
         type: 'textarea',
-        rows: 5,
-        help: 'El espacio para todo lo que no calzó en las preguntas anteriores.'
+        rows: 4
       }
     ]
   }
@@ -758,12 +507,7 @@ const FieldLabel = ({ field }) => (
       {field.label}
       {field.required && <span className="ml-1 text-rose-500">*</span>}
     </label>
-    {field.help && (
-      <p className="mt-1.5 flex items-start gap-1.5 text-[13px] leading-relaxed text-slate-500">
-        <Lightbulb size={13} className="mt-0.5 shrink-0 text-amber-500" />
-        <span>{field.help}</span>
-      </p>
-    )}
+    {field.help && <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">{field.help}</p>}
   </div>
 );
 
@@ -872,7 +616,7 @@ const Field = ({ field, value, onChange, error }) => {
     <div>
       <FieldLabel field={field} />
       <input
-        type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : 'text'}
+        type="text"
         className={inputClass}
         placeholder={field.placeholder || ''}
         value={value || ''}
@@ -922,7 +666,6 @@ const BulkUploader = ({ token, files, setFiles }) => {
   const [queue, setQueue] = useState([]);
   const [errors, setErrors] = useState([]);
 
-  // webkitdirectory no se puede declarar como prop de React en JSX
   useEffect(() => {
     if (folderRef.current) {
       folderRef.current.setAttribute('webkitdirectory', '');
@@ -1009,8 +752,7 @@ const BulkUploader = ({ token, files, setFiles }) => {
 
   return (
     <div>
-      {/* Selector de categoría */}
-      <p className="mb-2 text-[15px] font-semibold text-slate-800">1. ¿Qué tipo de material va a subir ahora?</p>
+      <p className="mb-2 text-[15px] font-semibold text-slate-800">1. ¿Qué va a subir ahora?</p>
       <div className="mb-6 grid gap-2 sm:grid-cols-3">
         {FILE_CATEGORIES.map((cat) => {
           const active = category === cat.id;
@@ -1052,15 +794,13 @@ const BulkUploader = ({ token, files, setFiles }) => {
         }`}
       >
         <UploadCloud size={36} className="mx-auto text-sky-500" />
-        <p className="mt-3 text-[15px] font-semibold text-slate-800">
-          Arrastre aquí todos los archivos que quiera
-        </p>
+        <p className="mt-3 text-[15px] font-semibold text-slate-800">Arrastre aquí todos los archivos que quiera</p>
         <p className="mt-1 text-[13px] text-slate-500">
-          Puede seleccionar decenas a la vez. Fotos, videos, PDF, Word, Excel. Máximo {MAX_FILE_MB} MB por archivo.
+          Puede subir muchos a la vez. Fotos, videos, PDF, Word. Máximo {MAX_FILE_MB} MB por archivo.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <span className="rounded-lg bg-sky-600 px-4 py-2 text-[13px] font-semibold text-white">
-            Seleccionar archivos
+            Buscar en mi computador
           </span>
           <button
             type="button"
@@ -1115,7 +855,6 @@ const BulkUploader = ({ token, files, setFiles }) => {
         </div>
       )}
 
-      {/* Cola de subida */}
       {queue.length > 0 && (
         <div className="mt-4 space-y-2">
           <p className="text-[13px] font-semibold text-slate-600">Subiendo {queue.length} archivo(s)…</p>
@@ -1137,7 +876,6 @@ const BulkUploader = ({ token, files, setFiles }) => {
         </div>
       )}
 
-      {/* Archivos ya cargados, agrupados por categoría */}
       {files.length > 0 && (
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
@@ -1201,25 +939,23 @@ const ClinicaBriefingForm = () => {
     return fresh;
   });
 
-  const [answers, setAnswers] = useState(() => {
-    let draft = {};
-    try {
-      draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
-    } catch {
-      draft = {};
-    }
-    // Prellenado desde la URL: lo que ya se supo en la entrevista no se vuelve a preguntar
+  // Los datos de contacto no se preguntan: llegan en el link de invitación y se
+  // guardan junto al briefing sin ocupar tiempo del médico.
+  const contact = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
-    const prefill = {
-      clinic_name: params.get('clinica'),
-      contact_name: params.get('nombre'),
-      contact_email: params.get('email'),
-      contact_phone: params.get('telefono')
+    return {
+      name: params.get('nombre') || '',
+      email: params.get('email') || '',
+      phone: params.get('telefono') || ''
     };
-    Object.entries(prefill).forEach(([k, v]) => {
-      if (v && !draft[k]) draft[k] = v;
-    });
-    return draft;
+  }, []);
+
+  const [answers, setAnswers] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+    } catch {
+      return {};
+    }
   });
 
   const [files, setFiles] = useState([]);
@@ -1269,14 +1005,8 @@ const ClinicaBriefingForm = () => {
       if (!f.required) return;
       const v = answers[f.key];
       const empty = f.type === 'checkbox' ? !Array.isArray(v) || v.length === 0 : !v || !String(v).trim();
-      if (empty) stepErrors[f.key] = 'Esta pregunta es obligatoria.';
+      if (empty) stepErrors[f.key] = 'Falta responder esta pregunta.';
     });
-    // El correo es opcional, pero si lo escriben debe ser válido
-    if (answers.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answers.contact_email)) {
-      if (step.fields.some((f) => f.key === 'contact_email')) {
-        stepErrors.contact_email = 'Ingrese un correo electrónico válido.';
-      }
-    }
     setErrors(stepErrors);
     return Object.keys(stepErrors).length === 0;
   };
@@ -1309,9 +1039,9 @@ const ClinicaBriefingForm = () => {
           token,
           form_slug: 'clinica-conectamedica',
           clinic_name: answers.clinic_name || '',
-          contact_name: answers.contact_name || '',
-          contact_email: answers.contact_email || '',
-          contact_phone: answers.contact_phone || '',
+          contact_name: contact.name,
+          contact_email: contact.email,
+          contact_phone: contact.phone,
           answers
         })
       });
@@ -1335,11 +1065,10 @@ const ClinicaBriefingForm = () => {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50">
             <Check size={30} className="text-emerald-600" strokeWidth={2.5} />
           </div>
-          <h1 className="mt-6 text-2xl font-bold text-slate-900">Briefing recibido</h1>
+          <h1 className="mt-6 text-2xl font-bold text-slate-900">Listo, recibimos todo</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-slate-600">
-            Gracias. Con esto ya tenemos el material y, más importante, entendemos el negocio de{' '}
-            <strong>{answers.clinic_name || 'su clínica'}</strong>. El próximo paso es la propuesta de estructura y
-            estrategia de contenidos.
+            Gracias por el tiempo, doctor. Con esto ya podemos proponerle la estructura de su sitio. Le escribimos en
+            los próximos días.
           </p>
           <div className="mt-6 rounded-xl bg-slate-50 px-4 py-3 text-[13px] text-slate-500">
             Código de seguimiento: <span className="font-mono font-semibold text-slate-700">{token}</span>
@@ -1362,14 +1091,17 @@ const ClinicaBriefingForm = () => {
               <Stethoscope size={22} />
             </span>
             <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-sky-600">Briefing estratégico</p>
-              <h1 className="text-lg font-bold leading-tight text-slate-900">Sitio web · Clínica Conecta Médica</h1>
+              <p className="text-[13px] font-semibold uppercase tracking-wide text-sky-600">
+                Conecta Médica · Sitio web
+              </p>
+              <h1 className="text-lg font-bold leading-tight text-slate-900">
+                {contact.name ? `Cuestionario para ${contact.name}` : 'Cuestionario para su clínica'}
+              </h1>
             </div>
           </div>
           <p className="mt-4 text-[14px] leading-relaxed text-slate-600">
-            Este cuestionario no busca definir cómo se ve el sitio, sino entender su negocio y a su paciente. Con eso
-            decidimos qué decir, en qué orden y a quién. Responda con honestidad y en las palabras que usa su equipo
-            todos los días: las respuestas incómodas suelen ser las más útiles.
+            Son 6 secciones y la mayoría se responde marcando opciones. Toma unos 10 minutos. Puede cerrar y volver
+            después: lo que responda queda guardado.
           </p>
         </div>
       </header>
@@ -1378,7 +1110,7 @@ const ClinicaBriefingForm = () => {
         <div className="mx-auto max-w-3xl px-5 py-3 sm:px-8">
           <div className="flex items-center justify-between text-[12px] font-medium text-slate-500">
             <span>
-              Paso {stepIndex + 1} de {STEPS.length} · {step.title}
+              Sección {stepIndex + 1} de {STEPS.length} · {step.title}
             </span>
             <span>{progress}%</span>
           </div>
@@ -1433,7 +1165,7 @@ const ClinicaBriefingForm = () => {
               disabled={stepIndex === 0}
               className="inline-flex items-center gap-1.5 rounded-xl px-4 py-3 text-[14px] font-semibold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronLeft size={17} /> Anterior
+              <ChevronLeft size={17} /> Atrás
             </button>
 
             {stepIndex < STEPS.length - 1 ? (
@@ -1452,14 +1184,14 @@ const ClinicaBriefingForm = () => {
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-[14px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
               >
                 {submitting ? <Loader2 size={17} className="animate-spin" /> : <Send size={16} />}
-                {submitting ? 'Enviando…' : 'Enviar briefing'}
+                {submitting ? 'Enviando…' : 'Enviar'}
               </button>
             )}
           </div>
         </div>
 
         <p className="mt-6 flex items-center justify-center gap-1.5 text-[12px] text-slate-400">
-          <Save size={13} /> Sus respuestas se guardan solas. Puede cerrar y continuar después en este mismo navegador.
+          <Save size={13} /> Se guarda solo. Puede cerrar y continuar después en este mismo navegador.
         </p>
       </main>
     </div>

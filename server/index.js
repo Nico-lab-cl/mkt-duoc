@@ -1202,11 +1202,8 @@ app.post('/api/briefing', async (req, res) => {
   if (!token) {
     return res.status(400).json({ success: false, error: 'Token de formulario requerido' });
   }
-  // El nombre y correo del contacto suelen venir de la entrevista previa, por eso
-  // no bloquean el envío. Lo que identifica al briefing es el nombre de la clínica.
-  if (!clinic_name || !String(clinic_name).trim()) {
-    return res.status(400).json({ success: false, error: 'El nombre de la clínica es obligatorio' });
-  }
+  // Nada más que el token es obligatorio: los datos de contacto vienen de la
+  // entrevista previa y una clínica recién abierta puede no tener nombre todavía.
 
   try {
     const result = await pool.query(
@@ -1224,7 +1221,7 @@ app.post('/api/briefing', async (req, res) => {
       [
         token,
         form_slug || 'clinica-conectamedica',
-        clinic_name,
+        clinic_name || null,
         contact_name || null,
         contact_email ? String(contact_email).trim().toLowerCase() : null,
         contact_phone || null,
