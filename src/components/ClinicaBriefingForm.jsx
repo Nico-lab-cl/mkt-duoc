@@ -1592,4 +1592,18 @@ const ClinicaBriefingForm = () => {
   );
 };
 
+/**
+ * Estructura del cuestionario sin iconos ni componentes, para que el panel de
+ * administración muestre la pregunta completa en lugar de la clave técnica.
+ */
+export const BRIEFING_SECTIONS = STEPS.map((s) => ({
+  id: s.id,
+  title: s.title,
+  fields: s.fields
+    .filter((f) => f.type !== 'files' && f.type !== 'upload')
+    .map((f) => ({ key: f.key, label: f.label, type: f.type }))
+}));
+
+export { FILE_CATEGORIES, PALETTES };
+
 export default ClinicaBriefingForm;

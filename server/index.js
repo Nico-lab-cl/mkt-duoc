@@ -1096,6 +1096,27 @@ app.get('/api/qr/stats/:id', async (req, res) => {
 
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB por archivo
 
+// Los briefings contienen material privado del cliente (fotos del local, del
+// equipo, títulos, aranceles), así que leerlos exige ser administrador.
+// El id del usuario llega por cabecera, o por query en las descargas directas,
+// donde el navegador no puede enviar cabeceras (<img src>, target="_blank").
+const requireAdmin = async (req, res, next) => {
+  const userId = req.headers['x-user-id'] || req.query.uid;
+  if (!userId) {
+    return res.status(401).json({ error: 'Se requiere iniciar sesión como administrador' });
+  }
+  try {
+    const result = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+    if (result.rows.length === 0 || result.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: 'No tiene permisos para ver esta información' });
+    }
+    next();
+  } catch (err) {
+    console.error('Error verificando permisos de administrador:', err);
+    res.status(500).json({ error: 'Error al verificar permisos' });
+  }
+};
+
 // Subir un archivo (foto, video, documento). Llega en base64 dentro del JSON.
 app.post('/api/briefing-files', async (req, res) => {
   const { token, file_name, mime_type, file_size, data_base64, category } = req.body;
@@ -1175,7 +1196,7 @@ app.delete('/api/briefing-files/:id', async (req, res) => {
 });
 
 // Descargar / visualizar un archivo guardado
-app.get('/api/briefing-files/:id/download', async (req, res) => {
+app.get('/api/briefing-files/:id/download', requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -1245,7 +1266,7 @@ app.post('/api/briefing', async (req, res) => {
 });
 
 // Listado de briefings recibidos (sin el contenido binario de los archivos)
-app.get('/api/admin/briefings', async (req, res) => {
+app.get('/api/admin/briefings', requireAdmin, async (req, res) => {
   const { slug } = req.query;
   try {
     const params = [];
@@ -1272,7 +1293,7 @@ app.get('/api/admin/briefings', async (req, res) => {
 });
 
 // Detalle de un briefing con la metadata de sus archivos
-app.get('/api/admin/briefings/:id', async (req, res) => {
+app.get('/api/admin/briefings/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     const briefing = await pool.query('SELECT * FROM briefings WHERE id = $1', [id]);
@@ -1288,6 +1309,24 @@ app.get('/api/admin/briefings/:id', async (req, res) => {
   } catch (err) {
     console.error('Error al obtener briefing:', err);
     res.status(500).json({ error: 'Error al obtener el formulario' });
+  }
+});
+
+// Eliminar un briefing con todos sus archivos
+app.delete('/api/admin/briefings/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const briefing = await pool.query('SELECT token FROM briefings WHERE id = $1', [id]);
+    if (briefing.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Formulario no encontrado' });
+    }
+    // Los archivos subidos antes de enviar quedan enlazados solo por token
+    await pool.query('DELETE FROM briefing_files WHERE briefing_token = $1', [briefing.rows[0].token]);
+    await pool.query('DELETE FROM briefings WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Formulario eliminado' });
+  } catch (err) {
+    console.error('Error al eliminar briefing:', err);
+    res.status(500).json({ success: false, error: 'Error al eliminar el formulario' });
   }
 });
 

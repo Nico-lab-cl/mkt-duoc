@@ -30,12 +30,14 @@ import {
   Lock,
   Trash2,
   QrCode,
-  Gift
+  Gift,
+  ClipboardList
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
 import QRManager from './QRManager';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import BriefingsAdmin from './BriefingsAdmin';
 
 
 const platforms = [
@@ -345,6 +347,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mt-8 mb-4">Administración</p>
               <SidebarItem icon={Monitor} label="Proyectos en Vivo" view="admin" badge="LIVE" />
               <SidebarItem icon={Users} label="Gestión de Grupos" view="groups" />
+              <SidebarItem icon={ClipboardList} label="Briefings de Clientes" view="briefings" />
             </>
           )}
 
@@ -381,6 +384,7 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
              {activeView === 'groups' && 'Gestión de Equipos y Usuarios'}
              {activeView === 'config' && 'Ajustes de Perfil'}
              {activeView === 'qr' && 'Generador & Métricas de Códigos QR'}
+             {activeView === 'briefings' && 'Briefings Recibidos de Clientes'}
            </h2>
            
            <div className="flex items-center gap-4">
@@ -659,6 +663,12 @@ const Dashboard = ({ onSelectPlatform, onChangeGroup }) => {
           {activeView === 'groups' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                <GroupsManagement />
+            </motion.div>
+          )}
+
+          {activeView === 'briefings' && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+               <BriefingsAdmin />
             </motion.div>
           )}
 
