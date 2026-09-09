@@ -20,7 +20,7 @@ import {
   Check
 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
-import { BRIEFING_SECTIONS, FILE_CATEGORIES, PALETTES } from './ClinicaBriefingForm';
+import { BRIEFING_FORMS, formOf } from './briefing/registry';
 
 /**
  * Panel para revisar los briefings que envían los clientes desde
@@ -54,7 +54,7 @@ const fileIcon = (mime = '') => {
 
 const isImage = (mime = '') => mime.startsWith('image/');
 
-const categoryLabel = (id) => FILE_CATEGORIES.find((c) => c.id === id)?.label || 'Otros';
+const categoryLabel = (form, id) => form.fileCategories.find((c) => c.id === id)?.label || 'Otros';
 
 // Convierte cualquier respuesta a texto legible
 const renderValue = (value) => {
@@ -140,16 +140,17 @@ const BriefingsAdmin = () => {
   // Descarga las respuestas como texto plano para pegarlas en una propuesta
   const exportText = () => {
     if (!detail) return;
+    const form = formOf(detail.briefing.form_slug);
     const a = detail.briefing.answers || {};
     const lines = [
-      `BRIEFING — ${detail.briefing.clinic_name || 'Sin nombre'}`,
+      `BRIEFING ${form.label.toUpperCase()} — ${detail.briefing.clinic_name || 'Sin nombre'}`,
       `Contacto: ${detail.briefing.contact_name || '—'} · ${detail.briefing.contact_email || '—'} · ${
         detail.briefing.contact_phone || '—'
       }`,
       `Recibido: ${formatDate(detail.briefing.created_at)}`,
       ''
     ];
-    BRIEFING_SECTIONS.forEach((section) => {
+    form.sections.forEach((section) => {
       const answered = section.fields.filter((f) => renderValue(a[f.key]));
       if (answered.length === 0) return;
       lines.push(`\n== ${section.title.toUpperCase()} ==\n`);
@@ -162,14 +163,18 @@ const BriefingsAdmin = () => {
     });
     if (detail.files.length) {
       lines.push('\n== ARCHIVOS ADJUNTOS ==\n');
-      detail.files.forEach((f) => lines.push(`  - [${categoryLabel(f.category)}] ${f.file_name} (${formatBytes(f.file_size)})`));
+      detail.files.forEach((f) =>
+        lines.push(`  - [${categoryLabel(form, f.category)}] ${f.file_name} (${formatBytes(f.file_size)})`)
+      );
     }
 
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `briefing-${(detail.briefing.clinic_name || 'cliente').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`;
+    link.download = `briefing-${form.slug}-${(detail.briefing.clinic_name || 'cliente')
+      .replace(/[^a-z0-9]/gi, '-')
+      .toLowerCase()}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -184,6 +189,7 @@ const BriefingsAdmin = () => {
   }
 
   const answers = detail?.briefing?.answers || {};
+  const detailForm = formOf(detail?.briefing?.form_slug);
   const filesByCategory = (detail?.files || []).reduce((acc, f) => {
     const cat = f.category || 'otros';
     (acc[cat] = acc[cat] || []).push(f);
@@ -227,7 +233,7 @@ const BriefingsAdmin = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por clínica, contacto o código"
+              placeholder="Buscar por cliente, contacto o código"
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-[13px] outline-none transition focus:border-sky-400 focus:bg-white"
             />
           </div>
@@ -243,20 +249,26 @@ const BriefingsAdmin = () => {
                 {list.length === 0 ? 'Todavía no llega ningún formulario' : 'Sin resultados para esa búsqueda'}
               </p>
               {list.length === 0 && (
-                <a
-                  href="/formulario-clinica-conectamedica"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 hover:underline"
-                >
-                  Ver el formulario <ExternalLink size={12} />
-                </a>
+                <div className="mt-4 flex flex-col items-center gap-1.5">
+                  {Object.values(BRIEFING_FORMS).map((form) => (
+                    <a
+                      key={form.slug}
+                      href={form.publicPath}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 hover:underline"
+                    >
+                      Ver el formulario de {form.label} <ExternalLink size={12} />
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           ) : (
             <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
               {filtered.map((b) => {
                 const active = selectedId === b.id;
+                const rowForm = formOf(b.form_slug);
                 return (
                   <button
                     key={b.id}
@@ -269,11 +281,14 @@ const BriefingsAdmin = () => {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="truncate text-[14px] font-bold text-slate-800">
-                        {b.clinic_name || 'Clínica sin nombre'}
+                        {b.clinic_name || rowForm.fallbackName}
                       </p>
                       <ChevronRight size={15} className={active ? 'text-sky-500' : 'text-slate-300'} />
                     </div>
                     <p className="mt-0.5 truncate text-[12px] text-slate-500">{b.contact_name || 'Sin contacto'}</p>
+                    <span className="mt-1.5 inline-block rounded-md bg-slate-200/70 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
+                      {rowForm.label}
+                    </span>
                     <div className="mt-2 flex items-center gap-3 text-[11px] font-semibold text-slate-400">
                       <span className="flex items-center gap-1">
                         <Calendar size={11} /> {formatDate(b.created_at).split(',')[0]}
@@ -309,8 +324,11 @@ const BriefingsAdmin = () => {
               {/* Encabezado */}
               <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-6">
                 <div>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {detailForm.label}
+                  </p>
                   <h2 className="text-2xl font-black tracking-tight text-slate-900">
-                    {detail.briefing.clinic_name || 'Clínica sin nombre'}
+                    {detail.briefing.clinic_name || detailForm.fallbackName}
                   </h2>
                   <div className="mt-2 flex flex-wrap items-center gap-4 text-[13px] text-slate-500">
                     {detail.briefing.contact_name && <span className="font-bold">{detail.briefing.contact_name}</span>}
@@ -369,7 +387,7 @@ const BriefingsAdmin = () => {
 
               {/* Respuestas por sección */}
               <div className="space-y-10">
-                {BRIEFING_SECTIONS.map((section) => {
+                {detailForm.sections.map((section) => {
                   const answered = section.fields.filter((f) => renderValue(answers[f.key]));
                   if (answered.length === 0) return null;
                   return (
@@ -380,7 +398,8 @@ const BriefingsAdmin = () => {
                       <div className="space-y-5">
                         {answered.map((f) => {
                           const value = answers[f.key];
-                          const palette = f.type === 'palette' ? PALETTES.find((p) => p.name === value) : null;
+                          const palette =
+                            f.type === 'palette' ? detailForm.palettes.find((p) => p.name === value) : null;
                           return (
                             <div key={f.key}>
                               <p className="text-[12.5px] font-bold text-slate-400">{f.label}</p>
@@ -427,7 +446,7 @@ const BriefingsAdmin = () => {
                       Material adjunto ({detail.files.length})
                     </h3>
                     <div className="space-y-6">
-                      {FILE_CATEGORIES.filter((c) => filesByCategory[c.id]?.length).map((cat) => (
+                      {detailForm.fileCategories.filter((c) => filesByCategory[c.id]?.length).map((cat) => (
                         <div key={cat.id}>
                           <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
                             {cat.label} · {filesByCategory[cat.id].length}

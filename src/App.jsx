@@ -13,6 +13,7 @@ import N8NModule from './components/N8NModule';
 import PagePublicView from './components/PageBuilder/PagePublicView';
 import VocationalFairLanding from './components/VocationalFairLanding';
 import ClinicaBriefingForm from './components/ClinicaBriefingForm';
+import CandidataBriefingForm from './components/CandidataBriefingForm';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser, logActivity } = useProject();
@@ -23,10 +24,13 @@ const AppContent = () => {
   const publicPageId = isPublicPage ? path.split('/p/')[1] : null;
   const isIdentidadPage = path.startsWith('/identidad') || path.startsWith('/registro') || path.startsWith('/martech');
   const isClinicaForm = path.startsWith('/formulario-clinica-conectamedica');
+  const isCandidataForm = path.startsWith('/formulario-campana-stephany-valdez');
 
   const [view, setView] = useState(
     isClinicaForm
       ? 'clinica-briefing'
+      : isCandidataForm
+      ? 'candidata-briefing'
       : isPublicPage
         ? 'public-view'
         : isIdentidadPage
@@ -37,8 +41,8 @@ const AppContent = () => {
 
   // Determinar la vista inicial o transiciones automáticas
   useEffect(() => {
-    // El formulario público de briefing nunca debe redirigir, aunque haya sesión iniciada
-    if (view === 'clinica-briefing') return;
+    // Los formularios públicos de briefing nunca deben redirigir, aunque haya sesión iniciada
+    if (view === 'clinica-briefing' || view === 'candidata-briefing') return;
 
     if (currentUser) {
       if (currentUser.role === 'guest') {
@@ -139,6 +143,10 @@ const AppContent = () => {
 
       {view === 'clinica-briefing' && (
         <ClinicaBriefingForm />
+      )}
+
+      {view === 'candidata-briefing' && (
+        <CandidataBriefingForm />
       )}
 
       {view === 'success' && (
