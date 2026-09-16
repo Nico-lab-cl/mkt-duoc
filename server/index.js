@@ -158,6 +158,12 @@ pool.connect(async (err, client, release) => {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='must_change_password') THEN
           ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='career_year') THEN
+          ALTER TABLE users ADD COLUMN career_year TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='campus') THEN
+          ALTER TABLE users ADD COLUMN campus TEXT;
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='qr_codes' AND column_name='color') THEN
           ALTER TABLE qr_codes ADD COLUMN color TEXT DEFAULT '#0f172a';
         END IF;
@@ -700,7 +706,7 @@ app.get('/api/admin/all', async (req, res) => {
 app.get('/api/admin/users', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT u.id, u.email, u.full_name, u.role, u.group_id, g.name as group_name 
+      SELECT u.id, u.email, u.full_name, u.role, u.group_id, u.career_year, u.campus, u.must_change_password, g.name as group_name 
       FROM users u
       LEFT JOIN groups g ON u.group_id = g.id
       ORDER BY u.id ASC
@@ -713,11 +719,11 @@ app.get('/api/admin/users', async (req, res) => {
 
 app.put('/api/admin/users/:id', async (req, res) => {
   const { id } = req.params;
-  const { full_name, email, role, group_id } = req.body;
+  const { full_name, email, role, group_id, career_year, campus } = req.body;
   try {
     const result = await pool.query(
-      'UPDATE users SET full_name = $1, email = $2, role = $3, group_id = $4 WHERE id = $5 RETURNING *',
-      [full_name, email, role, group_id, id]
+      'UPDATE users SET full_name = $1, email = $2, role = $3, group_id = $4, career_year = $5, campus = $6 WHERE id = $7 RETURNING *',
+      [full_name, email ? email.trim().toLowerCase() : '', role, group_id || null, career_year || null, campus || null, id]
     );
     res.json({ success: true, user: result.rows[0] });
   } catch (err) {
@@ -727,16 +733,121 @@ app.put('/api/admin/users/:id', async (req, res) => {
 });
 
 app.post('/api/admin/users', async (req, res) => {
-  const { full_name, email, password, role, group_id } = req.body;
+  const { full_name, email, password, role = 'student', group_id, career_year, campus, send_email = true } = req.body;
+  if (!full_name || !email) {
+    return res.status(400).json({ success: false, error: 'Nombre completo y correo son obligatorios' });
+  }
+
+  const emailNormalized = email.trim().toLowerCase();
+  // Generar contraseña temporal segura de 6 caracteres alfanuméricos si no se especifica
+  const tmpPassword = (password && password.trim()) ? password.trim() : Math.random().toString(36).substring(2, 8).toUpperCase();
+
   try {
-    const result = await pool.query(
-      'INSERT INTO users (full_name, email, password, role, group_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [full_name, email, password || 'duoc2024', role || 'student', group_id || null]
-    );
-    res.json({ success: true, user: result.rows[0] });
+    // Verificar si ya existe
+    const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [emailNormalized]);
+    let result;
+    
+    if (existing.rows.length > 0) {
+      // Actualizar usuario existente con nueva clave temporal y flags
+      result = await pool.query(
+        `UPDATE users 
+         SET full_name = $1, password = $2, role = $3, group_id = $4, career_year = $5, campus = $6, must_change_password = TRUE 
+         WHERE LOWER(email) = $7 
+         RETURNING id, email, full_name, role, group_id, career_year, campus, must_change_password`,
+        [full_name.trim(), tmpPassword, role, group_id || null, career_year || null, campus || null, emailNormalized]
+      );
+    } else {
+      // Insertar nuevo usuario con must_change_password = TRUE
+      result = await pool.query(
+        `INSERT INTO users (full_name, email, password, role, group_id, career_year, campus, must_change_password) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE) 
+         RETURNING id, email, full_name, role, group_id, career_year, campus, must_change_password`,
+        [full_name.trim(), emailNormalized, tmpPassword, role, group_id || null, career_year || null, campus || null]
+      );
+    }
+
+    // Disparar Webhook a n8n para enviar correo con credenciales de bienvenida
+    let emailSent = false;
+    if (send_email) {
+      try {
+        console.log(`Disparando webhook de bienvenida a n8n para ${emailNormalized}...`);
+        const webhookRes = await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'new_student_welcome',
+            email: emailNormalized,
+            new_password: tmpPassword,
+            Correo: emailNormalized,
+            "Contraseña temporal": tmpPassword,
+            Nombre: full_name.trim(),
+            first_name: full_name.trim().split(' ')[0],
+            last_name: full_name.trim().split(' ').slice(1).join(' ') || '',
+            career_year: career_year || '',
+            "Año de carrera": career_year || '',
+            campus: campus || '',
+            "Sede": campus || '',
+            login_url: 'https://softwarespectra.cl'
+          })
+        });
+        emailSent = webhookRes.ok;
+      } catch (webhookErr) {
+        console.error('Error enviando webhook n8n:', webhookErr.message);
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      user: result.rows[0], 
+      tmpPassword, 
+      emailSent,
+      message: `Alumno ${full_name} registrado exitosamente con clave temporal: ${tmpPassword}` 
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al crear usuario' });
+    console.error('Error al crear usuario:', err);
+    res.status(500).json({ success: false, error: 'Error al registrar usuario: ' + err.message });
+  }
+});
+
+// Reenviar credenciales y contraseña temporal
+app.post('/api/admin/users/:id/resend-credentials', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+    }
+
+    const user = userRes.rows[0];
+    const tmpPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    await pool.query('UPDATE users SET password = $1, must_change_password = TRUE WHERE id = $2', [tmpPassword, id]);
+
+    try {
+      await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'student_resend_password',
+          email: user.email,
+          new_password: tmpPassword,
+          Correo: user.email,
+          "Contraseña temporal": tmpPassword,
+          Nombre: user.full_name,
+          first_name: user.full_name ? user.full_name.split(' ')[0] : '',
+          last_name: user.full_name ? user.full_name.split(' ').slice(1).join(' ') : '',
+          career_year: user.career_year || '',
+          campus: user.campus || '',
+          login_url: 'https://softwarespectra.cl'
+        })
+      });
+    } catch (e) {
+      console.error('Error enviando webhook:', e);
+    }
+
+    res.json({ success: true, tmpPassword, message: `Nueva clave temporal ${tmpPassword} enviada a ${user.email}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al reenviar credenciales' });
   }
 });
 
