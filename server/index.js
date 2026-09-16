@@ -170,15 +170,38 @@ pool.connect(async (err, client, release) => {
         END IF;
       END $$;
     `);
-    try {
-      await client.query(`
-        INSERT INTO groups (id, name) VALUES (999, 'Invitados') 
-        ON CONFLICT (id) DO NOTHING
-      `);
-    } catch (groupErr) {
-      console.log('⚠️ Error insertando grupo 999 (puede no existir la tabla groups):', groupErr.message);
-    }
-    console.log('🚀 Tablas de base de datos verificadas/creadas');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS groups (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        year TEXT DEFAULT '3er Año',
+        is_locked BOOLEAN DEFAULT FALSE
+      );
+      ALTER TABLE groups ADD COLUMN IF NOT EXISTS year TEXT DEFAULT '3er Año';
+      ALTER TABLE groups ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;
+
+      -- Grupos de 4to Año (Bloqueados / Completos)
+      INSERT INTO groups (id, name, year, is_locked) VALUES 
+        (1, 'Grupo 1 (4° Año)', '4to Año', true),
+        (2, 'Grupo 2 (4° Año)', '4to Año', true),
+        (3, 'Grupo 3 (4° Año)', '4to Año', true)
+      ON CONFLICT (id) DO UPDATE SET 
+        name = EXCLUDED.name, 
+        year = EXCLUDED.year, 
+        is_locked = EXCLUDED.is_locked;
+
+      -- Grupos de 3er Año (Disponibles para selección)
+      INSERT INTO groups (id, name, year, is_locked) VALUES 
+        (4, 'Grupo 1 (3° Año)', '3er Año', false),
+        (5, 'Grupo 2 (3° Año)', '3er Año', false),
+        (6, 'Grupo 3 (3° Año)', '3er Año', false),
+        (999, 'Invitados', 'General', false)
+      ON CONFLICT (id) DO UPDATE SET 
+        name = EXCLUDED.name, 
+        year = EXCLUDED.year, 
+        is_locked = EXCLUDED.is_locked;
+    `);
+    console.log('🚀 Tablas de base de datos y grupos de 3° y 4° año verificados/creados');
   } catch (dbErr) {
     console.error('❌ Error inicializando tablas:', dbErr);
   } finally {
@@ -193,7 +216,7 @@ app.post('/api/login', async (req, res) => {
   const emailNormalized = email ? email.trim().toLowerCase() : '';
   try {
     const result = await pool.query(
-      'SELECT id, email, full_name, role, group_id, must_change_password FROM users WHERE LOWER(email) = $1 AND password = $2',
+      'SELECT id, email, full_name, role, group_id, career_year, campus, must_change_password FROM users WHERE LOWER(email) = $1 AND password = $2',
       [emailNormalized, password]
     );
 
@@ -339,7 +362,7 @@ app.post('/api/recover-password', async (req, res) => {
 
 app.get('/api/groups', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM groups');
+    const result = await pool.query('SELECT * FROM groups ORDER BY id ASC');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener grupos' });
@@ -349,8 +372,19 @@ app.get('/api/groups', async (req, res) => {
 app.post('/api/select-group', async (req, res) => {
   const { userId, groupId } = req.body;
   try {
+    const groupCheck = await pool.query('SELECT * FROM groups WHERE id = $1', [groupId]);
+    if (groupCheck.rows.length > 0 && groupCheck.rows[0].is_locked) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Este grupo corresponde a 4° Año y se encuentra completo y cerrado. Por favor selecciona un grupo de 3° Año.' 
+      });
+    }
+
     await pool.query('UPDATE users SET group_id = $1 WHERE id = $2', [groupId, userId]);
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    const userResult = await pool.query(
+      'SELECT id, email, full_name, role, group_id, career_year, campus, must_change_password FROM users WHERE id = $1', 
+      [userId]
+    );
     res.json({ success: true, user: userResult.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar grupo' });
