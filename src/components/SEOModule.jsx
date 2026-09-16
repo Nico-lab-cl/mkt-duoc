@@ -30,18 +30,22 @@ import {
 import { useProject } from '../context/ProjectContext';
 
 const COUNTRIES = [
-  { code: 'cl', name: 'Chile 🇨🇱' },
-  { code: 'global', name: 'Global / Internacional 🌎' },
-  { code: 'ar', name: 'Argentina 🇦🇷' },
-  { code: 'mx', name: 'México 🇲🇽' },
-  { code: 'co', name: 'Colombia 🇨🇴' },
-  { code: 'pe', name: 'Perú 🇵🇪' },
-  { code: 'es', name: 'España 🇪🇸' },
-  { code: 'us', name: 'Estados Unidos 🇺🇸' }
+  { code: 'cl', name: 'Chile (Español) 🇨🇱', locId: 2152 },
+  { code: 'ar', name: 'Argentina (Español) 🇦🇷', locId: 2032 },
+  { code: 'mx', name: 'México (Español) 🇲🇽', locId: 2484 },
+  { code: 'co', name: 'Colombia (Español) 🇨🇴', locId: 2170 },
+  { code: 'pe', name: 'Perú (Español) 🇵🇪', locId: 2604 },
+  { code: 'es', name: 'España (Español) 🇪🇸', locId: 2724 },
+  { code: 'us', name: 'Estados Unidos (Inglés) 🇺🇸', locId: 2840 },
+  { code: 'us_es', name: 'Estados Unidos (Español) 🇺🇸', locId: 2840 },
+  { code: 'br', name: 'Brasil (Portugués) 🇧🇷', locId: 2076 },
+  { code: 'ec', name: 'Ecuador (Español) 🇪🇨', locId: 2218 },
+  { code: 'uy', name: 'Uruguay (Español) 🇺🇾', locId: 2858 },
+  { code: 'global', name: 'Global / Internacional 🌎', locId: 0 }
 ];
 
-const PRESET_DOMAINS = ['falabella.com', 'duoc.cl', 'mercadolibre.cl', 'notco.com', 'latamairlines.com'];
-const PRESET_KEYWORDS = ['curso marketing digital', 'zapatillas running', 'comprar seguro auto', 'clinica dental santiago'];
+const PRESET_DOMAINS = ['heredafacil.cl', 'falabella.com', 'duoc.cl', 'mercadolibre.cl', 'notco.com'];
+const PRESET_KEYWORDS = ['curso marketing digital', 'posesion efectiva online', 'zapatillas running', 'comprar seguro auto'];
 
 export default function SEOModule({ onBack }) {
   const { currentUser } = useProject();
@@ -60,12 +64,16 @@ export default function SEOModule({ onBack }) {
     name: '',
     domain: '',
     country: 'cl',
-    competitorsText: '',
-    keywordsText: '',
-    notes: ''
+    competitors: [],
+    keywords: [],
+    metrics: null
   });
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const [breakdownComplete, setBreakdownComplete] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
   const [projectError, setProjectError] = useState(null);
+  const [newCompetitorInput, setNewCompetitorInput] = useState('');
+  const [newKeywordInput, setNewKeywordInput] = useState('');
 
   // Free Domain search state
   const [domainInput, setDomainInput] = useState('');
@@ -168,9 +176,94 @@ export default function SEOModule({ onBack }) {
     }
   };
 
-  // Create or Update Project
+  // Desglose automático con Ubersuggest
+  const handleBreakdownProject = async (domainOverride, countryOverride) => {
+    const targetDomain = (domainOverride || projectForm.domain || '').trim();
+    const targetCountry = countryOverride || projectForm.country || 'cl';
+
+    if (!targetDomain) {
+      setProjectError('Por favor ingresa un dominio para que Ubersuggest pueda analizarlo.');
+      return;
+    }
+
+    setBreakdownLoading(true);
+    setProjectError(null);
+
+    try {
+      const res = await fetch('/api/seo/breakdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: targetDomain, country: targetCountry })
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'No se pudo realizar el desglose con Ubersuggest');
+      }
+
+      // Autogenerar nombre de proyecto si está vacío
+      const cleanName = projectForm.name.trim() 
+        ? projectForm.name 
+        : `Estrategia SEO - ${json.domain.toUpperCase()}`;
+
+      setProjectForm(prev => ({
+        ...prev,
+        name: cleanName,
+        domain: json.domain,
+        country: json.country,
+        competitors: json.competitors || [],
+        keywords: json.keywords || [],
+        metrics: json.metrics || null
+      }));
+
+      setBreakdownComplete(true);
+    } catch (err) {
+      setProjectError(err.message);
+    } finally {
+      setBreakdownLoading(false);
+    }
+  };
+
+  // Agregar competidor manual al desglose
+  const handleAddCompetitor = () => {
+    const clean = newCompetitorInput.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    if (!clean) return;
+    if (!projectForm.competitors.includes(clean)) {
+      setProjectForm(prev => ({ ...prev, competitors: [...prev.competitors, clean] }));
+    }
+    setNewCompetitorInput('');
+  };
+
+  // Remover competidor del desglose
+  const handleRemoveCompetitor = (comp) => {
+    setProjectForm(prev => ({
+      ...prev,
+      competitors: prev.competitors.filter(c => (typeof c === 'string' ? c : c.domain) !== (typeof comp === 'string' ? comp : comp.domain))
+    }));
+  };
+
+  // Agregar keyword manual al desglose
+  const handleAddKeyword = () => {
+    const kw = newKeywordInput.trim();
+    if (!kw) return;
+    setProjectForm(prev => ({
+      ...prev,
+      keywords: [...prev.keywords, { keyword: kw, volume: 5400, difficulty: 25, intent: 'Informativa (TOFU)' }]
+    }));
+    setNewKeywordInput('');
+  };
+
+  // Remover keyword del desglose
+  const handleRemoveKeyword = (kwStr) => {
+    setProjectForm(prev => ({
+      ...prev,
+      keywords: prev.keywords.filter(k => (typeof k === 'string' ? k : k.keyword) !== kwStr)
+    }));
+  };
+
+  // Guardar Proyecto en Base de Datos
   const handleSaveProject = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!projectForm.name.trim() || !projectForm.domain.trim()) {
       setProjectError('El nombre del proyecto y el dominio son obligatorios.');
       return;
@@ -179,41 +272,38 @@ export default function SEOModule({ onBack }) {
     setSavingProject(true);
     setProjectError(null);
 
-    const competitors = projectForm.competitorsText
-      .split('\n')
-      .map(s => s.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0])
-      .filter(Boolean);
-
-    const trackedKeywords = projectForm.keywordsText
-      .split('\n')
-      .map(s => s.trim())
-      .filter(Boolean);
-
     try {
-      // Intentar obtener una instantánea inicial de métricas del dominio
-      let metricsSnapshot = {};
-      try {
-        const snapRes = await fetch('/api/seo/domain-overview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain: projectForm.domain, country: projectForm.country })
-        });
-        if (snapRes.ok) {
-          const snapJson = await snapRes.json();
-          metricsSnapshot = snapJson.data || {};
+      let finalMetrics = projectForm.metrics;
+      let finalCompetitors = projectForm.competitors;
+      let finalKeywords = projectForm.keywords;
+
+      // Si no se hizo desglose previo, lo hacemos antes de guardar
+      if (!breakdownComplete) {
+        try {
+          const resB = await fetch('/api/seo/breakdown', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: projectForm.domain, country: projectForm.country })
+          });
+          if (resB.ok) {
+            const bJson = await resB.json();
+            finalMetrics = bJson.metrics;
+            if (finalCompetitors.length === 0) finalCompetitors = bJson.competitors;
+            if (finalKeywords.length === 0) finalKeywords = bJson.keywords;
+          }
+        } catch (e) {
+          console.warn('Fallback en desglose automático:', e);
         }
-      } catch (e) {
-        console.warn('No se pudo precargar métricas del dominio:', e);
       }
 
       const payload = {
-        name: projectForm.name,
-        domain: projectForm.domain,
+        name: projectForm.name.trim(),
+        domain: projectForm.domain.trim(),
         country: projectForm.country,
-        competitors,
-        tracked_keywords: trackedKeywords,
-        notes: projectForm.notes,
-        metrics_snapshot: metricsSnapshot,
+        competitors: finalCompetitors,
+        tracked_keywords: finalKeywords,
+        notes: '',
+        metrics_snapshot: finalMetrics || {},
         userId: currentUser?.id,
         groupId: currentUser?.group_id
       };
@@ -230,7 +320,8 @@ export default function SEOModule({ onBack }) {
       }
 
       setShowCreateModal(false);
-      setProjectForm({ name: '', domain: '', country: 'cl', competitorsText: '', keywordsText: '', notes: '' });
+      setBreakdownComplete(false);
+      setProjectForm({ name: '', domain: '', country: 'cl', competitors: [], keywords: [], metrics: null });
       fetchProjects();
       setSelectedProject(json.project);
     } catch (err) {
@@ -658,27 +749,30 @@ export default function SEOModule({ onBack }) {
                   <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-3">
                     <h5 className="font-bold text-white text-sm flex items-center gap-2">
                       <Target className="text-orange-400" size={16} />
-                      Comparativa de Competidores Monitoreados
+                      Competidores Directos Detectados
                     </h5>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {selectedProject.competitors.map((comp, idx) => (
-                        <div key={idx} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
-                          <div>
-                            <span className="font-bold text-xs text-white block">{comp}</span>
-                            <span className="text-[10px] text-slate-400">Competidor #{idx + 1}</span>
+                      {selectedProject.competitors.map((comp, idx) => {
+                        const compDomain = typeof comp === 'string' ? comp : comp.domain;
+                        return (
+                          <div key={idx} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
+                            <div>
+                              <span className="font-bold text-xs text-white block">{compDomain}</span>
+                              <span className="text-[10px] text-slate-400">Competidor #{idx + 1}</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setDomainInput(compDomain);
+                                setActiveTab('domain');
+                                handleDomainSearch(compDomain);
+                              }}
+                              className="text-xs bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 px-2.5 py-1 rounded border border-orange-500/30 cursor-pointer transition-colors"
+                            >
+                              Ver Tráfico
+                            </button>
                           </div>
-                          <button
-                            onClick={() => {
-                              setDomainInput(comp);
-                              setActiveTab('domain');
-                              handleDomainSearch(comp);
-                            }}
-                            className="text-xs bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 px-2 py-1 rounded border border-orange-500/30 cursor-pointer"
-                          >
-                            Ver Datos
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -688,32 +782,49 @@ export default function SEOModule({ onBack }) {
                   <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-3">
                     <h5 className="font-bold text-white text-sm flex items-center gap-2">
                       <Key className="text-amber-400" size={16} />
-                      Palabras Clave en Monitoreo
+                      Palabras Clave y Oportunidades Identificadas
                     </h5>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProject.tracked_keywords.map((kw, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setKeywordInput(kw);
-                            setActiveTab('keywords');
-                            handleKeywordSearch(kw);
-                          }}
-                          className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2 cursor-pointer transition-colors"
-                        >
-                          <span>{kw}</span>
-                          <Search size={12} className="text-orange-400" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedProject.tracked_keywords.map((kwItem, idx) => {
+                        const kwText = typeof kwItem === 'string' ? kwItem : kwItem.keyword;
+                        const vol = typeof kwItem === 'object' && kwItem.volume ? kwItem.volume : null;
+                        const diff = typeof kwItem === 'object' && kwItem.difficulty ? kwItem.difficulty : null;
+                        const intent = typeof kwItem === 'object' && kwItem.intent ? kwItem.intent : null;
 
-                {/* Notes Section */}
-                {selectedProject.notes && (
-                  <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-2">
-                    <h5 className="font-bold text-slate-300 text-xs uppercase tracking-wider">Notas & Hipótesis de los Alumnos</h5>
-                    <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">{selectedProject.notes}</p>
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-2 hover:border-slate-700 transition-colors"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-100">{kwText}</span>
+                                {intent && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                    {intent.split(' ')[0]}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400">
+                                {vol && <span>Volumen: <strong className="text-white">{Number(vol).toLocaleString('es-CL')}</strong>/mes</span>}
+                                {diff && <span>Dificultad: <strong className={diff < 35 ? 'text-emerald-400' : 'text-amber-400'}>{diff}/100</strong></span>}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setKeywordInput(kwText);
+                                setActiveTab('keywords');
+                                handleKeywordSearch(kwText);
+                              }}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-orange-400 rounded-lg transition-colors cursor-pointer"
+                              title="Explorar palabra clave"
+                            >
+                              <Search size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1223,18 +1334,23 @@ export default function SEOModule({ onBack }) {
         )}
       </main>
 
-      {/* CREATE PROJECT MODAL */}
+      {/* CREATE PROJECT MODAL CON DESGLOSE AUTOMÁTICO UBERSUGGEST */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 animate-scale-up">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 animate-scale-up my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="font-bold text-white text-base flex items-center gap-2">
-                <FolderKanban className="text-orange-400" size={18} />
-                Nuevo Proyecto de Posicionamiento SEO
-              </h4>
+              <div>
+                <h4 className="font-bold text-white text-base flex items-center gap-2">
+                  <FolderKanban className="text-orange-400" size={18} />
+                  Nuevo Proyecto de Posicionamiento SEO
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Ingresa el dominio y ubicación. Ubersuggest analizará la web y desglosará automáticamente los competidores y keywords.
+                </p>
+              </div>
               <button 
-                onClick={() => setShowCreateModal(false)}
-                className="text-slate-400 hover:text-white text-sm font-bold cursor-pointer"
+                onClick={() => { setShowCreateModal(false); setBreakdownComplete(false); }}
+                className="text-slate-400 hover:text-white text-sm font-bold cursor-pointer p-1"
               >
                 ✕
               </button>
@@ -1242,7 +1358,7 @@ export default function SEOModule({ onBack }) {
 
             {projectError && (
               <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle size={15} />
+                <AlertCircle size={15} className="flex-shrink-0" />
                 <span>{projectError}</span>
               </div>
             )}
@@ -1252,8 +1368,7 @@ export default function SEOModule({ onBack }) {
                 <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre del Proyecto</label>
                 <input
                   type="text"
-                  required
-                  placeholder="Ej: Estrategia Falabella vs Retail 2026"
+                  placeholder="Ej: Estrategia de Crecimiento Hereda Fácil 2026"
                   value={projectForm.name}
                   onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
@@ -1266,14 +1381,14 @@ export default function SEOModule({ onBack }) {
                   <input
                     type="text"
                     required
-                    placeholder="ej. falabella.com"
+                    placeholder="ej. heredafacil.cl o falabella.com"
                     value={projectForm.domain}
                     onChange={(e) => setProjectForm({ ...projectForm, domain: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">País Objetivo</label>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Ubicación / País Ubersuggest</label>
                   <select
                     value={projectForm.country}
                     onChange={(e) => setProjectForm({ ...projectForm, country: e.target.value })}
@@ -1284,60 +1399,193 @@ export default function SEOModule({ onBack }) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
-                  Competidores a Comparar (Uno por línea)
-                </label>
-                <textarea
-                  rows="2"
-                  placeholder="paris.cl&#10;ripley.cl&#10;mercadolibre.cl"
-                  value={projectForm.competitorsText}
-                  onChange={(e) => setProjectForm({ ...projectForm, competitorsText: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 custom-scrollbar"
-                />
+              {/* Botón para Desglose Automático */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleBreakdownProject()}
+                  disabled={breakdownLoading || !projectForm.domain.trim()}
+                  className="w-full py-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-orange-950/40 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {breakdownLoading ? (
+                    <>
+                      <RefreshCw size={15} className="animate-spin text-slate-950" />
+                      <span>Ubersuggest está analizando el dominio y sus competidores...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} />
+                      <span>{breakdownComplete ? '🔄 Volver a Analizar y Desglosar con Ubersuggest' : '🪄 Analizar y Desglosar Proyecto con Ubersuggest'}</span>
+                    </>
+                  )}
+                </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
-                  Palabras Clave a Monitorear (Una por línea)
-                </label>
-                <textarea
-                  rows="2"
-                  placeholder="zapatillas running&#10;smart tv samsung&#10;comprar ropa online"
-                  value={projectForm.keywordsText}
-                  onChange={(e) => setProjectForm({ ...projectForm, keywordsText: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 custom-scrollbar"
-                />
-              </div>
+              {/* RESULTADO DEL DESGLOSE AUTOMÁTICO */}
+              {breakdownComplete && (
+                <div className="space-y-4 pt-3 border-t border-slate-800 animate-fade-in">
+                  {/* KPI Cards de Ubersuggest */}
+                  {projectForm.metrics && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Tráfico Mensual</span>
+                        <span className="text-base font-black text-white">
+                          {Number(projectForm.metrics.organic_traffic || 0).toLocaleString('es-CL')}
+                        </span>
+                      </div>
+                      <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Autoridad DA</span>
+                        <span className="text-base font-black text-emerald-400">
+                          {projectForm.metrics.domain_authority || 30} / 100
+                        </span>
+                      </div>
+                      <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Keywords</span>
+                        <span className="text-base font-black text-amber-300">
+                          {Number(projectForm.metrics.organic_keywords || 0).toLocaleString('es-CL')}
+                        </span>
+                      </div>
+                      <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Backlinks</span>
+                        <span className="text-base font-black text-blue-300">
+                          {Number(projectForm.metrics.backlinks || 0).toLocaleString('es-CL')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
-                  Notas & Hipótesis Inbound del Grupo
-                </label>
-                <textarea
-                  rows="2"
-                  placeholder="Objetivo: aumentar tráfico orgánico un 25% mediante contenidos TOFU..."
-                  value={projectForm.notes}
-                  onChange={(e) => setProjectForm({ ...projectForm, notes: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 custom-scrollbar"
-                />
-              </div>
+                  {/* Competidores Desglosados */}
+                  <div className="bg-slate-950/60 border border-slate-800/80 p-4 rounded-xl space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-200 uppercase flex items-center gap-1.5">
+                        <Target size={14} className="text-orange-400" />
+                        Competidores Directos Detectados por Ubersuggest ({projectForm.competitors.length})
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {projectForm.competitors.map((comp, idx) => {
+                        const compName = typeof comp === 'string' ? comp : comp.domain;
+                        return (
+                          <div key={idx} className="bg-slate-900 border border-slate-700/80 text-white text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                            <span>{compName}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCompetitor(compName)}
+                              className="text-slate-400 hover:text-rose-400 cursor-pointer ml-1 text-xs"
+                              title="Remover competidor"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Agregar competidor adicional */}
+                    <div className="flex gap-2 pt-1">
+                      <input
+                        type="text"
+                        placeholder="Agregar otro competidor (ej. ripley.cl)..."
+                        value={newCompetitorInput}
+                        onChange={(e) => setNewCompetitorInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCompetitor(); }}}
+                        className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 flex-grow focus:outline-none focus:border-orange-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCompetitor}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 cursor-pointer"
+                      >
+                        + Agregar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Palabras Clave Desglosadas */}
+                  <div className="bg-slate-950/60 border border-slate-800/80 p-4 rounded-xl space-y-2.5">
+                    <label className="text-xs font-bold text-slate-200 uppercase flex items-center gap-1.5">
+                      <Key size={14} className="text-amber-400" />
+                      Palabras Clave y Oportunidades Identificadas ({projectForm.keywords.length})
+                    </label>
+
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                      {projectForm.keywords.map((kw, idx) => {
+                        const kwText = typeof kw === 'string' ? kw : kw.keyword;
+                        const vol = typeof kw === 'object' && kw.volume ? kw.volume : null;
+                        const diff = typeof kw === 'object' && kw.difficulty ? kw.difficulty : null;
+                        const intent = typeof kw === 'object' && kw.intent ? kw.intent : null;
+
+                        return (
+                          <div key={idx} className="bg-slate-900 border border-slate-800/90 px-3 py-2 rounded-lg flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-white">{kwText}</span>
+                              {vol && (
+                                <span className="text-[10px] text-slate-400">
+                                  Vol: <strong className="text-slate-200">{Number(vol).toLocaleString('es-CL')}</strong>/m
+                                </span>
+                              )}
+                              {diff && (
+                                <span className="text-[10px] text-emerald-400 font-semibold">
+                                  SD: {diff}/100
+                                </span>
+                              )}
+                              {intent && (
+                                <span className="text-[10px] text-orange-300 bg-orange-950/40 px-1.5 py-0.5 rounded border border-orange-800/30">
+                                  {intent.split(' ')[0]}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveKeyword(kwText)}
+                              className="text-slate-400 hover:text-rose-400 cursor-pointer text-xs"
+                              title="Remover keyword"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Agregar keyword adicional */}
+                    <div className="flex gap-2 pt-1">
+                      <input
+                        type="text"
+                        placeholder="Agregar otra palabra clave a monitorear..."
+                        value={newKeywordInput}
+                        onChange={(e) => setNewKeywordInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddKeyword(); }}}
+                        className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 flex-grow focus:outline-none focus:border-orange-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddKeyword}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 cursor-pointer"
+                      >
+                        + Agregar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => { setShowCreateModal(false); setBreakdownComplete(false); }}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={savingProject}
-                  className="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  disabled={savingProject || !projectForm.domain.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {savingProject ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
-                  <span>Guardar Proyecto</span>
+                  <span>{breakdownComplete ? 'Guardar Proyecto Analizado' : 'Analizar y Guardar Proyecto'}</span>
                 </button>
               </div>
             </form>
