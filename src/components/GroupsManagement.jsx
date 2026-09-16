@@ -20,7 +20,9 @@ import {
   Key,
   Lock,
   Filter,
-  Check
+  Check,
+  Copy,
+  Sparkles
 } from 'lucide-react';
 
 const SEDES_DUOC = [
@@ -77,11 +79,18 @@ const GroupsManagement = () => {
     send_email: true
   });
 
+  // Modal para cambio directo de clave
+  const [passwordModalUser, setPasswordModalUser] = useState(null);
+  const [customPassword, setCustomPassword] = useState('');
+  const [sendEmailOnReset, setSendEmailOnReset] = useState(true);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [passwordSuccessData, setPasswordSuccessData] = useState(null);
+  const [copiedKey, setCopiedKey] = useState(false);
+
   const [message, setMessage] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCampus, setFilterCampus] = useState('ALL');
   const [filterYear, setFilterYear] = useState('ALL');
-  const [sendingUserId, setSendingUserId] = useState(null);
   const [submittingUser, setSubmittingUser] = useState(false);
 
   useEffect(() => {
@@ -164,7 +173,7 @@ const GroupsManagement = () => {
       if (response.ok && data.success) {
         setMessage({ 
           type: 'success', 
-          text: `¡Alumno ${newUserForm.full_name} registrado! Clave temporal: ${data.tmpPassword} ${data.emailSent ? '(Correo de bienvenida enviado por n8n)' : ''}` 
+          text: `¡Alumno ${newUserForm.full_name} registrado! Clave temporal: ${data.tmpPassword} ${data.emailSent ? '(Correo enviado)' : ''}` 
         });
         setShowAddForm(false);
         setNewUserForm({
@@ -189,26 +198,60 @@ const GroupsManagement = () => {
     }
   };
 
-  const handleResendCredentials = async (user) => {
-    setSendingUserId(user.id);
+  // Generar clave aleatoria
+  const generateRandomKey = () => {
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setCustomPassword(random);
+  };
+
+  // Abrir modal de cambio directo de clave
+  const openPasswordModal = (user) => {
+    setPasswordModalUser(user);
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setCustomPassword(random);
+    setSendEmailOnReset(true);
+    setPasswordSuccessData(null);
+    setCopiedKey(false);
+  };
+
+  // Ejecutar cambio directo de clave
+  const handleDirectPasswordReset = async (e) => {
+    e.preventDefault();
+    if (!passwordModalUser) return;
+
+    setResettingPassword(true);
     try {
-      const res = await fetch(`/api/admin/users/${user.id}/resend-credentials`, { method: 'POST' });
+      const res = await fetch(`/api/admin/users/${passwordModalUser.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          new_password: customPassword,
+          send_email: sendEmailOnReset
+        })
+      });
+
       const data = await res.json();
       if (res.ok && data.success) {
-        setMessage({ 
-          type: 'success', 
-          text: `Nueva clave temporal enviada a ${user.email}: ${data.tmpPassword}` 
+        setPasswordSuccessData({
+          user: passwordModalUser,
+          tmpPassword: data.tmpPassword,
+          emailSent: data.emailSent
         });
         fetchData();
-        setTimeout(() => setMessage(null), 5000);
       } else {
-        setMessage({ type: 'error', text: data.error || 'Error al reenviar credenciales' });
+        setMessage({ type: 'error', text: data.error || 'Error al cambiar contraseña' });
       }
     } catch {
       setMessage({ type: 'error', text: 'Error al conectar con el servidor' });
     } finally {
-      setSendingUserId(null);
+      setResettingPassword(false);
     }
+  };
+
+  const handleCopyPassword = (pwd) => {
+    navigator.clipboard.writeText(pwd);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2500);
   };
 
   const handleDeleteUser = async (userId) => {
@@ -245,7 +288,7 @@ const GroupsManagement = () => {
             Gestión de Alumnos y Accesos
           </h3>
           <p className="text-slate-500 font-medium text-sm">
-            Registra nuevos estudiantes, envía contraseñas temporales y asigna sedes y años de carrera.
+            Control de usuarios, asignación de contraseñas temporales en directo y forzado de cambio de clave.
           </p>
         </div>
 
@@ -555,7 +598,7 @@ const GroupsManagement = () => {
                 <th className="p-5">Sede Duoc UC</th>
                 <th className="p-5">Grupo</th>
                 <th className="p-5">Estado Clave</th>
-                <th className="p-5 text-right">Acciones</th>
+                <th className="p-5 text-right">Acciones Directas</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
@@ -673,7 +716,7 @@ const GroupsManagement = () => {
                       {user.must_change_password ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                           <Lock size={11} />
-                          <span>Temporal (Pendiente)</span>
+                          <span>Temporal (Obligatorio cambiar)</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -683,8 +726,8 @@ const GroupsManagement = () => {
                       )}
                     </td>
 
-                    {/* Acciones */}
-                    <td className="p-5 text-right space-x-1 whitespace-nowrap">
+                    {/* Acciones Directas */}
+                    <td className="p-5 text-right space-x-1.5 whitespace-nowrap">
                       {editingUser === user.id ? (
                         <>
                           <button 
@@ -704,30 +747,33 @@ const GroupsManagement = () => {
                         </>
                       ) : (
                         <>
-                          {user.role !== 'admin' && (
-                            <button 
-                              onClick={() => handleResendCredentials(user)}
-                              disabled={sendingUserId === user.id}
-                              className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all cursor-pointer"
-                              title="Reenviar Contraseña Temporal por Correo"
-                            >
-                              {sendingUserId === user.id ? <RefreshCcw size={15} className="animate-spin" /> : <Mail size={15} />}
-                            </button>
-                          )}
+                          {/* Botón Resetear Clave en Directo */}
+                          <button 
+                            onClick={() => openPasswordModal(user)}
+                            className="p-2 bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white rounded-xl transition-all border border-amber-200/60 cursor-pointer inline-flex items-center gap-1 font-bold text-[11px]"
+                            title="Cambiar contraseña temporal en directo"
+                          >
+                            <Key size={14} />
+                            <span className="hidden sm:inline">Cambiar Clave</span>
+                          </button>
+
+                          {/* Botón Editar */}
                           <button 
                             onClick={() => handleEdit(user)}
                             className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
                             title="Editar Alumno"
                           >
-                            <Edit2 size={15} />
+                            <Edit2 size={14} />
                           </button>
+
+                          {/* Botón Eliminar */}
                           {user.role !== 'admin' && (
                             <button 
                               onClick={() => handleDeleteUser(user.id)}
                               className="p-2 bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white rounded-xl transition-all cursor-pointer"
                               title="Eliminar Alumno"
                             >
-                              <Trash2 size={15} />
+                              <Trash2 size={14} />
                             </button>
                           )}
                         </>
@@ -740,6 +786,166 @@ const GroupsManagement = () => {
           </table>
         </div>
       </div>
+
+      {/* MODAL: CAMBIAR CONTRASEÑA EN DIRECTO */}
+      {passwordModalUser && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] max-w-md w-full p-8 shadow-2xl space-y-6 animate-scale-up">
+            
+            {!passwordSuccessData ? (
+              <>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                      <Key size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-black text-slate-900 uppercase italic">
+                        Cambiar Contraseña
+                      </h4>
+                      <p className="text-xs text-slate-500 font-bold">
+                        {passwordModalUser.full_name} ({passwordModalUser.email})
+                      </p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setPasswordModalUser(null)}
+                    className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleDirectPasswordReset} className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">
+                      Nueva Contraseña Temporal *
+                    </label>
+                    <div className="flex gap-2">
+                      <input 
+                        required
+                        type="text"
+                        placeholder="Ej: Duoc2026 o H7K9M2"
+                        className="flex-grow px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-amber-100 font-bold text-sm text-slate-800 tracking-wider"
+                        value={customPassword}
+                        onChange={(e) => setCustomPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={generateRandomKey}
+                        className="px-4 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-xl border border-amber-200 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        title="Generar clave aleatoria"
+                      >
+                        <Sparkles size={14} />
+                        <span>Aleatoria</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-100 text-xs text-amber-900 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <Lock size={13} />
+                      Forzado de Cambio de Clave:
+                    </p>
+                    <p className="text-amber-700 text-[11px] leading-relaxed">
+                      El alumno ingresará con esta clave temporal y el sistema le obligará a ingresar su nueva contraseña definitiva en su primer acceso.
+                    </p>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={sendEmailOnReset} 
+                      onChange={(e) => setSendEmailOnReset(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>Enviar también esta clave por correo al alumno (Webhook n8n)</span>
+                  </label>
+
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setPasswordModalUser(null)}
+                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={resettingPassword || !customPassword.trim()}
+                      className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-200 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {resettingPassword ? (
+                        <>
+                          <RefreshCcw size={14} className="animate-spin" />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Key size={14} />
+                          <span>Asignar Clave Temporal</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              /* Success confirmation with copy key */
+              <div className="text-center space-y-5 py-2">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 size={32} />
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-black text-slate-900 uppercase italic">
+                    ¡Contraseña Temporal Asignada!
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Alumno: <strong>{passwordSuccessData.user.full_name}</strong>
+                  </p>
+                  {passwordSuccessData.emailSent && (
+                    <p className="text-xs text-emerald-600 font-bold mt-1">
+                      ✉️ Correo de notificación enviado exitosamente.
+                    </p>
+                  )}
+                </div>
+
+                {/* Password display Box */}
+                <div className="p-4 bg-slate-900 rounded-2xl text-white space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                    Clave Temporal para el Alumno:
+                  </span>
+                  <div className="text-2xl font-black text-amber-400 tracking-widest font-mono">
+                    {passwordSuccessData.tmpPassword}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => handleCopyPassword(passwordSuccessData.tmpPassword)}
+                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedKey ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                    <span>{copiedKey ? '¡Copiada!' : 'Copiar Clave'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setPasswordSuccessData(null);
+                      setPasswordModalUser(null);
+                    }}
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
+                  >
+                    Listo / Cerrar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

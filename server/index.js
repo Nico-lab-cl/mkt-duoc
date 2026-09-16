@@ -851,6 +851,65 @@ app.post('/api/admin/users/:id/resend-credentials', async (req, res) => {
   }
 });
 
+// Cambiar o asignar contraseña temporal directamente desde el panel de admin
+app.post('/api/admin/users/:id/reset-password', async (req, res) => {
+  const { id } = req.params;
+  const { new_password, send_email = true } = req.body;
+  try {
+    const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+    }
+
+    const user = userRes.rows[0];
+    const finalPassword = (new_password && new_password.trim()) 
+      ? new_password.trim() 
+      : Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    // Actualizar clave y forzar cambio en próximo inicio de sesión
+    await pool.query(
+      'UPDATE users SET password = $1, must_change_password = TRUE WHERE id = $2', 
+      [finalPassword, id]
+    );
+
+    let emailSent = false;
+    if (send_email) {
+      try {
+        const webhookRes = await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'admin_reset_password',
+            email: user.email,
+            new_password: finalPassword,
+            Correo: user.email,
+            "Contraseña temporal": finalPassword,
+            Nombre: user.full_name,
+            first_name: user.full_name ? user.full_name.split(' ')[0] : '',
+            last_name: user.full_name ? user.full_name.split(' ').slice(1).join(' ') : '',
+            career_year: user.career_year || '',
+            campus: user.campus || '',
+            login_url: 'https://softwarespectra.cl'
+          })
+        });
+        emailSent = webhookRes.ok;
+      } catch (e) {
+        console.error('Error enviando webhook reset-password:', e);
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      tmpPassword: finalPassword, 
+      emailSent,
+      message: `Contraseña temporal establecida a "${finalPassword}" para ${user.full_name}. Se le solicitará cambiarla al ingresar.` 
+    });
+  } catch (err) {
+    console.error('Error al cambiar contraseña de usuario:', err);
+    res.status(500).json({ success: false, error: 'Error al cambiar contraseña' });
+  }
+});
+
 app.delete('/api/admin/users/:id', async (req, res) => {
   const { id } = req.params;
   try {
