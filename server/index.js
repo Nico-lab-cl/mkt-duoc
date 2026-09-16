@@ -1558,6 +1558,118 @@ app.get('/api/seo/tools', async (req, res) => {
   }
 });
 
+// ==========================================
+// PROYECTOS SEO (Tipo Ubersuggest Projects)
+// ==========================================
+
+// Listar proyectos de un usuario o grupo
+app.get('/api/seo/projects', async (req, res) => {
+  const { userId, groupId } = req.query;
+  try {
+    let query = 'SELECT * FROM seo_projects';
+    const params = [];
+
+    if (groupId) {
+      params.push(groupId);
+      query += ' WHERE group_id = $1';
+    } else if (userId) {
+      params.push(userId);
+      query += ' WHERE user_id = $1';
+    }
+    query += ' ORDER BY updated_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json({ success: true, projects: result.rows || [] });
+  } catch (err) {
+    console.error('Error al listar proyectos SEO:', err);
+    res.status(500).json({ success: false, error: 'Error al obtener proyectos SEO' });
+  }
+});
+
+// Crear un nuevo proyecto SEO
+app.post('/api/seo/projects', async (req, res) => {
+  const { name, domain, country = 'cl', competitors = [], tracked_keywords = [], notes = '', metrics_snapshot = {}, userId, groupId } = req.body;
+  if (!name || !domain) {
+    return res.status(400).json({ success: false, error: 'El nombre del proyecto y el dominio son obligatorios' });
+  }
+
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim().toLowerCase();
+
+  try {
+    const result = await pool.query(`
+      INSERT INTO seo_projects (name, domain, country, competitors, tracked_keywords, notes, metrics_snapshot, user_id, group_id, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      RETURNING *
+    `, [
+      name.trim(),
+      cleanDomain,
+      country,
+      JSON.stringify(competitors),
+      JSON.stringify(tracked_keywords),
+      notes,
+      JSON.stringify(metrics_snapshot),
+      userId || null,
+      groupId || null
+    ]);
+
+    res.json({ success: true, project: result.rows[0] });
+  } catch (err) {
+    console.error('Error al crear proyecto SEO:', err);
+    res.status(500).json({ success: false, error: 'Error al crear proyecto SEO' });
+  }
+});
+
+// Actualizar un proyecto SEO existente
+app.put('/api/seo/projects/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, domain, country, competitors, tracked_keywords, notes, metrics_snapshot } = req.body;
+
+  try {
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (name !== undefined) { fields.push(`name = $${idx++}`); values.push(name.trim()); }
+    if (domain !== undefined) { 
+      const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim().toLowerCase();
+      fields.push(`domain = $${idx++}`); 
+      values.push(cleanDomain); 
+    }
+    if (country !== undefined) { fields.push(`country = $${idx++}`); values.push(country); }
+    if (competitors !== undefined) { fields.push(`competitors = $${idx++}`); values.push(JSON.stringify(competitors)); }
+    if (tracked_keywords !== undefined) { fields.push(`tracked_keywords = $${idx++}`); values.push(JSON.stringify(tracked_keywords)); }
+    if (notes !== undefined) { fields.push(`notes = $${idx++}`); values.push(notes); }
+    if (metrics_snapshot !== undefined) { fields.push(`metrics_snapshot = $${idx++}`); values.push(JSON.stringify(metrics_snapshot)); }
+
+    fields.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const query = `UPDATE seo_projects SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`;
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Proyecto SEO no encontrado' });
+    }
+
+    res.json({ success: true, project: result.rows[0] });
+  } catch (err) {
+    console.error('Error al actualizar proyecto SEO:', err);
+    res.status(500).json({ success: false, error: 'Error al actualizar proyecto' });
+  }
+});
+
+// Eliminar un proyecto SEO
+app.delete('/api/seo/projects/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM seo_projects WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Proyecto eliminado correctamente' });
+  } catch (err) {
+    console.error('Error al eliminar proyecto SEO:', err);
+    res.status(500).json({ success: false, error: 'Error al eliminar proyecto' });
+  }
+});
+
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API (SPA)
 const indexHtmlPath = path.resolve(__dirname, '../dist/index.html');
 app.use((req, res) => {

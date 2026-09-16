@@ -52,8 +52,8 @@ const platforms = [
   },
   {
     id: 'seo',
-    name: 'SEO & Tráfico Orgánico',
-    description: 'Inteligencia de Palabras Clave y Tráfico (Ubersuggest MCP)',
+    name: 'SEO y Tráfico Orgánico',
+    description: 'Gestión de proyectos, auditoría y análisis de competidores',
     icon: <Globe size={24} />,
     color: 'bg-gradient-to-br from-orange-500 to-amber-500',
     status: 'active'

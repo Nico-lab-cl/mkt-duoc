@@ -62,8 +62,23 @@ export class UbersuggestMcpService {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           expires_at TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS seo_projects (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          domain TEXT NOT NULL,
+          country VARCHAR(10) DEFAULT 'cl',
+          competitors JSONB DEFAULT '[]',
+          tracked_keywords JSONB DEFAULT '[]',
+          notes TEXT,
+          metrics_snapshot JSONB DEFAULT '{}',
+          user_id INTEGER,
+          group_id INTEGER,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
       `);
-      console.log('✅ Tablas SEO de Ubersuggest inicializadas en PostgreSQL');
+      console.log('✅ Tablas SEO de Ubersuggest y Proyectos inicializadas en PostgreSQL');
     } catch (err) {
       console.error('❌ Error al inicializar tablas SEO:', err.message);
     }

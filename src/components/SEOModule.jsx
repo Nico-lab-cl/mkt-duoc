@@ -16,7 +16,16 @@ import {
   RefreshCw,
   Zap,
   Info,
-  BookOpen
+  BookOpen,
+  FolderKanban,
+  Plus,
+  Trash2,
+  Edit3,
+  Check,
+  ChevronRight,
+  Eye,
+  Users,
+  Target
 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 
@@ -38,24 +47,40 @@ export default function SEOModule({ onBack }) {
   const { currentUser } = useProject();
   const isAdmin = currentUser?.role === 'admin';
 
-  const [activeTab, setActiveTab] = useState('domain'); // 'domain' | 'keywords' | 'audit' | 'glossary'
+  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'domain' | 'keywords' | 'audit' | 'glossary'
   const [connectionStatus, setConnectionStatus] = useState({ connected: false, loading: true });
 
-  // Domain search state
+  // Projects State
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [projectForm, setProjectForm] = useState({
+    name: '',
+    domain: '',
+    country: 'cl',
+    competitorsText: '',
+    keywordsText: '',
+    notes: ''
+  });
+  const [savingProject, setSavingProject] = useState(false);
+  const [projectError, setProjectError] = useState(null);
+
+  // Free Domain search state
   const [domainInput, setDomainInput] = useState('');
   const [domainCountry, setDomainCountry] = useState('cl');
   const [domainLoading, setDomainLoading] = useState(false);
   const [domainData, setDomainData] = useState(null);
   const [domainError, setDomainError] = useState(null);
 
-  // Keyword search state
+  // Free Keyword search state
   const [keywordInput, setKeywordInput] = useState('');
   const [keywordCountry, setKeywordCountry] = useState('cl');
   const [keywordLoading, setKeywordLoading] = useState(false);
   const [keywordData, setKeywordData] = useState(null);
   const [keywordError, setKeywordError] = useState(null);
 
-  // Audit state
+  // Free Audit state
   const [auditInput, setAuditInput] = useState('');
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditData, setAuditData] = useState(null);
@@ -76,10 +101,30 @@ export default function SEOModule({ onBack }) {
     }
   };
 
+  // Fetch Projects for student/group
+  const fetchProjects = async () => {
+    setProjectsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (currentUser?.group_id) params.append('groupId', currentUser.group_id);
+      if (currentUser?.id) params.append('userId', currentUser.id);
+
+      const res = await fetch(`/api/seo/projects?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        setProjects(json.projects || []);
+      }
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
   useEffect(() => {
     checkStatus();
+    fetchProjects();
 
-    // Listen for OAuth completion message from popup window
     const handleMessage = (event) => {
       if (event.data?.type === 'UBERSUGGEST_CONNECTED') {
         checkStatus();
@@ -87,7 +132,7 @@ export default function SEOModule({ onBack }) {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [currentUser]);
 
   const handleConnectOAuth = () => {
     const width = 600;
@@ -102,7 +147,7 @@ export default function SEOModule({ onBack }) {
   };
 
   const handleDisconnect = async () => {
-    if (!confirm('¿Estás seguro de desconectar Ubersuggest?')) return;
+    if (!confirm('¿Estás seguro de desconectar la sesión de SEO?')) return;
     try {
       await fetch('/api/seo/disconnect', { method: 'POST' });
       checkStatus();
@@ -111,7 +156,90 @@ export default function SEOModule({ onBack }) {
     }
   };
 
-  // 1. Domain Overview Query
+  // Create or Update Project
+  const handleSaveProject = async (e) => {
+    e.preventDefault();
+    if (!projectForm.name.trim() || !projectForm.domain.trim()) {
+      setProjectError('El nombre del proyecto y el dominio son obligatorios.');
+      return;
+    }
+
+    setSavingProject(true);
+    setProjectError(null);
+
+    const competitors = projectForm.competitorsText
+      .split('\n')
+      .map(s => s.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0])
+      .filter(Boolean);
+
+    const trackedKeywords = projectForm.keywordsText
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    try {
+      // Intentar obtener una instantánea inicial de métricas del dominio
+      let metricsSnapshot = {};
+      try {
+        const snapRes = await fetch('/api/seo/domain-overview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain: projectForm.domain, country: projectForm.country })
+        });
+        if (snapRes.ok) {
+          const snapJson = await snapRes.json();
+          metricsSnapshot = snapJson.data || {};
+        }
+      } catch (e) {
+        console.warn('No se pudo precargar métricas del dominio:', e);
+      }
+
+      const payload = {
+        name: projectForm.name,
+        domain: projectForm.domain,
+        country: projectForm.country,
+        competitors,
+        tracked_keywords: trackedKeywords,
+        notes: projectForm.notes,
+        metrics_snapshot: metricsSnapshot,
+        userId: currentUser?.id,
+        groupId: currentUser?.group_id
+      };
+
+      const res = await fetch('/api/seo/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Error al guardar el proyecto');
+      }
+
+      setShowCreateModal(false);
+      setProjectForm({ name: '', domain: '', country: 'cl', competitorsText: '', keywordsText: '', notes: '' });
+      fetchProjects();
+      setSelectedProject(json.project);
+    } catch (err) {
+      setProjectError(err.message);
+    } finally {
+      setSavingProject(false);
+    }
+  };
+
+  const handleDeleteProject = async (id) => {
+    if (!confirm('¿Deseas eliminar este proyecto SEO?')) return;
+    try {
+      await fetch(`/api/seo/projects/${id}`, { method: 'DELETE' });
+      if (selectedProject?.id === id) setSelectedProject(null);
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // 1. Domain Search
   const handleDomainSearch = async (domainToSearch = domainInput) => {
     const target = domainToSearch.trim();
     if (!target) return;
@@ -138,7 +266,7 @@ export default function SEOModule({ onBack }) {
     }
   };
 
-  // 2. Keyword Research Query
+  // 2. Keyword Search
   const handleKeywordSearch = async (kwToSearch = keywordInput) => {
     const target = kwToSearch.trim();
     if (!target) return;
@@ -165,7 +293,7 @@ export default function SEOModule({ onBack }) {
     }
   };
 
-  // 3. Site Audit Query
+  // 3. Site Audit
   const handleAuditSearch = async (domainToSearch = auditInput) => {
     const target = domainToSearch.trim();
     if (!target) return;
@@ -192,7 +320,6 @@ export default function SEOModule({ onBack }) {
     }
   };
 
-  // Helper for Difficulty Color
   const getDifficultyBadge = (score) => {
     const num = Number(score) || 0;
     if (num < 35) {
@@ -212,7 +339,7 @@ export default function SEOModule({ onBack }) {
           <div className="flex items-center gap-4">
             <button 
               onClick={onBack}
-              className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+              className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group cursor-pointer"
             >
               <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition-colors border border-slate-700/50">
                 <ArrowLeft size={18} />
@@ -223,36 +350,33 @@ export default function SEOModule({ onBack }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-400 bg-clip-text text-transparent">
-                  SEO & Traffic Intelligence Studio
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                  Ubersuggest MCP
+                  SEO y Tráfico Orgánico
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
-                Simulador de tráfico orgánico, dificultad de palabras clave y auditoría técnica para clases
+                Gestión de proyectos, análisis de competidores y palabras clave
               </p>
             </div>
           </div>
 
-          {/* Connection Status / Admin controls */}
+          {/* Connection Status Indicator */}
           <div className="flex items-center gap-3">
             {connectionStatus.loading ? (
               <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700">
                 <RefreshCw size={14} className="animate-spin text-orange-400" />
-                <span>Verificando MCP...</span>
+                <span>Verificando conexión...</span>
               </div>
             ) : connectionStatus.connected ? (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 text-xs text-emerald-300 bg-emerald-950/50 px-3 py-1.5 rounded-lg border border-emerald-800/40">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                  <span className="font-semibold">MCP Activo</span>
+                  <span className="font-semibold">Servicio Activo</span>
                 </div>
                 {isAdmin && (
                   <button
                     onClick={handleDisconnect}
-                    className="text-xs text-slate-400 hover:text-rose-400 px-2 py-1 rounded transition-colors"
-                    title="Desconectar Ubersuggest"
+                    className="text-xs text-slate-400 hover:text-rose-400 px-2 py-1 rounded transition-colors cursor-pointer"
+                    title="Desconectar cuenta"
                   >
                     Desconectar
                   </button>
@@ -281,20 +405,37 @@ export default function SEOModule({ onBack }) {
         {/* Tab Navigation */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 overflow-x-auto pb-2 custom-scrollbar">
           <button
+            onClick={() => setActiveTab('projects')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'projects'
+                ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <FolderKanban size={16} />
+            <span>Mis Proyectos SEO</span>
+            {projects.length > 0 && (
+              <span className="ml-1 px-2 py-0.5 text-[10px] bg-slate-900/60 rounded-full font-extrabold text-orange-200">
+                {projects.length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('domain')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'domain'
                 ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
             <Globe size={16} />
-            <span>Tráfico de Dominio</span>
+            <span>Análisis de Dominio</span>
           </button>
 
           <button
             onClick={() => setActiveTab('keywords')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'keywords'
                 ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -306,26 +447,26 @@ export default function SEOModule({ onBack }) {
 
           <button
             onClick={() => setActiveTab('audit')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'audit'
                 ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
             <Activity size={16} />
-            <span>Auditoría Técnica SEO</span>
+            <span>Auditoría Técnica</span>
           </button>
 
           <button
             onClick={() => setActiveTab('glossary')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'glossary'
                 ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
             <BookOpen size={16} />
-            <span>Glosario & Metodología Inbound</span>
+            <span>Glosario & Guía</span>
           </button>
         </div>
       </header>
@@ -340,11 +481,11 @@ export default function SEOModule({ onBack }) {
                 <Info size={20} />
               </div>
               <div>
-                <h4 className="font-bold text-amber-200 text-sm">Integración MCP pendiente de vinculación</h4>
+                <h4 className="font-bold text-amber-200 text-sm">Conexión con el servicio requerida</h4>
                 <p className="text-xs text-amber-300/80">
                   {isAdmin 
-                    ? 'Haz clic en "Conectar Ubersuggest" para iniciar sesión con tu cuenta y habilitar las consultas de los estudiantes.'
-                    : 'El profesor debe activar la conexión con Ubersuggest para habilitar las consultas en tiempo real de este módulo.'}
+                    ? 'Haz clic en "Conectar Ubersuggest" para activar las consultas en tiempo real para todos tus alumnos.'
+                    : 'El profesor debe activar la conexión para habilitar las consultas de datos en tiempo real.'}
                 </p>
               </div>
             </div>
@@ -354,16 +495,259 @@ export default function SEOModule({ onBack }) {
                 className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer"
               >
                 <Zap size={15} />
-                Conectar mi Cuenta Ahora
+                Conectar Ahora
               </button>
             )}
           </div>
         )}
 
-        {/* TAB 1: DOMAIN INTELLIGENCE */}
+        {/* TAB: MIS PROYECTOS SEO */}
+        {activeTab === 'projects' && (
+          <div className="space-y-6">
+            {/* Projects Header / Actions */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900/70 border border-slate-800 p-6 rounded-2xl">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <FolderKanban className="text-orange-400" size={20} />
+                  Proyectos de Posicionamiento SEO
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Crea y guarda proyectos para monitorear el dominio de tu marca, comparar con competidores y rastrear palabras clave.
+                </p>
+              </div>
+
+              <button
+                onClick={() => { setShowCreateModal(true); setProjectError(null); }}
+                className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-950/40 flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Plus size={16} />
+                <span>+ Crear Proyecto SEO</span>
+              </button>
+            </div>
+
+            {/* Selected Project View (if open) */}
+            {selectedProject ? (
+              <div className="space-y-6 bg-slate-900/90 border border-orange-500/30 rounded-2xl p-6 shadow-2xl relative animate-fade-in">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedProject(null)}
+                        className="text-xs font-bold text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700"
+                      >
+                        <ArrowLeft size={14} /> Volver a la lista
+                      </button>
+                      <h4 className="text-xl font-black text-white">{selectedProject.name}</h4>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                        {selectedProject.domain}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      País objetivo: <span className="font-semibold text-slate-300">{COUNTRIES.find(c => c.code === selectedProject.country)?.name || selectedProject.country}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDomainSearch(selectedProject.domain)}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw size={13} />
+                      <span>Actualizar Métricas</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProject(selectedProject.id)}
+                      className="px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-bold rounded-lg border border-rose-800/50 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 size={13} />
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Main Domain KPI Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Tráfico Mensual Estimado</span>
+                    <div className="text-2xl font-black text-white mt-1">
+                      {selectedProject.metrics_snapshot?.organic_traffic 
+                        ? Number(selectedProject.metrics_snapshot.organic_traffic).toLocaleString('es-CL')
+                        : (selectedProject.metrics_snapshot?.traffic || '125.000')}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Autoridad de Dominio (DA)</span>
+                    <div className="text-2xl font-black text-emerald-400 mt-1">
+                      {selectedProject.metrics_snapshot?.domain_authority || selectedProject.metrics_snapshot?.da || '54'} / 100
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Keywords Rastreadas</span>
+                    <div className="text-2xl font-black text-amber-300 mt-1">
+                      {Array.isArray(selectedProject.tracked_keywords) ? selectedProject.tracked_keywords.length : 0}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Competidores Asignados</span>
+                    <div className="text-2xl font-black text-blue-300 mt-1">
+                      {Array.isArray(selectedProject.competitors) ? selectedProject.competitors.length : 0}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Side-by-side Competitor Comparison */}
+                {Array.isArray(selectedProject.competitors) && selectedProject.competitors.length > 0 && (
+                  <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-3">
+                    <h5 className="font-bold text-white text-sm flex items-center gap-2">
+                      <Target className="text-orange-400" size={16} />
+                      Comparativa de Competidores Monitoreados
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedProject.competitors.map((comp, idx) => (
+                        <div key={idx} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-xs text-white block">{comp}</span>
+                            <span className="text-[10px] text-slate-400">Competidor #{idx + 1}</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setDomainInput(comp);
+                              setActiveTab('domain');
+                              handleDomainSearch(comp);
+                            }}
+                            className="text-xs bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 px-2 py-1 rounded border border-orange-500/30 cursor-pointer"
+                          >
+                            Ver Datos
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tracked Keywords Table */}
+                {Array.isArray(selectedProject.tracked_keywords) && selectedProject.tracked_keywords.length > 0 && (
+                  <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-3">
+                    <h5 className="font-bold text-white text-sm flex items-center gap-2">
+                      <Key className="text-amber-400" size={16} />
+                      Palabras Clave en Monitoreo
+                    </h5>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProject.tracked_keywords.map((kw, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setKeywordInput(kw);
+                            setActiveTab('keywords');
+                            handleKeywordSearch(kw);
+                          }}
+                          className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2 cursor-pointer transition-colors"
+                        >
+                          <span>{kw}</span>
+                          <Search size={12} className="text-orange-400" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes Section */}
+                {selectedProject.notes && (
+                  <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-xl space-y-2">
+                    <h5 className="font-bold text-slate-300 text-xs uppercase tracking-wider">Notas & Hipótesis de los Alumnos</h5>
+                    <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">{selectedProject.notes}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Projects Grid */
+              <div>
+                {projectsLoading ? (
+                  <div className="text-center py-16">
+                    <RefreshCw className="animate-spin text-orange-400 mx-auto mb-3" size={24} />
+                    <p className="text-xs text-slate-400">Cargando proyectos guardados...</p>
+                  </div>
+                ) : projects.length === 0 ? (
+                  <div className="bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-12 text-center space-y-4">
+                    <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center mx-auto">
+                      <FolderKanban size={28} />
+                    </div>
+                    <div className="max-w-md mx-auto">
+                      <h4 className="font-bold text-white text-base">Aún no hay proyectos creados</h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Crea el primer proyecto de tu grupo para almacenar el dominio de estudio, sus competidores y las palabras clave que trabajarán en su estrategia Inbound.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
+                    >
+                      <Plus size={16} />
+                      <span>Crear mi Primer Proyecto</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {projects.map((proj) => (
+                      <div 
+                        key={proj.id}
+                        className="bg-slate-900/80 border border-slate-800 hover:border-orange-500/50 p-5 rounded-2xl transition-all shadow-lg hover:shadow-orange-950/20 flex flex-col justify-between group"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-3">
+                            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                              {proj.domain}
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              {new Date(proj.created_at).toLocaleDateString('es-CL')}
+                            </span>
+                          </div>
+
+                          <h4 className="font-bold text-white text-base group-hover:text-orange-300 transition-colors">
+                            {proj.name}
+                          </h4>
+
+                          <p className="text-xs text-slate-400 mt-2 line-clamp-2">
+                            {proj.notes || 'Sin descripción adicional.'}
+                          </p>
+
+                          <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                            <span>🔑 {Array.isArray(proj.tracked_keywords) ? proj.tracked_keywords.length : 0} keywords</span>
+                            <span>🎯 {Array.isArray(proj.competitors) ? proj.competitors.length : 0} competidores</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 pt-3 flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => setSelectedProject(proj)}
+                            className="flex-grow py-2 bg-slate-800 hover:bg-orange-500 hover:text-white text-slate-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Eye size={14} />
+                            <span>Abrir Proyecto</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProject(proj.id)}
+                            className="p-2 text-slate-500 hover:text-rose-400 bg-slate-800/50 hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: DOMAIN SEARCH */}
         {activeTab === 'domain' && (
           <div className="space-y-6">
-            {/* Search Box Card */}
             <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
               <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
                 <Globe className="text-orange-400" size={20} />
@@ -406,7 +790,7 @@ export default function SEOModule({ onBack }) {
                   {domainLoading ? (
                     <>
                       <RefreshCw size={16} className="animate-spin" />
-                      <span>Consultando MCP...</span>
+                      <span>Consultando...</span>
                     </>
                   ) : (
                     <>
@@ -424,7 +808,7 @@ export default function SEOModule({ onBack }) {
                   <button
                     key={dom}
                     onClick={() => handleDomainSearch(dom)}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg border border-slate-700/60 transition-colors"
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg border border-slate-700/60 transition-colors cursor-pointer"
                   >
                     {dom}
                   </button>
@@ -443,14 +827,10 @@ export default function SEOModule({ onBack }) {
             {/* Results Display */}
             {domainData && (
               <div className="space-y-6">
-                {/* 4 KPI Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between text-slate-400 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Tráfico Orgánico Mensual</span>
-                      <TrendingUp size={18} className="text-orange-400" />
-                    </div>
-                    <div className="text-2xl font-black text-white">
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Tráfico Orgánico Mensual</span>
+                    <div className="text-2xl font-black text-white mt-1">
                       {domainData.organic_traffic 
                         ? Number(domainData.organic_traffic).toLocaleString('es-CL')
                         : (domainData.traffic || domainData.estimated_visits || '142.500')}
@@ -458,23 +838,17 @@ export default function SEOModule({ onBack }) {
                     <p className="text-[11px] text-slate-500 mt-1">Visitas estimadas al mes desde Google</p>
                   </div>
 
-                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between text-slate-400 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Autoridad de Dominio (DA)</span>
-                      <ShieldCheck size={18} className="text-emerald-400" />
-                    </div>
-                    <div className="text-2xl font-black text-emerald-400">
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Autoridad de Dominio (DA)</span>
+                    <div className="text-2xl font-black text-emerald-400 mt-1">
                       {domainData.domain_authority || domainData.da || '58'} / 100
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">Fuerza y confiabilidad del dominio</p>
                   </div>
 
-                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between text-slate-400 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Keywords Posicionadas</span>
-                      <Key size={18} className="text-amber-400" />
-                    </div>
-                    <div className="text-2xl font-black text-amber-300">
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Keywords Posicionadas</span>
+                    <div className="text-2xl font-black text-amber-300 mt-1">
                       {domainData.organic_keywords 
                         ? Number(domainData.organic_keywords).toLocaleString('es-CL')
                         : (domainData.keywords_count || '12.840')}
@@ -482,12 +856,9 @@ export default function SEOModule({ onBack }) {
                     <p className="text-[11px] text-slate-500 mt-1">Palabras clave en el Top 100 de búsqueda</p>
                   </div>
 
-                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between text-slate-400 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Backlinks Totales</span>
-                      <Layers size={18} className="text-blue-400" />
-                    </div>
-                    <div className="text-2xl font-black text-blue-300">
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Backlinks Totales</span>
+                    <div className="text-2xl font-black text-blue-300 mt-1">
                       {domainData.backlinks 
                         ? Number(domainData.backlinks).toLocaleString('es-CL')
                         : (domainData.backlinks_count || '350.200')}
@@ -496,7 +867,6 @@ export default function SEOModule({ onBack }) {
                   </div>
                 </div>
 
-                {/* Didactic Analysis Box */}
                 <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950/20 border border-orange-500/20 rounded-2xl p-6">
                   <div className="flex items-center gap-2 text-orange-400 font-bold text-sm mb-3">
                     <Sparkles size={18} />
@@ -518,7 +888,7 @@ export default function SEOModule({ onBack }) {
           </div>
         )}
 
-        {/* TAB 2: KEYWORD EXPLORER */}
+        {/* TAB: KEYWORD EXPLORER */}
         {activeTab === 'keywords' && (
           <div className="space-y-6">
             <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
@@ -581,7 +951,7 @@ export default function SEOModule({ onBack }) {
                   <button
                     key={kw}
                     onClick={() => handleKeywordSearch(kw)}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg border border-slate-700/60 transition-colors"
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-lg border border-slate-700/60 transition-colors cursor-pointer"
                   >
                     {kw}
                   </button>
@@ -589,7 +959,6 @@ export default function SEOModule({ onBack }) {
               </div>
             </div>
 
-            {/* Keyword Error */}
             {keywordError && (
               <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-800/40 text-rose-300 text-sm flex items-center gap-3">
                 <AlertCircle size={18} className="text-rose-400 flex-shrink-0" />
@@ -597,7 +966,6 @@ export default function SEOModule({ onBack }) {
               </div>
             )}
 
-            {/* Keyword Results */}
             {keywordData && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -636,7 +1004,6 @@ export default function SEOModule({ onBack }) {
                   </div>
                 </div>
 
-                {/* Strategy recommendation */}
                 <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6">
                   <h4 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
                     <BarChart3 className="text-orange-400" size={18} />
@@ -651,7 +1018,7 @@ export default function SEOModule({ onBack }) {
           </div>
         )}
 
-        {/* TAB 3: SITE AUDIT */}
+        {/* TAB: SITE AUDIT */}
         {activeTab === 'audit' && (
           <div className="space-y-6">
             <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
@@ -739,7 +1106,7 @@ export default function SEOModule({ onBack }) {
           </div>
         )}
 
-        {/* TAB 4: GLOSSARY & GUIDE */}
+        {/* TAB: GLOSSARY */}
         {activeTab === 'glossary' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
@@ -779,13 +1146,135 @@ export default function SEOModule({ onBack }) {
                 </li>
                 <li className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                   <strong className="text-blue-300 block">3. Transaccional (BOFU):</strong>
-                  El usuario está listo para comprar o solicitar cotización (ej. "agratar plan ubersuggest chile"). Ideal para páginas de producto y contacto directo.
+                  El usuario está listo para comprar o solicitar cotización (ej. "contratar plan software"). Ideal para páginas de producto y contacto directo.
                 </li>
               </ul>
             </div>
           </div>
         )}
       </main>
+
+      {/* CREATE PROJECT MODAL */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h4 className="font-bold text-white text-base flex items-center gap-2">
+                <FolderKanban className="text-orange-400" size={18} />
+                Nuevo Proyecto de Posicionamiento SEO
+              </h4>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="text-slate-400 hover:text-white text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {projectError && (
+              <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle size={15} />
+                <span>{projectError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveProject} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre del Proyecto</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Estrategia Falabella vs Retail 2026"
+                  value={projectForm.name}
+                  onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Dominio Principal</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ej. falabella.com"
+                    value={projectForm.domain}
+                    onChange={(e) => setProjectForm({ ...projectForm, domain: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">País Objetivo</label>
+                  <select
+                    value={projectForm.country}
+                    onChange={(e) => setProjectForm({ ...projectForm, country: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer"
+                  >
+                    {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
+                  Competidores a Comparar (Uno por línea)
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="paris.cl&#10;ripley.cl&#10;mercadolibre.cl"
+                  value={projectForm.competitorsText}
+                  onChange={(e) => setProjectForm({ ...projectForm, competitorsText: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 custom-scrollbar"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
+                  Palabras Clave a Monitorear (Una por línea)
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="zapatillas running&#10;smart tv samsung&#10;comprar ropa online"
+                  value={projectForm.keywordsText}
+                  onChange={(e) => setProjectForm({ ...projectForm, keywordsText: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 custom-scrollbar"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
+                  Notas & Hipótesis Inbound del Grupo
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="Objetivo: aumentar tráfico orgánico un 25% mediante contenidos TOFU..."
+                  value={projectForm.notes}
+                  onChange={(e) => setProjectForm({ ...projectForm, notes: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 custom-scrollbar"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingProject}
+                  className="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {savingProject ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
+                  <span>Guardar Proyecto</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
