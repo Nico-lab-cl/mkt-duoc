@@ -716,16 +716,18 @@ export default function SEOModule({ onBack }) {
                   <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl">
                     <span className="text-[11px] font-bold uppercase text-slate-400">Tráfico Mensual Estimado</span>
                     <div className="text-2xl font-black text-white mt-1">
-                      {selectedProject.metrics_snapshot?.organic_traffic 
+                      {selectedProject.metrics_snapshot?.organic_traffic !== undefined && selectedProject.metrics_snapshot?.organic_traffic !== null
                         ? Number(selectedProject.metrics_snapshot.organic_traffic).toLocaleString('es-CL')
-                        : (selectedProject.metrics_snapshot?.traffic || '125.000')}
+                        : (selectedProject.metrics_snapshot?.traffic !== undefined ? Number(selectedProject.metrics_snapshot.traffic).toLocaleString('es-CL') : '0')}
                     </div>
                   </div>
 
                   <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl">
                     <span className="text-[11px] font-bold uppercase text-slate-400">Autoridad de Dominio (DA)</span>
                     <div className="text-2xl font-black text-emerald-400 mt-1">
-                      {selectedProject.metrics_snapshot?.domain_authority || selectedProject.metrics_snapshot?.da || '54'} / 100
+                      {selectedProject.metrics_snapshot?.domain_authority !== undefined && selectedProject.metrics_snapshot?.domain_authority !== null
+                        ? selectedProject.metrics_snapshot.domain_authority
+                        : (selectedProject.metrics_snapshot?.da !== undefined ? selectedProject.metrics_snapshot.da : '1')} / 100
                     </div>
                   </div>
 
@@ -1011,9 +1013,9 @@ export default function SEOModule({ onBack }) {
                   <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Tráfico Orgánico Mensual</span>
                     <div className="text-2xl font-black text-white mt-1">
-                      {domainData.organic_traffic 
+                      {domainData.organic_traffic !== undefined && domainData.organic_traffic !== null
                         ? Number(domainData.organic_traffic).toLocaleString('es-CL')
-                        : (domainData.traffic || domainData.estimated_visits || '142.500')}
+                        : (domainData.traffic !== undefined ? Number(domainData.traffic).toLocaleString('es-CL') : '0')}
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">Visitas estimadas al mes desde Google</p>
                   </div>
@@ -1021,7 +1023,9 @@ export default function SEOModule({ onBack }) {
                   <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Autoridad de Dominio (DA)</span>
                     <div className="text-2xl font-black text-emerald-400 mt-1">
-                      {domainData.domain_authority || domainData.da || '58'} / 100
+                      {domainData.domain_authority !== undefined && domainData.domain_authority !== null
+                        ? domainData.domain_authority
+                        : (domainData.da !== undefined ? domainData.da : '1')} / 100
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">Fuerza y confiabilidad del dominio</p>
                   </div>
@@ -1029,9 +1033,9 @@ export default function SEOModule({ onBack }) {
                   <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Keywords Posicionadas</span>
                     <div className="text-2xl font-black text-amber-300 mt-1">
-                      {domainData.organic_keywords 
+                      {domainData.organic_keywords !== undefined && domainData.organic_keywords !== null
                         ? Number(domainData.organic_keywords).toLocaleString('es-CL')
-                        : (domainData.keywords_count || '12.840')}
+                        : (domainData.keywords_count !== undefined ? Number(domainData.keywords_count).toLocaleString('es-CL') : '0')}
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">Palabras clave en el Top 100 de búsqueda</p>
                   </div>
@@ -1039,9 +1043,9 @@ export default function SEOModule({ onBack }) {
                   <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Backlinks Totales</span>
                     <div className="text-2xl font-black text-blue-300 mt-1">
-                      {domainData.backlinks 
+                      {domainData.backlinks !== undefined && domainData.backlinks !== null
                         ? Number(domainData.backlinks).toLocaleString('es-CL')
-                        : (domainData.backlinks_count || '350.200')}
+                        : (domainData.backlinks_count !== undefined ? Number(domainData.backlinks_count).toLocaleString('es-CL') : '0')}
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">Enlaces externos entrantes</p>
                   </div>
@@ -1436,7 +1440,7 @@ export default function SEOModule({ onBack }) {
                       <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
                         <span className="text-[10px] text-slate-400 font-bold uppercase block">Autoridad DA</span>
                         <span className="text-base font-black text-emerald-400">
-                          {projectForm.metrics.domain_authority || 30} / 100
+                          {projectForm.metrics.domain_authority !== undefined && projectForm.metrics.domain_authority !== null ? projectForm.metrics.domain_authority : 1} / 100
                         </span>
                       </div>
                       <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">

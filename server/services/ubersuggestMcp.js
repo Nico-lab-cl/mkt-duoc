@@ -30,6 +30,28 @@ function generatePKCE() {
   return { verifier, challenge };
 }
 
+const COUNTRY_LOC_MAP = {
+  cl: { locId: 2152, language: 'es', country: 'cl' },
+  ar: { locId: 2032, language: 'es', country: 'ar' },
+  mx: { locId: 2484, language: 'es', country: 'mx' },
+  co: { locId: 2170, language: 'es', country: 'co' },
+  pe: { locId: 2604, language: 'es', country: 'pe' },
+  es: { locId: 2724, language: 'es', country: 'es' },
+  us: { locId: 2840, language: 'en', country: 'us' },
+  us_es: { locId: 2840, language: 'es', country: 'us' },
+  br: { locId: 2076, language: 'pt', country: 'br' },
+  ec: { locId: 2218, language: 'es', country: 'ec' },
+  uy: { locId: 2858, language: 'es', country: 'uy' },
+  global: { locId: 0, language: 'es', country: 'global' }
+};
+
+const TOOL_ALIASES = {
+  domain_overview: ['domain_overview', 'get_domain_overview', 'ubersuggest_domain_overview', 'domain_traffic', 'get_domain_rank'],
+  keyword_overview: ['keyword_overview', 'get_keyword_overview', 'ubersuggest_keyword_overview', 'keyword_research', 'get_keyword_data'],
+  site_audit: ['site_audit', 'get_site_audit', 'ubersuggest_site_audit'],
+  top_pages: ['top_pages', 'get_top_pages', 'ubersuggest_top_pages']
+};
+
 export class UbersuggestMcpService {
   constructor(pool) {
     this.pool = pool;
@@ -91,14 +113,12 @@ export class UbersuggestMcpService {
     const { verifier, challenge } = generatePKCE();
     const state = crypto.randomBytes(16).toString('hex');
 
-    // Guardar el verifier asociado al state (expira en 15 minutos)
     pkceStore.set(state, {
       verifier,
       redirectUri,
       createdAt: Date.now()
     });
 
-    // Limpiar entradas antiguas de PKCE
     for (const [s, data] of pkceStore.entries()) {
       if (Date.now() - data.createdAt > 15 * 60 * 1000) {
         pkceStore.delete(s);
@@ -157,10 +177,9 @@ export class UbersuggestMcpService {
     }
 
     const tokenData = await response.json();
-    const expiresIn = tokenData.expires_in || 86400 * 30; // 30 días por defecto
+    const expiresIn = tokenData.expires_in || 86400 * 30;
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
-    // Guardar o actualizar en la base de datos
     await this.pool.query(`
       INSERT INTO seo_integrations (provider, access_token, refresh_token, token_type, expires_at, scope, is_active, updated_at)
       VALUES ('ubersuggest', $1, $2, $3, $4, $5, true, NOW())
@@ -202,7 +221,6 @@ export class UbersuggestMcpService {
     const now = new Date();
     const expiresAt = new Date(integration.expires_at);
 
-    // Si expira en menos de 5 minutos y tenemos refresh_token, refrescamos
     if (integration.refresh_token && (expiresAt.getTime() - now.getTime() < 5 * 60 * 1000)) {
       try {
         console.log('🔄 Refrescando token de Ubersuggest...');
@@ -287,71 +305,107 @@ export class UbersuggestMcpService {
   }
 
   /**
-   * Ejecuta una llamada RPC contra el servidor MCP de Ubersuggest
+   * Ejecuta una llamada RPC contra el servidor MCP de Ubersuggest con soporte de alias y enriquecimiento de locación
    */
-  async executeMcpTool(toolName, params = {}) {
+  async executeMcpTool(toolName, rawParams = {}) {
     const token = await this.getValidToken();
     if (!token) {
       throw new Error('Ubersuggest no está conectado. El profesor debe conectar su cuenta en el panel SEO.');
     }
 
-    // Comprobar caché (para no consumir créditos si se repite la misma consulta en 24h)
-    const cacheKey = `${toolName}:${JSON.stringify(params)}`.toLowerCase();
-    const cacheRes = await this.pool.query(`
-      SELECT response_data, expires_at FROM seo_queries_cache WHERE cache_key = $1
-    `, [cacheKey]);
-
-    if (cacheRes.rows.length > 0) {
-      const cached = cacheRes.rows[0];
-      if (!cached.expires_at || new Date(cached.expires_at) > new Date()) {
-        await this.pool.query(`UPDATE seo_queries_cache SET hits = hits + 1 WHERE cache_key = $1`, [cacheKey]);
-        return {
-          ...cached.response_data,
-          _fromCache: true
-        };
-      }
+    // Enriquecer parámetros geográficos si viene un país
+    const enrichedParams = { ...rawParams };
+    if (rawParams.country && COUNTRY_LOC_MAP[rawParams.country]) {
+      const loc = COUNTRY_LOC_MAP[rawParams.country];
+      enrichedParams.locId = loc.locId;
+      enrichedParams.language = loc.language;
     }
 
-    // Llamada JSON-RPC al MCP Server
-    const payload = {
-      jsonrpc: '2.0',
-      id: Date.now(),
-      method: 'tools/call',
-      params: {
-        name: toolName,
-        arguments: params
-      }
-    };
+    // Comprobar caché
+    const cacheKey = `${toolName}:${JSON.stringify(enrichedParams)}`.toLowerCase();
+    try {
+      const cacheRes = await this.pool.query(`
+        SELECT response_data, expires_at FROM seo_queries_cache WHERE cache_key = $1
+      `, [cacheKey]);
 
-    const response = await fetch(MCP_SERVER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/event-stream',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errBody = await response.text();
-      console.error(`❌ Error en MCP tool ${toolName}:`, response.status, errBody);
-      throw new Error(`Error en servidor MCP (${response.status}): ${errBody}`);
-    }
-
-    const data = await response.json();
-    
-    // Si la respuesta contiene contenido devuelto por la herramienta MCP
-    let finalResult = data;
-    if (data.result && data.result.content && data.result.content[0]) {
-      const firstContent = data.result.content[0];
-      if (firstContent.type === 'text') {
-        try {
-          finalResult = JSON.parse(firstContent.text);
-        } catch {
-          finalResult = { text: firstContent.text, rawResult: data.result };
+      if (cacheRes.rows.length > 0) {
+        const cached = cacheRes.rows[0];
+        if (!cached.expires_at || new Date(cached.expires_at) > new Date()) {
+          await this.pool.query(`UPDATE seo_queries_cache SET hits = hits + 1 WHERE cache_key = $1`, [cacheKey]);
+          return {
+            ...cached.response_data,
+            _fromCache: true
+          };
         }
       }
+    } catch (cErr) {
+      console.warn('Advertencia en consulta de caché:', cErr.message);
+    }
+
+    // Lista de nombres de herramientas a probar (principal + alias)
+    const candidateTools = TOOL_ALIASES[toolName] || [toolName];
+    let lastError = null;
+    let finalResult = null;
+
+    for (const candidateName of candidateTools) {
+      try {
+        const payload = {
+          jsonrpc: '2.0',
+          id: Date.now(),
+          method: 'tools/call',
+          params: {
+            name: candidateName,
+            arguments: enrichedParams
+          }
+        };
+
+        const response = await fetch(MCP_SERVER_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, text/event-stream',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errBody = await response.text();
+          lastError = new Error(`Error en servidor MCP (${response.status}): ${errBody}`);
+          continue;
+        }
+
+        const data = await response.json();
+        
+        if (data.error) {
+          lastError = new Error(`MCP RPC Error: ${data.error.message || JSON.stringify(data.error)}`);
+          continue;
+        }
+
+        // Si la respuesta contiene contenido devuelto por la herramienta MCP
+        finalResult = data;
+        if (data.result && data.result.content && data.result.content[0]) {
+          const firstContent = data.result.content[0];
+          if (firstContent.type === 'text') {
+            try {
+              finalResult = JSON.parse(firstContent.text);
+            } catch {
+              finalResult = { text: firstContent.text, rawResult: data.result };
+            }
+          }
+        } else if (data.result) {
+          finalResult = data.result;
+        }
+
+        // Si obtuvimos un resultado válido, salimos del ciclo de alias
+        if (finalResult) break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!finalResult) {
+      throw lastError || new Error(`No se pudo ejecutar la herramienta ${toolName} en el servidor MCP`);
     }
 
     // Guardar en caché por 24 horas
@@ -364,7 +418,7 @@ export class UbersuggestMcpService {
           response_data = EXCLUDED.response_data,
           expires_at = EXCLUDED.expires_at,
           created_at = NOW()
-      `, [cacheKey, toolName, JSON.stringify(params), JSON.stringify(finalResult), expiresAt]);
+      `, [cacheKey, toolName, JSON.stringify(enrichedParams), JSON.stringify(finalResult), expiresAt]);
     } catch (e) {
       console.warn('⚠️ No se pudo guardar en caché SEO:', e.message);
     }
