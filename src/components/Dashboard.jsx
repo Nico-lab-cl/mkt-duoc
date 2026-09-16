@@ -7,7 +7,7 @@ import {
   Search, 
   Video, 
   ArrowRight, 
-  MessageCircle,
+  MessageCircle, 
   MessageSquare, 
   Settings, 
   Users, 
@@ -31,7 +31,8 @@ import {
   Trash2,
   QrCode,
   Gift,
-  ClipboardList
+  ClipboardList,
+  Globe
 } from 'lucide-react';
 
 import GroupsManagement from './GroupsManagement';
@@ -47,6 +48,14 @@ const platforms = [
     description: 'Facebook & Instagram Ads Manager',
     icon: <Layout size={24} />,
     color: 'bg-[#1877F2]',
+    status: 'active'
+  },
+  {
+    id: 'seo',
+    name: 'SEO & Tráfico Orgánico',
+    description: 'Inteligencia de Palabras Clave y Tráfico (Ubersuggest MCP)',
+    icon: <Globe size={24} />,
+    color: 'bg-gradient-to-br from-orange-500 to-amber-500',
     status: 'active'
   },
   {

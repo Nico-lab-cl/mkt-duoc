@@ -5,6 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { UbersuggestMcpService } from './services/ubersuggestMcp.js';
 
 dotenv.config();
 
@@ -1327,6 +1328,233 @@ app.delete('/api/admin/briefings/:id', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar briefing:', err);
     res.status(500).json({ success: false, error: 'Error al eliminar el formulario' });
+  }
+});
+
+// ==========================================
+// MÓDULO SEO & UBERSUGGEST MCP
+// ==========================================
+const ubersuggestService = new UbersuggestMcpService(pool);
+
+// Estado de conexión del servidor MCP de Ubersuggest
+app.get('/api/seo/status', async (req, res) => {
+  try {
+    const status = await ubersuggestService.getStatus();
+    res.json(status);
+  } catch (err) {
+    console.error('Error al consultar estado SEO:', err);
+    res.status(500).json({ error: 'Error al consultar estado de conexión SEO' });
+  }
+});
+
+// Iniciar flujo OAuth (Redirige a Ubersuggest login)
+app.get('/api/seo/oauth/login', (req, res) => {
+  try {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const defaultOrigin = (host.includes('localhost') || host.includes('127.0.0.1'))
+      ? `${protocol}://${host}`
+      : 'https://softwarespectra.cl';
+
+    const redirectUri = `${defaultOrigin}/api/seo/oauth/callback`;
+    const { authUrl } = ubersuggestService.getAuthorizationUrl(redirectUri);
+
+    if (req.query.format === 'json') {
+      return res.json({ authUrl, redirectUri });
+    }
+    res.redirect(authUrl);
+  } catch (err) {
+    console.error('Error al iniciar OAuth de Ubersuggest:', err);
+    res.status(500).send(`Error iniciando conexión: ${err.message}`);
+  }
+});
+
+// Callback OAuth de Ubersuggest
+app.get('/api/seo/oauth/callback', async (req, res) => {
+  const { code, state, error, error_description } = req.query;
+
+  if (error) {
+    return res.status(400).send(`
+      <html>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h2 style="color: #e11d48;">Error al conectar con Ubersuggest</h2>
+          <p>${error_description || error}</p>
+          <a href="/?view=seo" style="display:inline-block; margin-top:20px; padding:10px 20px; background:#2563eb; color:white; border-radius:8px; text-decoration:none;">Volver al Simulador</a>
+        </body>
+      </html>
+    `);
+  }
+
+  try {
+    await ubersuggestService.handleOAuthCallback(code, state);
+    res.send(`
+      <html>
+        <head><title>Ubersuggest Conectado</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px; background: #f8fafc;">
+          <div style="background: white; border-radius: 16px; padding: 40px; max-width: 500px; margin: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+            <div style="font-size: 50px; margin-bottom: 10px;">✅</div>
+            <h2 style="color: #0f172a; margin-bottom: 10px;">¡Ubersuggest Conectado con Éxito!</h2>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">La integración MCP de SEO para tus alumnos ya está activa y lista para responder consultas.</p>
+            <a href="/?view=seo&connected=true" style="display:inline-block; padding:12px 24px; background:#2563eb; color:white; font-weight:bold; border-radius:10px; text-decoration:none;">Ir al Módulo SEO</a>
+          </div>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({ type: 'UBERSUGGEST_CONNECTED' }, '*');
+              setTimeout(() => window.close(), 1500);
+            } else {
+              setTimeout(() => { window.location.href = '/?view=seo'; }, 2000);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error('Error al procesar callback OAuth:', err);
+    res.status(500).send(`
+      <html>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h2 style="color: #e11d48;">Error en la vinculación</h2>
+          <p>${err.message}</p>
+          <a href="/?view=seo" style="display:inline-block; margin-top:20px; padding:10px 20px; background:#2563eb; color:white; border-radius:8px; text-decoration:none;">Reintentar</a>
+        </body>
+      </html>
+    `);
+  }
+});
+
+// Desconectar Ubersuggest
+app.post('/api/seo/disconnect', requireAdmin, async (req, res) => {
+  try {
+    await ubersuggestService.disconnect();
+    res.json({ success: true, message: 'Ubersuggest desconectado' });
+  } catch (err) {
+    console.error('Error al desconectar SEO:', err);
+    res.status(500).json({ error: 'Error al desconectar' });
+  }
+});
+
+// Herramienta 1: Análisis de Dominio y Tráfico
+app.post('/api/seo/domain-overview', async (req, res) => {
+  const { domain, country = 'cl' } = req.body;
+  if (!domain) {
+    return res.status(400).json({ error: 'El dominio es obligatorio' });
+  }
+
+  // Limpiar dominio (remover http://, https://, www., /)
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim().toLowerCase();
+
+  try {
+    // Intentar ejecutar la herramienta MCP del servidor Ubersuggest
+    const result = await ubersuggestService.executeMcpTool('domain_overview', {
+      domain: cleanDomain,
+      country: country
+    });
+
+    res.json({
+      success: true,
+      domain: cleanDomain,
+      data: result
+    });
+  } catch (err) {
+    console.error('Error en domain-overview:', err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Error al obtener datos de tráfico del dominio'
+    });
+  }
+});
+
+// Herramienta 2: Explorador de Palabras Clave
+app.post('/api/seo/keyword-research', async (req, res) => {
+  const { keyword, country = 'cl' } = req.body;
+  if (!keyword) {
+    return res.status(400).json({ error: 'La palabra clave es obligatoria' });
+  }
+
+  try {
+    const result = await ubersuggestService.executeMcpTool('keyword_overview', {
+      keyword: keyword.trim(),
+      country: country
+    });
+
+    res.json({
+      success: true,
+      keyword: keyword.trim(),
+      data: result
+    });
+  } catch (err) {
+    console.error('Error en keyword-research:', err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Error al buscar palabras clave'
+    });
+  }
+});
+
+// Herramienta 3: Auditoría SEO de Sitio Web
+app.post('/api/seo/site-audit', async (req, res) => {
+  const { domain } = req.body;
+  if (!domain) {
+    return res.status(400).json({ error: 'El dominio es obligatorio' });
+  }
+
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim().toLowerCase();
+
+  try {
+    const result = await ubersuggestService.executeMcpTool('site_audit', {
+      domain: cleanDomain
+    });
+
+    res.json({
+      success: true,
+      domain: cleanDomain,
+      data: result
+    });
+  } catch (err) {
+    console.error('Error en site-audit:', err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Error al auditar el sitio web'
+    });
+  }
+});
+
+// Herramienta 4: Páginas más visitadas (Top Pages)
+app.post('/api/seo/top-pages', async (req, res) => {
+  const { domain, country = 'cl' } = req.body;
+  if (!domain) {
+    return res.status(400).json({ error: 'El dominio es obligatorio' });
+  }
+
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim().toLowerCase();
+
+  try {
+    const result = await ubersuggestService.executeMcpTool('top_pages', {
+      domain: cleanDomain,
+      country: country
+    });
+
+    res.json({
+      success: true,
+      domain: cleanDomain,
+      data: result
+    });
+  } catch (err) {
+    console.error('Error en top-pages:', err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Error al obtener top páginas'
+    });
+  }
+});
+
+// Herramienta 5: Listar herramientas MCP activas
+app.get('/api/seo/tools', async (req, res) => {
+  try {
+    const tools = await ubersuggestService.listMcpTools();
+    res.json(tools);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al listar herramientas MCP' });
   }
 });
 

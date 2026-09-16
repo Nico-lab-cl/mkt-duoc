@@ -9,6 +9,7 @@ import GroupSelection from './components/GroupSelection';
 import KPIModule from './components/KPIModule';
 import LeadMagnetStudio from './components/PageBuilder';
 import N8NModule from './components/N8NModule';
+import SEOModule from './components/SEOModule';
 
 import PagePublicView from './components/PageBuilder/PagePublicView';
 import VocationalFairLanding from './components/VocationalFairLanding';
@@ -72,6 +73,8 @@ const AppContent = () => {
     
     if (platform === 'chatflow') {
       setView('chatflow');
+    } else if (platform === 'seo') {
+      setView('seo');
     } else if (platform === 'kpi') {
       setView('kpi');
     } else if (platform === 'leadmagnet') {
@@ -97,6 +100,12 @@ const AppContent = () => {
         <Dashboard 
           onSelectPlatform={handleSelectPlatform} 
           onChangeGroup={() => setView('group-selection')}
+        />
+      )}
+
+      {view === 'seo' && (
+        <SEOModule 
+          onBack={() => setView('dashboard')}
         />
       )}
 

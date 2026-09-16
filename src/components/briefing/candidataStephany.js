@@ -1158,7 +1158,7 @@ export const CONFIG = {
     title: (contact) =>
       contact.name ? `Cuestionario de campaña para ${contact.name}` : 'Cuestionario para iniciar su campaña',
     intro:
-      'Son 11 secciones y la mayoría se responde marcando opciones. Toma unos 25 minutos y no hace falta terminarlo de una vez: lo que responda queda guardado y puede volver después. Con esto abrimos los perfiles oficiales, definimos su imagen y armamos el plan de contenido, videos y pauta del distrito. De su parte solo necesitamos que después grabe los videos siguiendo las indicaciones que le enviemos.',
+      'Son 11 secciones y la mayoría se responde marcando opciones. Toma unos 25 minutos y no hace falta terminarlo de una vez: lo que responda queda guardado y puede volver después. Con esto abrimos los perfiles oficiales, definimos su imagen y armamos el plan de contenido, videos y pauta del distrito.',
     successTitle: 'Listo, recibimos todo',
     successText:
       'Gracias, Stephany. Con esto ya podemos abrir los perfiles, proponerle la línea gráfica y armar el primer calendario de contenido. Le escribimos en los próximos días con la propuesta.'
