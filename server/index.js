@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { UbersuggestMcpService } from './services/ubersuggestMcp.js';
+import { sendStudentNotificationWebhook } from './services/emailTemplates.js';
 
 dotenv.config();
 
@@ -321,30 +322,13 @@ app.post('/api/recover-password', async (req, res) => {
       );
     }
 
-    // 3. Disparar Webhook a n8n
-    try {
-      console.log(`Disparando webhook de recuperación a n8n para ${emailNormalized}...`);
-      const webhookRes = await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailNormalized,
-          new_password: tmpPassword,
-          Correo: emailNormalized,
-          "Contraseña temporal": tmpPassword,
-          Nombre: full_name,
-          first_name: first_name,
-          last_name: last_name,
-          "Numero de telefono": phone,
-          phone: phone
-        })
-      });
-      
-      const responseText = await webhookRes.text();
-      console.log(`Webhook n8n response - Status: ${webhookRes.status}, Body: ${responseText}`);
-    } catch (webhookErr) {
-      console.error('Error al disparar webhook de recuperación en n8n:', webhookErr);
-    }
+    // 3. Disparar Webhook a n8n con HTML, Subject y Metacampos
+    await sendStudentNotificationWebhook({
+      event: 'student_recover_password',
+      full_name: full_name || `${first_name} ${last_name}`.trim(),
+      email: emailNormalized,
+      tmpPassword: tmpPassword
+    });
 
     res.json({ success: true, message: 'Se ha generado y enviado una nueva contraseña temporal.' });
   } catch (err) {
@@ -766,34 +750,18 @@ app.post('/api/admin/users', async (req, res) => {
       );
     }
 
-    // Disparar Webhook a n8n para enviar correo con credenciales de bienvenida
+    // Disparar Webhook a n8n para enviar correo con credenciales de bienvenida (con subject, html y metacampos)
     let emailSent = false;
     if (send_email) {
-      try {
-        console.log(`Disparando webhook de bienvenida a n8n para ${emailNormalized}...`);
-        const webhookRes = await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'new_student_welcome',
-            email: emailNormalized,
-            new_password: tmpPassword,
-            Correo: emailNormalized,
-            "Contraseña temporal": tmpPassword,
-            Nombre: full_name.trim(),
-            first_name: full_name.trim().split(' ')[0],
-            last_name: full_name.trim().split(' ').slice(1).join(' ') || '',
-            career_year: career_year || '',
-            "Año de carrera": career_year || '',
-            campus: campus || '',
-            "Sede": campus || '',
-            login_url: 'https://softwarespectra.cl'
-          })
-        });
-        emailSent = webhookRes.ok;
-      } catch (webhookErr) {
-        console.error('Error enviando webhook n8n:', webhookErr.message);
-      }
+      const webhookRes = await sendStudentNotificationWebhook({
+        event: 'new_student_welcome',
+        full_name: full_name.trim(),
+        email: emailNormalized,
+        tmpPassword: tmpPassword,
+        career_year: career_year,
+        campus: campus
+      });
+      emailSent = webhookRes.success;
     }
 
     res.json({ 
@@ -823,29 +791,21 @@ app.post('/api/admin/users/:id/resend-credentials', async (req, res) => {
 
     await pool.query('UPDATE users SET password = $1, must_change_password = TRUE WHERE id = $2', [tmpPassword, id]);
 
-    try {
-      await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'student_resend_password',
-          email: user.email,
-          new_password: tmpPassword,
-          Correo: user.email,
-          "Contraseña temporal": tmpPassword,
-          Nombre: user.full_name,
-          first_name: user.full_name ? user.full_name.split(' ')[0] : '',
-          last_name: user.full_name ? user.full_name.split(' ').slice(1).join(' ') : '',
-          career_year: user.career_year || '',
-          campus: user.campus || '',
-          login_url: 'https://softwarespectra.cl'
-        })
-      });
-    } catch (e) {
-      console.error('Error enviando webhook:', e);
-    }
+    const webhookRes = await sendStudentNotificationWebhook({
+      event: 'student_resend_password',
+      full_name: user.full_name,
+      email: user.email,
+      tmpPassword: tmpPassword,
+      career_year: user.career_year,
+      campus: user.campus
+    });
 
-    res.json({ success: true, tmpPassword, message: `Nueva clave temporal ${tmpPassword} enviada a ${user.email}` });
+    res.json({ 
+      success: true, 
+      tmpPassword, 
+      emailSent: webhookRes.success,
+      message: `Nueva clave temporal ${tmpPassword} enviada a ${user.email}` 
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Error al reenviar credenciales' });
   }
@@ -874,28 +834,15 @@ app.post('/api/admin/users/:id/reset-password', async (req, res) => {
 
     let emailSent = false;
     if (send_email) {
-      try {
-        const webhookRes = await fetch('https://n8n-n8n.db8enk.easypanel.host/webhook/fa99e6f7-4e9c-4dd7-baad-81853fd9fa66', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'admin_reset_password',
-            email: user.email,
-            new_password: finalPassword,
-            Correo: user.email,
-            "Contraseña temporal": finalPassword,
-            Nombre: user.full_name,
-            first_name: user.full_name ? user.full_name.split(' ')[0] : '',
-            last_name: user.full_name ? user.full_name.split(' ').slice(1).join(' ') : '',
-            career_year: user.career_year || '',
-            campus: user.campus || '',
-            login_url: 'https://softwarespectra.cl'
-          })
-        });
-        emailSent = webhookRes.ok;
-      } catch (e) {
-        console.error('Error enviando webhook reset-password:', e);
-      }
+      const webhookRes = await sendStudentNotificationWebhook({
+        event: 'admin_reset_password',
+        full_name: user.full_name,
+        email: user.email,
+        tmpPassword: finalPassword,
+        career_year: user.career_year,
+        campus: user.campus
+      });
+      emailSent = webhookRes.success;
     }
 
     res.json({ 
