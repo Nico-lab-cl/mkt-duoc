@@ -1562,21 +1562,34 @@ app.get('/api/seo/tools', async (req, res) => {
 // PROYECTOS SEO (Tipo Ubersuggest Projects)
 // ==========================================
 
-// Listar proyectos de un usuario o grupo
+// Listar proyectos de un usuario, grupo o todos (para el profesor)
 app.get('/api/seo/projects', async (req, res) => {
-  const { userId, groupId } = req.query;
+  const { userId, groupId, filter } = req.query;
   try {
-    let query = 'SELECT * FROM seo_projects';
+    let query = `
+      SELECT p.*, 
+             COALESCE(u.full_name, u.username, 'Profesor') as author_name, 
+             COALESCE(u.role, 'teacher') as author_role
+      FROM seo_projects p
+      LEFT JOIN users u ON u.id = p.user_id
+    `;
     const params = [];
 
-    if (groupId) {
+    if (filter === 'all') {
+      // Trae todos los proyectos de alumnos y profesores
+    } else if (filter === 'teacher' && userId) {
+      params.push(userId);
+      query += ' WHERE p.user_id = $1';
+    } else if (filter === 'students') {
+      query += " WHERE (u.role IS NULL OR u.role != 'admin')";
+    } else if (groupId) {
       params.push(groupId);
-      query += ' WHERE group_id = $1';
+      query += ' WHERE p.group_id = $1';
     } else if (userId) {
       params.push(userId);
-      query += ' WHERE user_id = $1';
+      query += ' WHERE p.user_id = $1';
     }
-    query += ' ORDER BY updated_at DESC';
+    query += ' ORDER BY p.updated_at DESC';
 
     const result = await pool.query(query, params);
     res.json({ success: true, projects: result.rows || [] });

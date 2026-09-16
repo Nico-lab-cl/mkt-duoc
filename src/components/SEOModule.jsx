@@ -48,6 +48,7 @@ export default function SEOModule({ onBack }) {
   const isAdmin = currentUser?.role === 'admin';
 
   const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'domain' | 'keywords' | 'audit' | 'glossary'
+  const [projectFilter, setProjectFilter] = useState('my'); // 'my' | 'students' | 'all'
   const [connectionStatus, setConnectionStatus] = useState({ connected: false, loading: true });
 
   // Projects State
@@ -101,13 +102,24 @@ export default function SEOModule({ onBack }) {
     }
   };
 
-  // Fetch Projects for student/group
-  const fetchProjects = async () => {
+  // Fetch Projects for student/group or teacher filter
+  const fetchProjects = async (filterToUse = projectFilter) => {
     setProjectsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (currentUser?.group_id) params.append('groupId', currentUser.group_id);
-      if (currentUser?.id) params.append('userId', currentUser.id);
+      if (isAdmin) {
+        if (filterToUse === 'my') {
+          params.append('filter', 'teacher');
+          if (currentUser?.id) params.append('userId', currentUser.id);
+        } else if (filterToUse === 'students') {
+          params.append('filter', 'students');
+        } else {
+          params.append('filter', 'all');
+        }
+      } else {
+        if (currentUser?.group_id) params.append('groupId', currentUser.group_id);
+        if (currentUser?.id) params.append('userId', currentUser.id);
+      }
 
       const res = await fetch(`/api/seo/projects?${params.toString()}`);
       if (res.ok) {
@@ -525,6 +537,42 @@ export default function SEOModule({ onBack }) {
               </button>
             </div>
 
+            {/* Teacher Project Filter Pills */}
+            {isAdmin && (
+              <div className="flex items-center gap-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800 w-fit">
+                <button
+                  onClick={() => { setProjectFilter('my'); fetchProjects('my'); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    projectFilter === 'my'
+                      ? 'bg-orange-500 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  👨‍🏫 Mis Proyectos (Profesor)
+                </button>
+                <button
+                  onClick={() => { setProjectFilter('students'); fetchProjects('students'); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    projectFilter === 'students'
+                      ? 'bg-orange-500 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🎓 Proyectos de Alumnos
+                </button>
+                <button
+                  onClick={() => { setProjectFilter('all'); fetchProjects('all'); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    projectFilter === 'all'
+                      ? 'bg-orange-500 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🌐 Todos los Proyectos
+                </button>
+              </div>
+            )}
+
             {/* Selected Project View (if open) */}
             {selectedProject ? (
               <div className="space-y-6 bg-slate-900/90 border border-orange-500/30 rounded-2xl p-6 shadow-2xl relative animate-fade-in">
@@ -542,9 +590,16 @@ export default function SEOModule({ onBack }) {
                         {selectedProject.domain}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">
-                      País objetivo: <span className="font-semibold text-slate-300">{COUNTRIES.find(c => c.code === selectedProject.country)?.name || selectedProject.country}</span>
-                    </p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <p className="text-xs text-slate-400">
+                        País: <span className="font-semibold text-slate-300">{COUNTRIES.find(c => c.code === selectedProject.country)?.name || selectedProject.country}</span>
+                      </p>
+                      {selectedProject.author_name && (
+                        <span className="text-xs text-slate-400">
+                          • Autor: <span className="text-orange-300 font-semibold">{selectedProject.author_name}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -676,9 +731,11 @@ export default function SEOModule({ onBack }) {
                       <FolderKanban size={28} />
                     </div>
                     <div className="max-w-md mx-auto">
-                      <h4 className="font-bold text-white text-base">Aún no hay proyectos creados</h4>
+                      <h4 className="font-bold text-white text-base">No se encontraron proyectos</h4>
                       <p className="text-xs text-slate-400 mt-1">
-                        Crea el primer proyecto de tu grupo para almacenar el dominio de estudio, sus competidores y las palabras clave que trabajarán en su estrategia Inbound.
+                        {isAdmin && projectFilter === 'my'
+                          ? 'Aún no has creado proyectos de profesor. Crea uno como caso de estudio para la clase.'
+                          : 'Crea un proyecto para almacenar el dominio de estudio, sus competidores y las palabras clave que trabajarán en su estrategia Inbound.'}
                       </p>
                     </div>
                     <button
@@ -686,7 +743,7 @@ export default function SEOModule({ onBack }) {
                       className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
                     >
                       <Plus size={16} />
-                      <span>Crear mi Primer Proyecto</span>
+                      <span>Crear Proyecto SEO</span>
                     </button>
                   </div>
                 ) : (
@@ -709,6 +766,18 @@ export default function SEOModule({ onBack }) {
                           <h4 className="font-bold text-white text-base group-hover:text-orange-300 transition-colors">
                             {proj.name}
                           </h4>
+
+                          {proj.author_name && (
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                proj.author_role === 'admin' 
+                                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' 
+                                  : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                              }`}>
+                                {proj.author_role === 'admin' ? '👨‍🏫 Profesor' : `🎓 ${proj.author_name}`}
+                              </span>
+                            </div>
+                          )}
 
                           <p className="text-xs text-slate-400 mt-2 line-clamp-2">
                             {proj.notes || 'Sin descripción adicional.'}
