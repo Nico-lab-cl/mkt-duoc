@@ -15,6 +15,8 @@ import PagePublicView from './components/PageBuilder/PagePublicView';
 import VocationalFairLanding from './components/VocationalFairLanding';
 import ClinicaBriefingForm from './components/ClinicaBriefingForm';
 import CandidataBriefingForm from './components/CandidataBriefingForm';
+import FeedbackDocenteForm from './components/feedbackDocente/FeedbackDocenteForm';
+import FeedbackDocentePanel from './components/feedbackDocente/FeedbackDocentePanel';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser, logActivity } = useProject();
@@ -26,9 +28,15 @@ const AppContent = () => {
   const isIdentidadPage = path.startsWith('/identidad') || path.startsWith('/registro') || path.startsWith('/martech');
   const isClinicaForm = path.startsWith('/formulario-clinica-conectamedica');
   const isCandidataForm = path.startsWith('/formulario-campana-stephany-valdez');
+  const isFeedbackPanel = path.startsWith('/feedback-docente-mkt/resultados');
+  const isFeedbackForm = !isFeedbackPanel && path.startsWith('/feedback-docente-mkt');
 
   const [view, setView] = useState(
-    isClinicaForm
+    isFeedbackPanel
+      ? 'feedback-docente-panel'
+      : isFeedbackForm
+      ? 'feedback-docente'
+      : isClinicaForm
       ? 'clinica-briefing'
       : isCandidataForm
       ? 'candidata-briefing'
@@ -43,7 +51,7 @@ const AppContent = () => {
   // Determinar la vista inicial o transiciones automáticas
   useEffect(() => {
     // Los formularios públicos de briefing nunca deben redirigir, aunque haya sesión iniciada
-    if (view === 'clinica-briefing' || view === 'candidata-briefing') return;
+    if (['clinica-briefing', 'candidata-briefing', 'feedback-docente', 'feedback-docente-panel'].includes(view)) return;
 
     if (currentUser) {
       if (currentUser.role === 'guest') {
@@ -157,6 +165,10 @@ const AppContent = () => {
       {view === 'candidata-briefing' && (
         <CandidataBriefingForm />
       )}
+
+      {view === 'feedback-docente' && <FeedbackDocenteForm />}
+
+      {view === 'feedback-docente-panel' && <FeedbackDocentePanel />}
 
       {view === 'success' && (
         <Success onBackToDashboard={() => setView('dashboard')} />

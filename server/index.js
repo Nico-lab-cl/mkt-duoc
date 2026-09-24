@@ -148,6 +148,20 @@ pool.connect(async (err, client, release) => {
       CREATE INDEX IF NOT EXISTS idx_briefing_files_token ON briefing_files(briefing_token);
       CREATE INDEX IF NOT EXISTS idx_briefing_files_briefing ON briefing_files(briefing_id);
       CREATE INDEX IF NOT EXISTS idx_briefings_slug ON briefings(form_slug);
+      CREATE TABLE IF NOT EXISTS docente_feedback (
+        id SERIAL PRIMARY KEY,
+        program TEXT NOT NULL DEFAULT 'marketing',
+        teacher_name TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        career_year SMALLINT NOT NULL,
+        period TEXT,
+        observations JSONB NOT NULL DEFAULT '[]'::jsonb,
+        strengths JSONB NOT NULL DEFAULT '[]'::jsonb,
+        strengths_comment TEXT,
+        general_comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_docente_feedback_program ON docente_feedback(program, career_year);
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='user_id') THEN
@@ -1479,6 +1493,119 @@ app.delete('/api/admin/briefings/:id', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar briefing:', err);
     res.status(500).json({ success: false, error: 'Error al eliminar el formulario' });
+  }
+});
+
+// ==========================================
+// FEEDBACK DOCENTE — OBSERVATORIO DE COMPETENCIAS
+// Formulario público: /feedback-docente-mkt
+// Panel con clave:    /feedback-docente-mkt/resultados
+// ==========================================
+
+// La clave del panel se define en Easypanel. El valor por defecto existe solo
+// para que el panel funcione en el primer despliegue; hay que reemplazarlo.
+const FEEDBACK_PANEL_KEY = process.env.FEEDBACK_PANEL_KEY || 'observatorio-mkt';
+if (!process.env.FEEDBACK_PANEL_KEY) {
+  console.warn('⚠️  FEEDBACK_PANEL_KEY no está definida: el panel de feedback docente usa la clave por defecto');
+}
+
+const FEEDBACK_FREQUENCIES = ['pocos', 'varios', 'mayoria'];
+const FEEDBACK_SEVERITIES = ['leve', 'moderado', 'critico'];
+
+const requirePanelKey = (req, res, next) => {
+  if (req.headers['x-panel-key'] !== FEEDBACK_PANEL_KEY) {
+    return res.status(401).json({ error: 'Clave incorrecta' });
+  }
+  next();
+};
+
+const cleanText = (value, max) => String(value ?? '').trim().slice(0, max);
+
+app.post('/api/feedback-docente', async (req, res) => {
+  const body = req.body || {};
+  const teacherName = cleanText(body.teacher_name, 120);
+  const subject = cleanText(body.subject, 160);
+  const careerYear = Number(body.career_year);
+
+  if (!teacherName || !subject) {
+    return res.status(400).json({ success: false, error: 'Faltan el nombre del docente o la asignatura' });
+  }
+  if (![1, 2, 3, 4].includes(careerYear)) {
+    return res.status(400).json({ success: false, error: 'El año de la carrera debe ser de 1° a 4°' });
+  }
+
+  const observations = (Array.isArray(body.observations) ? body.observations : [])
+    .slice(0, 40)
+    .map((o) => ({
+      competency: cleanText(o?.competency, 60),
+      custom_label: cleanText(o?.custom_label, 120),
+      frequency: o?.frequency,
+      severity: o?.severity,
+      example: cleanText(o?.example, 2000),
+      suggestion: cleanText(o?.suggestion, 2000)
+    }))
+    .filter((o) => o.competency && FEEDBACK_FREQUENCIES.includes(o.frequency) && FEEDBACK_SEVERITIES.includes(o.severity));
+
+  if (observations.length === 0) {
+    return res.status(400).json({ success: false, error: 'Registre al menos una brecha con su frecuencia e impacto' });
+  }
+
+  const strengths = (Array.isArray(body.strengths) ? body.strengths : [])
+    .slice(0, 40)
+    .map((s) => cleanText(s, 60))
+    .filter(Boolean);
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO docente_feedback
+         (program, teacher_name, subject, career_year, period, observations, strengths, strengths_comment, general_comment)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [
+        cleanText(body.program, 40) || 'marketing',
+        teacherName,
+        subject,
+        careerYear,
+        cleanText(body.period, 20),
+        JSON.stringify(observations),
+        JSON.stringify(strengths),
+        cleanText(body.strengths_comment, 2000),
+        cleanText(body.general_comment, 4000)
+      ]
+    );
+    res.json({ success: true, id: result.rows[0].id });
+  } catch (err) {
+    console.error('Error al guardar feedback docente:', err);
+    res.status(500).json({ success: false, error: 'No se pudo guardar el feedback. Intente nuevamente.' });
+  }
+});
+
+app.get('/api/feedback-docente/resultados', requirePanelKey, async (req, res) => {
+  const program = cleanText(req.query.program, 40) || 'marketing';
+  try {
+    const result = await pool.query(
+      `SELECT id, teacher_name, subject, career_year, period, observations, strengths,
+              strengths_comment, general_comment, created_at
+       FROM docente_feedback
+       WHERE program = $1
+       ORDER BY created_at DESC`,
+      [program]
+    );
+    res.json({ rows: result.rows });
+  } catch (err) {
+    console.error('Error al leer feedback docente:', err);
+    res.status(500).json({ error: 'No se pudieron cargar los resultados' });
+  }
+});
+
+app.delete('/api/feedback-docente/:id', requirePanelKey, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM docente_feedback WHERE id = $1', [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Registro no encontrado' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error al eliminar feedback docente:', err);
+    res.status(500).json({ error: 'No se pudo eliminar el registro' });
   }
 });
 
