@@ -16,12 +16,18 @@ import {
   MessageSquareQuote,
   ExternalLink,
   LogOut,
-  Inbox
+  Inbox,
+  PieChart,
+  LayoutDashboard,
+  GraduationCap
 } from 'lucide-react';
 import {
   PROGRAM,
   CAMPUS,
   CAREER_YEARS,
+  DIMENSIONS,
+  FREQUENCIES,
+  SEVERITIES,
   periodLabel,
   OTHER_ID,
   competencyOf,
@@ -30,6 +36,7 @@ import {
   scoreOf
 } from './competencias';
 import usePageScroll from './usePageScroll';
+import Donut from './Donut';
 
 /**
  * Panel de resultados del feedback docente: /feedback-docente-mkt/resultados
@@ -66,6 +73,21 @@ const yearLabel = (id) => CAREER_YEARS.find((y) => y.id === Number(id))?.label |
 const groupKey = (o) =>
   o.competency === OTHER_ID ? `${OTHER_ID}:${(o.custom_label || '').trim().toLowerCase()}` : o.competency;
 
+const TABS = [
+  { id: 'resumen', label: 'Resumen', icon: LayoutDashboard },
+  { id: 'brechas', label: 'Brechas', icon: AlertTriangle },
+  { id: 'anio', label: 'Por año', icon: GraduationCap },
+  { id: 'fortalezas', label: 'Fortalezas', icon: Sparkles },
+  { id: 'propuestas', label: 'Propuestas y comentarios', icon: Lightbulb },
+  { id: 'registros', label: 'Registros', icon: ClipboardList }
+];
+
+// Escala ordinal de un solo tono (claro → oscuro) para leve/moderado/crítico,
+// algunos/varios/mayoría y 1° a 4° año: el orden se lee en la intensidad.
+const ORDINAL_3 = ['#86b6ef', '#2a78d6', '#104281'];
+const ORDINAL_4 = ['#9ec5f4', '#5598e7', '#256abf', '#104281'];
+const OTHER_COLOR = '#94a3b8';
+
 const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
 // --- Pantalla de clave ---------------------------------------------------------
@@ -86,7 +108,7 @@ const KeyGate = ({ onSubmit, error, loading }) => {
           <Lock size={22} />
         </span>
         <h1 className="mt-5 text-xl font-black tracking-tight text-slate-900">Resultados del feedback docente</h1>
-        <p className="mt-1 text-[14px] text-slate-500">{PROGRAM.label} · Ingrese la clave del panel</p>
+        <p className="mt-1 text-[14px] text-slate-500">{PROGRAM.label} · Ingresa la clave del panel</p>
         <input
           type="password"
           autoFocus
@@ -162,6 +184,8 @@ const FeedbackDocentePanel = () => {
   const [filterPeriod, setFilterPeriod] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
   const [focusGap, setFocusGap] = useState(null);
+  const [tab, setTab] = useState('resumen');
+  const [dimFilter, setDimFilter] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const load = useCallback(async (key) => {
@@ -277,16 +301,58 @@ const FeedbackDocentePanel = () => {
     return { coursesPerYear, rows: [...cells.values()].sort((a, b) => b.total - a.total).slice(0, 15) };
   }, [all, filterPeriod, filterSubject]);
 
-  const byDimension = useMemo(() => {
-    const totals = {};
-    observations.forEach((o) => {
-      const dim = competencyOf(o.competency, o.custom_label).dimension;
-      totals[dim.id] = totals[dim.id] || { dim, score: 0, count: 0 };
-      totals[dim.id].score += o.score;
-      totals[dim.id].count += 1;
-    });
-    return Object.values(totals).sort((a, b) => b.score - a.score);
-  }, [observations]);
+  // El color sigue a la dimensión (orden fijo de la taxonomía), nunca a su posición en el ranking
+  const countByDimension = (ids) => {
+    const counts = {};
+    ids.forEach((dimId) => (counts[dimId] = (counts[dimId] || 0) + 1));
+    return [
+      ...DIMENSIONS.map((d) => ({ id: d.id, label: d.label, color: d.color, value: counts[d.id] || 0 })),
+      { id: OTHER_ID, label: 'Otras', color: OTHER_COLOR, value: counts[OTHER_ID] || 0 }
+    ];
+  };
+
+  const dimensionSlices = useMemo(
+    () => countByDimension(observations.map((o) => competencyOf(o.competency, o.custom_label).dimension.id)),
+    [observations]
+  );
+
+  const severitySlices = useMemo(
+    () =>
+      SEVERITIES.map((sv, i) => ({
+        id: sv.id,
+        label: sv.label,
+        color: ORDINAL_3[i],
+        value: observations.filter((o) => o.severity === sv.id).length
+      })),
+    [observations]
+  );
+
+  const frequencySlices = useMemo(
+    () =>
+      FREQUENCIES.map((f, i) => ({
+        id: f.id,
+        label: f.label,
+        color: ORDINAL_3[i],
+        value: observations.filter((o) => o.frequency === f.id).length
+      })),
+    [observations]
+  );
+
+  const yearSlices = useMemo(
+    () =>
+      CAREER_YEARS.map((y, i) => ({
+        id: String(y.id),
+        label: y.label,
+        color: ORDINAL_4[i],
+        value: observations.filter((o) => Number(o.row.career_year) === y.id).length
+      })),
+    [observations]
+  );
+
+  const visibleRanking = useMemo(
+    () => (dimFilter ? ranking.filter((g) => g.comp.dimension.id === dimFilter) : ranking),
+    [ranking, dimFilter]
+  );
 
   const strengths = useMemo(() => {
     const counts = {};
@@ -295,6 +361,14 @@ const FeedbackDocentePanel = () => {
       .map(([id, count]) => ({ comp: competencyOf(id), count }))
       .sort((a, b) => b.count - a.count);
   }, [filtered]);
+
+  const strengthSlices = useMemo(
+    () =>
+      countByDimension(
+        filtered.flatMap((r) => (r.strengths || []).map((id) => competencyOf(id).dimension.id))
+      ),
+    [filtered]
+  );
 
   const suggestions = useMemo(() => observations.filter((o) => o.suggestion), [observations]);
 
@@ -439,103 +513,109 @@ const FeedbackDocentePanel = () => {
             <Inbox size={40} className="mx-auto text-slate-300" />
             <p className="mt-3 text-[15px] font-bold text-slate-500">Todavía no llega ningún registro</p>
             <p className="mt-1 text-[13.5px] text-slate-400">
-              Comparta con los docentes el link{' '}
+              Comparte con los docentes el link{' '}
               <span className="font-mono text-slate-600">{window.location.origin + PROGRAM.publicPath}</span>
             </p>
           </div>
         ) : (
           <>
-            {/* KPIs */}
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <Stat label="Cursos registrados" value={filtered.length} hint={`${subjects.length} asignaturas en total`} />
-              <Stat label="Docentes" value={teachers} />
-              <Stat label="Brechas reportadas" value={observations.length} hint={`${suggestions.length} con propuesta`} />
-              <Stat label="Brecha #1" value={ranking[0] ? ranking[0].count : '—'} hint={ranking[0]?.comp.label || 'Sin datos'} />
+            {/* Pestañas */}
+            <div className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[13.5px] font-bold transition ${
+                    tab === t.id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                  }`}
+                >
+                  <t.icon size={15} /> {t.label}
+                </button>
+              ))}
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-              {/* Ranking */}
-              <Card
-                title="Ranking de brechas"
-                icon={TrendingUp}
-                subtitle="Ordenado por puntaje: frecuencia × impacto (1 a 9 por reporte). Haga clic para ver ejemplos."
-              >
-                {ranking.length === 0 ? (
-                  <p className="py-8 text-center text-[13.5px] text-slate-400">Sin brechas para este filtro</p>
-                ) : (
-                  <div className="space-y-1">
-                    {ranking.map((g, i) => (
-                      <button
-                        key={g.key}
-                        onClick={() => setFocusGap(g.key)}
-                        className="group w-full rounded-xl px-3 py-2 text-left transition hover:bg-slate-50"
-                      >
-                        <div className="flex items-baseline justify-between gap-3">
-                          <p className="truncate text-[13.5px] font-semibold text-slate-800">
-                            <span className="mr-2 inline-block w-5 text-right text-slate-400">{i + 1}</span>
-                            {g.comp.label}
-                          </p>
-                          <p className="shrink-0 text-[12px] text-slate-500">
-                            <strong className="text-slate-800">{g.count}</strong> reporte{g.count === 1 ? '' : 's'}
-                            {g.critical > 0 && <span className="ml-2 font-bold text-rose-600">{g.critical} crítico{g.critical === 1 ? '' : 's'}</span>}
-                          </p>
-                        </div>
-                        <div className="ml-7 mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full transition-all group-hover:opacity-80"
-                            style={{ width: `${(g.score / maxScore) * 100}%`, backgroundColor: g.comp.dimension.color }}
-                          />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </Card>
+            {tab === 'resumen' && (
+              <>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <Stat label="Cursos registrados" value={filtered.length} hint={`${subjects.length} asignaturas en total`} />
+                  <Stat label="Docentes" value={teachers} />
+                  <Stat label="Brechas reportadas" value={observations.length} hint={`${suggestions.length} con propuesta`} />
+                  <Stat label="Brecha #1" value={ranking[0] ? ranking[0].count : '—'} hint={ranking[0]?.comp.label || 'Sin datos'} />
+                </div>
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <Card title="Brechas por dimensión" icon={PieChart}>
+                    <Donut data={dimensionSlices} centerLabel="brechas" />
+                  </Card>
+                  <Card title="Impacto en el desempeño" icon={AlertTriangle}>
+                    <Donut data={severitySlices} centerLabel="brechas" />
+                  </Card>
+                  <Card title="Alcance en el curso" icon={Users}>
+                    <Donut data={frequencySlices} centerLabel="brechas" />
+                  </Card>
+                </div>
+              </>
+            )}
 
-              <div className="space-y-6">
-                {/* Por dimensión */}
-                <Card title="Por dimensión" icon={ClipboardList}>
-                  <div className="space-y-3">
-                    {byDimension.map(({ dim, score, count }) => (
-                      <div key={dim.id}>
-                        <div className="flex justify-between text-[13px]">
-                          <span className="font-semibold text-slate-700">{dim.label}</span>
-                          <span className="text-slate-500">
-                            {count} · <strong className="text-slate-800">{score} pts</strong>
-                          </span>
-                        </div>
-                        <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${(score / (byDimension[0]?.score || 1)) * 100}%`, backgroundColor: dim.color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            {tab === 'brechas' && (
+              <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+                <Card title="Por dimensión" icon={PieChart} subtitle="Haz clic en una porción para ver solo esa dimensión.">
+                  <Donut data={dimensionSlices} centerLabel="brechas" selected={dimFilter} onSelect={setDimFilter} />
                 </Card>
-
-                {/* Fortalezas */}
-                <Card title="Fortalezas" icon={Sparkles} subtitle="Lo que los docentes destacan de sus cursos">
-                  {strengths.length === 0 ? (
-                    <p className="text-[13px] text-slate-400">Nadie ha marcado fortalezas todavía</p>
+                <Card
+                  title={dimFilter ? `Brechas · ${dimensionSlices.find((d) => d.id === dimFilter)?.label || ''}` : 'Ranking de brechas'}
+                  icon={TrendingUp}
+                  subtitle="Puntaje = alcance × impacto (1 a 9 por reporte). Haz clic para ver ejemplos."
+                  action={
+                    dimFilter && (
+                      <button onClick={() => setDimFilter(null)} className="shrink-0 text-[12px] font-bold text-sky-600 hover:underline">
+                        Ver todas
+                      </button>
+                    )
+                  }
+                >
+                  {visibleRanking.length === 0 ? (
+                    <p className="py-8 text-center text-[13.5px] text-slate-400">Sin brechas para este filtro</p>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {strengths.map(({ comp, count }) => (
-                        <span
-                          key={comp.id}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[12.5px] font-semibold text-emerald-800"
+                    <div className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
+                      {visibleRanking.map((g, i) => (
+                        <button
+                          key={g.key}
+                          onClick={() => setFocusGap(g.key)}
+                          className="group w-full rounded-xl px-3 py-2 text-left transition hover:bg-slate-50"
                         >
-                          {comp.label} <strong className="text-emerald-600">{count}</strong>
-                        </span>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <p className="truncate text-[13.5px] font-semibold text-slate-800">
+                              <span className="mr-2 inline-block w-5 text-right text-slate-400">{i + 1}</span>
+                              {g.comp.label}
+                            </p>
+                            <p className="shrink-0 text-[12px] text-slate-500">
+                              <strong className="text-slate-800">{g.count}</strong> reporte{g.count === 1 ? '' : 's'}
+                              {g.critical > 0 && (
+                                <span className="ml-2 font-bold text-rose-600">
+                                  {g.critical} crítico{g.critical === 1 ? '' : 's'}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="ml-7 mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${(g.score / maxScore) * 100}%`, backgroundColor: g.comp.dimension.color }}
+                            />
+                          </div>
+                        </button>
                       ))}
                     </div>
                   )}
                 </Card>
               </div>
-            </div>
+            )}
 
-            {/* Matriz por año */}
+            {tab === 'anio' && (
+              <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
+                <Card title="Brechas por año" icon={PieChart}>
+                  <Donut data={yearSlices} centerLabel="brechas" />
+                </Card>
             <Card
               title="Evolución por año de la carrera"
               icon={Users}
@@ -585,7 +665,35 @@ const FeedbackDocentePanel = () => {
               </div>
             </Card>
 
-            {/* Propuestas */}
+              </div>
+            )}
+
+            {tab === 'fortalezas' && (
+              <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+                <Card title="Fortalezas por dimensión" icon={PieChart} subtitle="Lo que los docentes destacan de sus cursos">
+                  <Donut data={strengthSlices} centerLabel="menciones" emptyText="Nadie ha marcado fortalezas todavía" />
+                </Card>
+                <Card title="Detalle" icon={Sparkles}>
+                  {strengths.length === 0 ? (
+                    <p className="text-[13px] text-slate-400">Nadie ha marcado fortalezas todavía</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {strengths.map(({ comp, count }) => (
+                        <span
+                          key={comp.id}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[12.5px] font-semibold text-emerald-800"
+                        >
+                          {comp.label} <strong className="text-emerald-600">{count}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </div>
+            )}
+
+            {tab === 'propuestas' && (
+              <>
             <Card
               title="Propuestas de los docentes"
               icon={Lightbulb}
@@ -615,7 +723,6 @@ const FeedbackDocentePanel = () => {
               )}
             </Card>
 
-            {/* Comentarios */}
             {filtered.some((r) => r.general_comment || r.strengths_comment) && (
               <Card title="Comentarios de los docentes" icon={MessageSquareQuote}>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -640,7 +747,11 @@ const FeedbackDocentePanel = () => {
               </Card>
             )}
 
-            {/* Registros */}
+              </>
+            )}
+
+            {tab === 'registros' && (
+              <>
             <Card title={`Registros (${filtered.length})`} icon={ClipboardList}>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-[13px]">
@@ -703,6 +814,9 @@ const FeedbackDocentePanel = () => {
                 </table>
               </div>
             </Card>
+              </>
+            )}
+
           </>
         )}
       </div>

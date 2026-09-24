@@ -48,7 +48,7 @@ export const DIMENSIONS = [
   {
     id: 'comunicacion',
     label: 'Comunicación',
-    color: '#0284c7',
+    color: '#2a78d6',
     competencies: [
       { id: 'com_oral', label: 'Expresión oral y presentaciones' },
       { id: 'com_escrita', label: 'Redacción y ortografía' },
@@ -59,7 +59,7 @@ export const DIMENSIONS = [
   {
     id: 'pensamiento_critico',
     label: 'Pensamiento crítico',
-    color: '#7c3aed',
+    color: '#eb6834',
     competencies: [
       { id: 'pc_lectura', label: 'Comprensión lectora' },
       { id: 'pc_analisis', label: 'Análisis de información y datos' },
@@ -71,7 +71,7 @@ export const DIMENSIONS = [
   {
     id: 'proactividad',
     label: 'Proactividad y autonomía',
-    color: '#059669',
+    color: '#1baf7a',
     competencies: [
       { id: 'pro_iniciativa', label: 'Iniciativa (ir más allá de lo pedido)' },
       { id: 'pro_autonomia', label: 'Trabajar sin instrucciones paso a paso' },
@@ -82,7 +82,7 @@ export const DIMENSIONS = [
   {
     id: 'caracter',
     label: 'Carácter y personalidad',
-    color: '#d97706',
+    color: '#eda100',
     competencies: [
       { id: 'car_frustracion', label: 'Tolerancia a la frustración y al error' },
       { id: 'car_seguridad', label: 'Seguridad y confianza en sí mismo' },
@@ -93,7 +93,7 @@ export const DIMENSIONS = [
   {
     id: 'trabajo_equipo',
     label: 'Trabajo con otros',
-    color: '#db2777',
+    color: '#e87ba4',
     competencies: [
       { id: 'eq_colaboracion', label: 'Colaboración en equipo' },
       { id: 'eq_liderazgo', label: 'Liderazgo' },
@@ -104,7 +104,7 @@ export const DIMENSIONS = [
   {
     id: 'profesionalismo',
     label: 'Responsabilidad y profesionalismo',
-    color: '#475569',
+    color: '#008300',
     competencies: [
       { id: 'prof_plazos', label: 'Cumplimiento de plazos' },
       { id: 'prof_asistencia', label: 'Puntualidad y asistencia' },
