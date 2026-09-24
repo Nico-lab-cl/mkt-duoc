@@ -162,6 +162,9 @@ pool.connect(async (err, client, release) => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_docente_feedback_program ON docente_feedback(program, career_year);
+      ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS campus TEXT DEFAULT 'Duoc UC · Sede Valparaíso';
+      ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS academic_year SMALLINT;
+      ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS semester SMALLINT;
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='user_id') THEN
@@ -1534,6 +1537,12 @@ app.post('/api/feedback-docente', async (req, res) => {
     return res.status(400).json({ success: false, error: 'El año de la carrera debe ser de 1° a 4°' });
   }
 
+  const academicYear = Number(body.academic_year);
+  const semester = Number(body.semester);
+  if (!Number.isInteger(academicYear) || academicYear < 2020 || academicYear > 2100 || ![1, 2].includes(semester)) {
+    return res.status(400).json({ success: false, error: 'Indica el año y el semestre' });
+  }
+
   const observations = (Array.isArray(body.observations) ? body.observations : [])
     .slice(0, 40)
     .map((o) => ({
@@ -1558,15 +1567,19 @@ app.post('/api/feedback-docente', async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO docente_feedback
-         (program, teacher_name, subject, career_year, period, observations, strengths, strengths_comment, general_comment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         (program, campus, teacher_name, subject, career_year, academic_year, semester, period,
+          observations, strengths, strengths_comment, general_comment)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id`,
       [
         cleanText(body.program, 40) || 'marketing',
+        cleanText(body.campus, 80) || 'Duoc UC · Sede Valparaíso',
         teacherName,
         subject,
         careerYear,
-        cleanText(body.period, 20),
+        academicYear,
+        semester,
+        `${academicYear}-${semester}`,
         JSON.stringify(observations),
         JSON.stringify(strengths),
         cleanText(body.strengths_comment, 2000),
@@ -1584,7 +1597,7 @@ app.get('/api/feedback-docente/resultados', requirePanelKey, async (req, res) =>
   const program = cleanText(req.query.program, 40) || 'marketing';
   try {
     const result = await pool.query(
-      `SELECT id, teacher_name, subject, career_year, period, observations, strengths,
+      `SELECT id, campus, teacher_name, subject, career_year, academic_year, semester, period, observations, strengths,
               strengths_comment, general_comment, created_at
        FROM docente_feedback
        WHERE program = $1

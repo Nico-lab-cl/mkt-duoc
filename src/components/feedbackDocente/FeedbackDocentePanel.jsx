@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import {
   PROGRAM,
+  CAMPUS,
   CAREER_YEARS,
+  periodLabel,
   OTHER_ID,
   competencyOf,
   frequencyOf,
@@ -79,6 +81,7 @@ const KeyGate = ({ onSubmit, error, loading }) => {
         }}
         className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
       >
+        <img src="/duoc-uc-logo.png" alt="Duoc UC" className="mb-6 h-8 w-auto" />
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
           <Lock size={22} />
         </span>
@@ -299,13 +302,14 @@ const FeedbackDocentePanel = () => {
 
   const exportCsv = () => {
     const header = [
-      'Fecha', 'Docente', 'Asignatura', 'Año', 'Semestre', 'Dimensión', 'Competencia',
+      'Fecha', 'Sede', 'Docente', 'Asignatura', 'Año de carrera', 'Semestre', 'Dimensión', 'Competencia',
       'Frecuencia', 'Impacto', 'Puntaje', 'Ejemplo', 'Propuesta'
     ];
     const lines = observations.map((o) => {
       const comp = competencyOf(o.competency, o.custom_label);
       return [
-        formatDate(o.row.created_at), o.row.teacher_name, o.row.subject, yearLabel(o.row.career_year), o.row.period,
+        formatDate(o.row.created_at), o.row.campus || CAMPUS, o.row.teacher_name, o.row.subject, yearLabel(o.row.career_year),
+        periodLabel(o.row.period),
         comp.dimension.label, comp.label, frequencyOf(o.frequency)?.label, severityOf(o.severity)?.label,
         o.score, o.example, o.suggestion
       ].map(csvCell).join(';');
@@ -343,8 +347,9 @@ const FeedbackDocentePanel = () => {
         {/* Encabezado */}
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
+            <img src="/duoc-uc-logo.png" alt="Duoc UC" className="mb-5 h-8 w-auto" />
             <p className="text-[12px] font-black uppercase tracking-widest text-sky-600">
-              Observatorio de competencias · {PROGRAM.label}
+              Observatorio de competencias · {PROGRAM.label} · {CAMPUS.replace('Duoc UC · ', '')}
             </p>
             <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Resultados del feedback docente</h1>
           </div>
@@ -407,7 +412,7 @@ const FeedbackDocentePanel = () => {
             value={filterPeriod}
             onChange={setFilterPeriod}
             allLabel="Todos los semestres"
-            options={periods.map((p) => ({ value: p, label: p }))}
+            options={periods.map((p) => ({ value: p, label: periodLabel(p) }))}
           />
           <Select
             value={filterSubject}
@@ -657,7 +662,7 @@ const FeedbackDocentePanel = () => {
                         <td className="py-2.5 font-semibold text-slate-800">{r.teacher_name}</td>
                         <td className="py-2.5 text-slate-700">{r.subject}</td>
                         <td className="py-2.5 text-slate-700">{yearLabel(r.career_year)}</td>
-                        <td className="py-2.5 text-slate-500">{r.period}</td>
+                        <td className="py-2.5 text-slate-500">{periodLabel(r.period)}</td>
                         <td className="py-2.5 text-slate-700">
                           {(r.observations || []).length}
                           {r.general_comment && (

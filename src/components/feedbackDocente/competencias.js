@@ -13,6 +13,30 @@ export const PROGRAM = {
   panelPath: '/feedback-docente-mkt/resultados'
 };
 
+// Fija por ahora: el piloto es solo en Valparaíso
+export const CAMPUS = 'Duoc UC · Sede Valparaíso';
+
+export const SEMESTERS = [
+  { id: 1, label: 'Primer semestre' },
+  { id: 2, label: 'Segundo semestre' }
+];
+
+/** Años académicos para elegir: desde 2024 hasta el próximo año, el más reciente primero. */
+export const academicYears = (now = new Date()) => {
+  const years = [];
+  for (let y = now.getFullYear() + 1; y >= 2024; y--) years.push(y);
+  return years;
+};
+
+export const currentSemester = (date = new Date()) => (date.getMonth() < 7 ? 1 : 2);
+
+/** "2026-2" → "2026 · Segundo semestre" */
+export const periodLabel = (period) => {
+  const [year, sem] = String(period || '').split('-');
+  const semester = SEMESTERS.find((s) => String(s.id) === sem);
+  return semester ? `${year} · ${semester.label}` : period || '';
+};
+
 export const CAREER_YEARS = [
   { id: 1, label: '1° año' },
   { id: 2, label: '2° año' },
@@ -125,6 +149,3 @@ export const severityOf = (id) => SEVERITIES.find((s) => s.id === id);
 
 /** Puntaje 1–9: una brecha crítica en la mayoría del curso pesa 9, una leve en pocos pesa 1. */
 export const scoreOf = (obs) => (frequencyOf(obs.frequency)?.weight || 1) * (severityOf(obs.severity)?.weight || 1);
-
-/** Semestre académico actual en formato 2026-1 / 2026-2. */
-export const currentPeriod = (date = new Date()) => `${date.getFullYear()}-${date.getMonth() < 7 ? 1 : 2}`;

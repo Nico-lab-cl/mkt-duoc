@@ -30,3 +30,11 @@ CREATE INDEX IF NOT EXISTS idx_docente_feedback_program ON docente_feedback(prog
 -- WHERE f.program = 'marketing'
 -- GROUP BY 1, 2
 -- ORDER BY 1, 3 DESC;
+
+-- =============================================================================
+-- v2 (2026-09-24): sede fija, año académico y semestre como campos separados.
+-- `period` se mantiene como "2026-2" para filtrar y ordenar.
+-- =============================================================================
+ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS campus TEXT DEFAULT 'Duoc UC · Sede Valparaíso';
+ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS academic_year SMALLINT;
+ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS semester SMALLINT;

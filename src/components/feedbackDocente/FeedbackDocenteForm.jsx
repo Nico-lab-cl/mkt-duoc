@@ -10,17 +10,22 @@ import {
   Loader2,
   AlertCircle,
   RotateCcw,
-  Lightbulb
+  Lightbulb,
+  Lock
 } from 'lucide-react';
 import {
   PROGRAM,
+  CAMPUS,
   CAREER_YEARS,
+  SEMESTERS,
+  academicYears,
+  currentSemester,
+  periodLabel,
   DIMENSIONS,
   OTHER_ID,
   FREQUENCIES,
   SEVERITIES,
-  competencyOf,
-  currentPeriod
+  competencyOf
 } from './competencias';
 import usePageScroll from './usePageScroll';
 
@@ -56,7 +61,8 @@ const emptyForm = (teacherName = '') => ({
   teacher_name: teacherName,
   subject: '',
   career_year: null,
-  period: currentPeriod(),
+  academic_year: new Date().getFullYear(),
+  semester: currentSemester(),
   observations: [],
   strengths: [],
   strengths_comment: '',
@@ -202,12 +208,12 @@ const FeedbackDocenteForm = () => {
 
   const errors = useMemo(() => {
     const e = {};
-    if (!form.teacher_name.trim()) e.teacher_name = 'Escriba su nombre';
-    if (!form.subject.trim()) e.subject = 'Indique la asignatura';
-    if (!form.career_year) e.career_year = 'Elija el año del curso';
-    if (form.observations.length === 0) e.observations = 'Seleccione al menos una brecha';
+    if (!form.teacher_name.trim()) e.teacher_name = 'Escribe tu nombre';
+    if (!form.subject.trim()) e.subject = 'Indica la asignatura';
+    if (!form.career_year) e.career_year = 'Elige el año de la carrera';
+    if (form.observations.length === 0) e.observations = 'Marca al menos una brecha';
     form.observations.forEach((o) => {
-      if (!o.frequency || !o.severity) e[`obs_${o.key}`] = 'Indique a cuántos afecta y qué tanto';
+      if (!o.frequency || !o.severity) e[`obs_${o.key}`] = 'Indica a cuántos afecta y qué tanto';
     });
     return e;
   }, [form]);
@@ -230,7 +236,10 @@ const FeedbackDocenteForm = () => {
         teacher_name: form.teacher_name.trim(),
         subject: form.subject.trim(),
         career_year: form.career_year,
-        period: form.period.trim(),
+        campus: CAMPUS,
+        academic_year: Number(form.academic_year),
+        semester: Number(form.semester),
+        period: `${form.academic_year}-${form.semester}`,
         observations: form.observations.map(({ competency, custom_label, frequency, severity, example, suggestion }) => ({
           competency,
           custom_label: competency === OTHER_ID ? custom_label : '',
@@ -250,7 +259,7 @@ const FeedbackDocenteForm = () => {
         body: JSON.stringify(payload)
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo enviar. Intente nuevamente.');
+      if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo enviar. Inténtalo nuevamente.');
 
       writeStorage(TEACHER_KEY, payload.teacher_name);
       writeStorage(DRAFT_KEY, null);
@@ -283,8 +292,8 @@ const FeedbackDocenteForm = () => {
           </span>
           <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900">¡Gracias, {sent.teacher_name.split(' ')[0]}!</h1>
           <p className="mt-2 text-[15px] leading-relaxed text-slate-500">
-            Quedaron registradas {sent.observations.length} brecha{sent.observations.length === 1 ? '' : 's'} de{' '}
-            <strong className="text-slate-700">{sent.subject}</strong> ({year}, {sent.period}).
+            {sent.observations.length === 1 ? 'Quedó registrada 1 brecha' : `Quedaron registradas ${sent.observations.length} brechas`} de{' '}
+            <strong className="text-slate-700">{sent.subject}</strong> ({year}, {periodLabel(sent.period)}).
           </p>
           <ul className="mx-auto mt-6 max-w-sm space-y-1.5 text-left">
             {sent.observations.map((o, i) => (
@@ -294,7 +303,7 @@ const FeedbackDocenteForm = () => {
               </li>
             ))}
           </ul>
-          <p className="mt-8 text-[14px] text-slate-500">¿Hace clases en otro curso o en otro año?</p>
+          <p className="mt-8 text-[14px] text-slate-500">¿Haces clases en otro curso o en otro año?</p>
           <button
             onClick={startAnother}
             className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3.5 text-[14px] font-bold text-white transition hover:bg-slate-700"
@@ -311,6 +320,7 @@ const FeedbackDocenteForm = () => {
       <div className="mx-auto max-w-3xl space-y-6">
         {/* Encabezado */}
         <header className="px-1 pb-2">
+          <img src="/duoc-uc-logo.png" alt="Duoc UC" className="mb-6 h-9 w-auto" />
           <p className="text-[12px] font-black uppercase tracking-widest text-sky-600">
             Observatorio de competencias · {PROGRAM.label}
           </p>
@@ -318,15 +328,16 @@ const FeedbackDocenteForm = () => {
             ¿Qué les está faltando a nuestros estudiantes?
           </h1>
           <p className="mt-3 text-[15.5px] leading-relaxed text-slate-600">
-            Registre las brechas que observa en sus cursos: habilidades blandas, pensamiento crítico, carácter,
-            proactividad. Con el aporte de todos los docentes vamos a ver qué se repite en cada año de la carrera y
-            diseñar actividades o asignaturas que lo trabajen.
+            Registra las brechas que observas en tus cursos: habilidades blandas, pensamiento crítico, carácter,
+            proactividad. Con el aporte de todos los docentes veremos qué se repite en cada año de la carrera para
+            diseñar actividades y ver cómo se acoplan a las asignaturas transversales que desarrollan estas
+            habilidades en el estudiante.
           </p>
-          <p className="mt-2 text-[13px] text-slate-400">Toma unos 5 minutos por curso. Complete un formulario por cada asignatura.</p>
+          <p className="mt-2 text-[13px] text-slate-400">Toma unos 5 minutos por curso. Completa un formulario por cada asignatura.</p>
         </header>
 
         {/* 1. Curso */}
-        <Section number={1} icon={GraduationCap} title="Su curso">
+        <Section number={1} icon={GraduationCap} title="Tu curso">
           <div className="grid gap-5 sm:grid-cols-2">
             <div data-error={!!err('teacher_name')}>
               <Label>Nombre del docente</Label>
@@ -350,7 +361,45 @@ const FeedbackDocenteForm = () => {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_160px]">
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label>Sede</Label>
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-[15px] font-semibold text-slate-600">
+                <Lock size={14} className="shrink-0 text-slate-400" />
+                <span className="truncate">{CAMPUS}</span>
+              </div>
+            </div>
+            <div>
+              <Label>Año</Label>
+              <select
+                className={inputClass}
+                value={form.academic_year}
+                onChange={(e) => set({ academic_year: Number(e.target.value) })}
+              >
+                {academicYears().map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Semestre</Label>
+              <select
+                className={inputClass}
+                value={form.semester}
+                onChange={(e) => set({ semester: Number(e.target.value) })}
+              >
+                {SEMESTERS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-5">
             <div data-error={!!err('career_year')}>
               <Label>Año de la carrera</Label>
               <div className="grid grid-cols-4 gap-2">
@@ -371,10 +420,6 @@ const FeedbackDocenteForm = () => {
               </div>
               {err('career_year') && <p className="mt-1.5 text-[12.5px] font-semibold text-rose-600">{errors.career_year}</p>}
             </div>
-            <div>
-              <Label>Semestre</Label>
-              <input className={inputClass} value={form.period} onChange={(e) => set({ period: e.target.value })} />
-            </div>
           </div>
         </Section>
 
@@ -382,8 +427,8 @@ const FeedbackDocenteForm = () => {
         <Section
           number={2}
           icon={AlertTriangle}
-          title="Brechas que observa"
-          subtitle="Marque las competencias que le cuestan a este curso. Luego indique a cuántos afecta, qué tanto y, si puede, un ejemplo concreto."
+          title="Brechas que observas"
+          subtitle="Marca las competencias de las que carece el alumnado de este curso. Luego indica a cuántos afecta, qué tanto y, si puedes, un ejemplo concreto."
         >
           <div className="space-y-5" data-error={!!err('observations')}>
             {DIMENSIONS.map((dim) => (
@@ -481,7 +526,7 @@ const FeedbackDocenteForm = () => {
                       </div>
                       {invalid && <p className="text-[12.5px] font-semibold text-rose-600">{errors[`obs_${o.key}`]}</p>}
                       <div>
-                        <Label optional>Ejemplo concreto de lo que observa</Label>
+                        <Label optional>Ejemplo concreto de lo que observas</Label>
                         <textarea
                           rows={2}
                           className={inputClass}
@@ -493,7 +538,7 @@ const FeedbackDocenteForm = () => {
                       <div>
                         <Label optional>
                           <Lightbulb size={14} className="-mt-0.5 mr-1 inline text-amber-500" />
-                          ¿Qué actividad o asignatura podría ayudar?
+                          ¿Qué actividad o asignatura transversal podría ayudar?
                         </Label>
                         <textarea
                           rows={2}
@@ -532,7 +577,7 @@ const FeedbackDocenteForm = () => {
             ))}
           </div>
           <div className="mt-6">
-            <Label optional>Algo más que destaque</Label>
+            <Label optional>Algo más que destaques</Label>
             <textarea
               rows={2}
               className={inputClass}
@@ -548,7 +593,7 @@ const FeedbackDocenteForm = () => {
               className={inputClass}
               value={form.general_comment}
               onChange={(e) => set({ general_comment: e.target.value })}
-              placeholder="Cualquier observación sobre el curso, su contexto o lo que cree que falta en la malla."
+              placeholder="Cualquier observación sobre el curso, su contexto o lo que crees que falta en la malla."
             />
           </div>
         </Section>
@@ -557,7 +602,7 @@ const FeedbackDocenteForm = () => {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           {showErrors && hasErrors && (
             <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-[13.5px] font-semibold text-rose-700">
-              <AlertCircle size={16} className="shrink-0" /> Faltan algunos datos. Revise los campos marcados en rojo.
+              <AlertCircle size={16} className="shrink-0" /> Faltan algunos datos. Revisa los campos marcados en rojo.
             </div>
           )}
           {submitError && (
@@ -575,7 +620,7 @@ const FeedbackDocenteForm = () => {
             {submitting ? 'Enviando...' : 'Enviar feedback de este curso'}
           </button>
           <p className="mt-3 text-center text-[12.5px] text-slate-400">
-            Su avance se guarda en este navegador mientras completa el formulario.
+            Tu avance se guarda en este navegador mientras completas el formulario.
           </p>
         </div>
       </div>
