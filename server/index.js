@@ -1507,7 +1507,7 @@ app.delete('/api/admin/briefings/:id', requireAdmin, async (req, res) => {
 
 // La clave del panel se define en Easypanel. El valor por defecto existe solo
 // para que el panel funcione en el primer despliegue; hay que reemplazarlo.
-const FEEDBACK_PANEL_KEY = process.env.FEEDBACK_PANEL_KEY || 'observatorio-mkt';
+const FEEDBACK_PANEL_KEY = process.env.FEEDBACK_PANEL_KEY || 'duocvalparaiso';
 if (!process.env.FEEDBACK_PANEL_KEY) {
   console.warn('⚠️  FEEDBACK_PANEL_KEY no está definida: el panel de feedback docente usa la clave por defecto');
 }
