@@ -81,7 +81,7 @@ const KeyGate = ({ onSubmit, error, loading }) => {
         }}
         className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
       >
-        <img src="/duoc-uc-logo.png" alt="Duoc UC" className="mb-6 h-8 w-auto" />
+        <img src="/logo-duoc-uc.png" alt="Duoc UC" className="mb-6 h-8 w-auto" />
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
           <Lock size={22} />
         </span>
@@ -347,7 +347,7 @@ const FeedbackDocentePanel = () => {
         {/* Encabezado */}
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <img src="/duoc-uc-logo.png" alt="Duoc UC" className="mb-5 h-8 w-auto" />
+            <img src="/logo-duoc-uc.png" alt="Duoc UC" className="mb-5 h-8 w-auto" />
             <p className="text-[12px] font-black uppercase tracking-widest text-sky-600">
               Observatorio de competencias · {PROGRAM.label} · {CAMPUS.replace('Duoc UC · ', '')}
             </p>

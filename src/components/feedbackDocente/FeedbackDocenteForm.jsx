@@ -320,7 +320,7 @@ const FeedbackDocenteForm = () => {
       <div className="mx-auto max-w-3xl space-y-6">
         {/* Encabezado */}
         <header className="px-1 pb-2">
-          <img src="/duoc-uc-logo.png" alt="Duoc UC" className="mb-6 h-9 w-auto" />
+          <img src="/logo-duoc-uc.png" alt="Duoc UC" className="mb-6 h-9 w-auto" />
           <p className="text-[12px] font-black uppercase tracking-widest text-sky-600">
             Observatorio de competencias · {PROGRAM.label}
           </p>

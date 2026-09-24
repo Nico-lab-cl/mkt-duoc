@@ -2091,6 +2091,11 @@ app.delete('/api/seo/projects/:id', async (req, res) => {
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API (SPA)
 const indexHtmlPath = path.resolve(__dirname, '../dist/index.html');
 app.use((req, res) => {
+  // Un archivo inexistente (logo, imagen, js) debe dar 404: si se responde con
+  // index.html, Cloudflare lo cachea como si fuera la imagen durante horas.
+  if (path.extname(req.path) && !req.path.endsWith('.html')) {
+    return res.status(404).type('text/plain').send('Not found');
+  }
   try {
     const html = fs.readFileSync(indexHtmlPath, 'utf8');
     res.type('html').send(html);
