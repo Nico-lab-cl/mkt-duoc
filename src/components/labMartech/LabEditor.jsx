@@ -13,7 +13,10 @@ import {
   FileText,
   MessageCircle,
   Trash2,
-  Flame
+  Flame,
+  ShieldCheck,
+  Copy,
+  Check
 } from 'lucide-react';
 import usePageScroll from '../feedbackDocente/usePageScroll';
 import { checkFormEmbed, checkHeadCode, hasErrors } from './hubspotCode';
@@ -24,6 +27,9 @@ import { checkFormEmbed, checkHeadCode, hasErrors } from './hubspotCode';
  * Protegido con el PIN que el equipo eligió al crear su espacio (o la clave del
  * profesor). Aquí pegan los dos códigos de HubSpot; /lab/:slug los publica.
  */
+
+// HubSpot manda a spam los envíos desde dominios que la cuenta no tiene registrados
+const LAB_DOMAIN = 'softwarespectra.cl';
 
 const pinKey = (slug) => `lab_pin_${slug}`;
 const readPin = (slug) => {
@@ -138,6 +144,17 @@ export default function LabEditor({ slug }) {
   const [space, setSpace] = useState(null);
   const [draft, setDraft] = useState({ form_embed: '', head_code: '', members: '' });
   const [status, setStatus] = useState({ loading: !!readPin(slug), saving: false, error: '', savedAt: null });
+  const [copied, setCopied] = useState(false);
+
+  const copyDomain = async () => {
+    try {
+      await navigator.clipboard.writeText(LAB_DOMAIN);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Sin acceso al portapapeles: el dominio queda a la vista para copiarlo a mano
+    }
+  };
 
   const request = (method, body, withPin = pin) =>
     fetch(`/api/lab/spaces/${slug}`, {
@@ -278,6 +295,32 @@ export default function LabEditor({ slug }) {
           </p>
         </Section>
 
+        <Section
+          icon={ShieldCheck}
+          number={3}
+          title="Registren softwarespectra.cl en su HubSpot"
+          subtitle="Sin este paso el formulario muestra el “gracias”, pero HubSpot manda el envío a spam (“Unregistered Site Domain”) y el contacto nunca llega al CRM."
+        >
+          <Where
+            steps={['⚙ Configuración', 'Seguimiento y análisis', 'Código de seguimiento', 'Seguimiento avanzado', 'Additional Site Domains']}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <code className="rounded-xl bg-slate-950 px-4 py-2.5 font-mono text-[14px] text-emerald-200">{LAB_DOMAIN}</code>
+            <button
+              onClick={copyDomain}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-[13.5px] font-bold text-slate-700 transition hover:bg-slate-100"
+            >
+              {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+              {copied ? 'Copiado' : 'Copiar dominio'}
+            </button>
+          </div>
+          <p className="mt-4 text-[13px] leading-relaxed text-slate-500">
+            Si ya hicieron envíos de prueba antes de registrarlo, están en la pestaña{' '}
+            <strong className="text-slate-700">Spam</strong> de su formulario: márquenlos y presionen{' '}
+            <strong className="text-slate-700">Release</strong> para que entren al CRM.
+          </p>
+        </Section>
+
         <div className="sticky bottom-4 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur">
           <button
             onClick={save}
@@ -324,7 +367,10 @@ export default function LabEditor({ slug }) {
           </p>
           <ol className="mt-4 space-y-2 text-[14px] text-slate-700">
             <li>1. El mensaje de agradecimiento aparece en la página.</li>
-            <li>2. El contacto nuevo está en <strong>CRM › Contactos</strong> con su Carrera de Interés.</li>
+            <li>
+              2. El contacto nuevo está en <strong>CRM › Contactos</strong> con su Carrera de Interés. Si no aparece,
+              revisen la pestaña <strong>Spam</strong> del formulario (paso 3).
+            </li>
             <li>3. La lista activa de la clase anterior lo sumó.</li>
             <li>4. El correo de seguimiento llegó a la bandeja de entrada.</li>
             <li>5. En <strong>Marketing › Formularios › Análisis</strong> ven las visitas y los envíos.</li>
