@@ -16,7 +16,7 @@ import {
   Flame
 } from 'lucide-react';
 import usePageScroll from '../feedbackDocente/usePageScroll';
-import { checkFormEmbed, checkHeadCode } from './hubspotCode';
+import { checkFormEmbed, checkHeadCode, hasErrors } from './hubspotCode';
 
 /**
  * Editor del equipo: /lab/:slug/editar
@@ -174,6 +174,7 @@ export default function LabEditor({ slug }) {
 
   const formNotes = useMemo(() => checkFormEmbed(draft.form_embed), [draft.form_embed]);
   const headNotes = useMemo(() => checkHeadCode(draft.head_code, draft.form_embed), [draft.head_code, draft.form_embed]);
+  const invalid = hasErrors(formNotes) || hasErrors(headNotes);
   const dirty =
     space &&
     (draft.form_embed !== space.form_embed || draft.head_code !== space.head_code || draft.members !== (space.members || ''));
@@ -280,7 +281,7 @@ export default function LabEditor({ slug }) {
         <div className="sticky bottom-4 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur">
           <button
             onClick={save}
-            disabled={!dirty || status.saving}
+            disabled={!dirty || invalid || status.saving}
             className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-[14px] font-bold text-white transition hover:bg-slate-700 disabled:opacity-40"
           >
             {status.saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
@@ -299,6 +300,8 @@ export default function LabEditor({ slug }) {
               <span className="flex items-center gap-1.5 text-rose-600">
                 <AlertCircle size={14} /> {status.error}
               </span>
+            ) : invalid ? (
+              <span className="text-rose-600">Corrijan el código marcado en rojo para poder guardar</span>
             ) : dirty ? (
               <span className="text-amber-600">Cambios sin guardar</span>
             ) : status.savedAt ? (
@@ -306,6 +309,11 @@ export default function LabEditor({ slug }) {
             ) : null}
           </span>
         </div>
+
+        <p className="px-1 text-[12.5px] leading-relaxed text-slate-400">
+          Por seguridad, su página no publica el texto pegado tal cual: toma de él la cuenta y el formulario y publica
+          el código oficial de HubSpot con esos datos.
+        </p>
 
         <section className="rounded-3xl border border-orange-200 bg-orange-50/60 p-6 sm:p-8">
           <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">

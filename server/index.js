@@ -8,6 +8,12 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { UbersuggestMcpService } from './services/ubersuggestMcp.js';
 import { sendStudentNotificationWebhook } from './services/emailTemplates.js';
+import {
+  parseHubspotForm,
+  parseHubspotTracking,
+  renderHubspotForm,
+  renderHubspotTracking
+} from './services/hubspotEmbed.js';
 
 dotenv.config();
 
@@ -1674,8 +1680,8 @@ const labSpacePublic = (row) => ({
   slug: row.slug,
   team_name: row.team_name,
   members: row.members,
-  has_form: !!row.form_embed?.trim(),
-  has_head: !!row.head_code?.trim(),
+  has_form: !!parseHubspotForm(row.form_embed),
+  has_head: !!parseHubspotTracking(row.head_code),
   updated_at: row.updated_at,
   created_at: row.created_at
 });
@@ -1747,6 +1753,12 @@ app.put('/api/lab/spaces/:slug', requireLabPin, async (req, res) => {
   if (formEmbed.length > LAB_CODE_MAX || headCode.length > LAB_CODE_MAX) {
     return res.status(400).json({ error: 'El código es demasiado largo. Pega solo el código que entrega HubSpot.' });
   }
+  if (formEmbed && !parseHubspotForm(formEmbed)) {
+    return res.status(400).json({ error: 'No reconocemos el código del formulario. Copia el código de inserción de HubSpot completo.' });
+  }
+  if (headCode && !parseHubspotTracking(headCode)) {
+    return res.status(400).json({ error: 'No reconocemos el código de seguimiento. Debe ser el de HubSpot (js.hs-scripts.com).' });
+  }
   try {
     const result = await pool.query(
       `UPDATE lab_spaces
@@ -1775,11 +1787,13 @@ app.delete('/api/lab/spaces/:slug', requireLabPin, async (req, res) => {
 
 // Página pública del equipo. Es HTML plano (no la SPA) para que el código de
 // HubSpot quede en el <head> y el <body> igual que en un sitio real.
-// OJO: el código lo pegan los alumnos y se ejecuta sin filtro en este dominio.
+// Lo pegado por los alumnos nunca se publica tal cual: se rearma desde sus IDs.
 const renderLabPage = (space) => {
   const team = escapeHtml(space.team_name);
-  const formBlock = space.form_embed?.trim()
-    ? space.form_embed
+  const form = parseHubspotForm(space.form_embed);
+  const tracking = parseHubspotTracking(space.head_code);
+  const formBlock = form
+    ? renderHubspotForm(form)
     : `<div class="empty">
          <strong>Aquí aparecerá el formulario de ${team}</strong>
          <span>Peguen el código de inserción de HubSpot en <a href="/lab/${space.slug}/editar">el editor del equipo</a>.</span>
@@ -1820,7 +1834,7 @@ const renderLabPage = (space) => {
   footer{text-align:center;color:#94a3b8;font-size:13px;padding:24px 16px 40px}
   @media (max-width:820px){.main{grid-template-columns:1fr}.labbar{flex-direction:column;align-items:flex-start}}
 </style>
-${space.head_code || ''}
+${tracking ? renderHubspotTracking(tracking) : ''}
 </head>
 <body>
 <div class="labbar">
