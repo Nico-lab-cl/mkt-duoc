@@ -17,6 +17,8 @@ import ClinicaBriefingForm from './components/ClinicaBriefingForm';
 import CandidataBriefingForm from './components/CandidataBriefingForm';
 import FeedbackDocenteForm from './components/feedbackDocente/FeedbackDocenteForm';
 import FeedbackDocentePanel from './components/feedbackDocente/FeedbackDocentePanel';
+import LabHome from './components/labMartech/LabHome';
+import LabEditor from './components/labMartech/LabEditor';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser, logActivity } = useProject();
@@ -30,9 +32,16 @@ const AppContent = () => {
   const isCandidataForm = path.startsWith('/formulario-campana-stephany-valdez');
   const isFeedbackPanel = path.startsWith('/feedback-docente-mkt/resultados');
   const isFeedbackForm = !isFeedbackPanel && path.startsWith('/feedback-docente-mkt');
+  // /lab/:slug (sin /editar) lo entrega el servidor como HTML propio, no la SPA
+  const labEditorSlug = path.match(/^\/lab\/([^/]+)\/editar\/?$/)?.[1] || null;
+  const isLabHome = /^\/lab\/?$/.test(path);
 
   const [view, setView] = useState(
-    isFeedbackPanel
+    labEditorSlug
+      ? 'lab-editor'
+      : isLabHome
+      ? 'lab-home'
+      : isFeedbackPanel
       ? 'feedback-docente-panel'
       : isFeedbackForm
       ? 'feedback-docente'
@@ -51,7 +60,7 @@ const AppContent = () => {
   // Determinar la vista inicial o transiciones automáticas
   useEffect(() => {
     // Los formularios públicos de briefing nunca deben redirigir, aunque haya sesión iniciada
-    if (['clinica-briefing', 'candidata-briefing', 'feedback-docente', 'feedback-docente-panel'].includes(view)) return;
+    if (['clinica-briefing', 'candidata-briefing', 'feedback-docente', 'feedback-docente-panel', 'lab-home', 'lab-editor'].includes(view)) return;
 
     if (currentUser) {
       if (currentUser.role === 'guest') {
@@ -169,6 +178,10 @@ const AppContent = () => {
       {view === 'feedback-docente' && <FeedbackDocenteForm />}
 
       {view === 'feedback-docente-panel' && <FeedbackDocentePanel />}
+
+      {view === 'lab-home' && <LabHome />}
+
+      {view === 'lab-editor' && <LabEditor slug={labEditorSlug} />}
 
       {view === 'success' && (
         <Success onBackToDashboard={() => setView('dashboard')} />

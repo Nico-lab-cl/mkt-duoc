@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { UbersuggestMcpService } from './services/ubersuggestMcp.js';
 import { sendStudentNotificationWebhook } from './services/emailTemplates.js';
@@ -165,6 +166,17 @@ pool.connect(async (err, client, release) => {
       ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS campus TEXT DEFAULT 'Duoc UC · Sede Valparaíso';
       ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS academic_year SMALLINT;
       ALTER TABLE docente_feedback ADD COLUMN IF NOT EXISTS semester SMALLINT;
+      CREATE TABLE IF NOT EXISTS lab_spaces (
+        id SERIAL PRIMARY KEY,
+        slug TEXT NOT NULL UNIQUE,
+        team_name TEXT NOT NULL,
+        members TEXT,
+        pin_hash TEXT NOT NULL,
+        form_embed TEXT DEFAULT '',
+        head_code TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lead_magnets' AND column_name='user_id') THEN
@@ -1619,6 +1631,245 @@ app.delete('/api/feedback-docente/:id', requirePanelKey, async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar feedback docente:', err);
     res.status(500).json({ error: 'No se pudo eliminar el registro' });
+  }
+});
+
+// ==========================================
+// LABORATORIO MARTECH — HubSpot en vivo
+// Lista y creación de espacios: /lab
+// Editor del equipo (con PIN):  /lab/:slug/editar
+// Página pública del equipo:    /lab/:slug  (HTML armado aquí, no la SPA)
+// ==========================================
+
+// Clave del profesor: abre el editor de cualquier equipo (por si olvidan su PIN)
+const LAB_ADMIN_KEY = process.env.LAB_ADMIN_KEY || FEEDBACK_PANEL_KEY;
+const LAB_CODE_MAX = 20000;
+
+const slugify = (value) =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+
+const hashPin = (pin) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  return `${salt}:${crypto.scryptSync(pin, salt, 32).toString('hex')}`;
+};
+
+const pinMatches = (pin, stored) => {
+  const [salt, hash] = String(stored || '').split(':');
+  if (!salt || !hash || !pin) return false;
+  const candidate = crypto.scryptSync(pin, salt, 32);
+  const expected = Buffer.from(hash, 'hex');
+  return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+};
+
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+const labSpacePublic = (row) => ({
+  slug: row.slug,
+  team_name: row.team_name,
+  members: row.members,
+  has_form: !!row.form_embed?.trim(),
+  has_head: !!row.head_code?.trim(),
+  updated_at: row.updated_at,
+  created_at: row.created_at
+});
+
+const requireLabPin = async (req, res, next) => {
+  try {
+    const result = await pool.query('SELECT * FROM lab_spaces WHERE slug = $1', [req.params.slug]);
+    const space = result.rows[0];
+    if (!space) return res.status(404).json({ error: 'Ese espacio no existe' });
+    const pin = String(req.headers['x-lab-pin'] || '');
+    if (pin !== LAB_ADMIN_KEY && !pinMatches(pin, space.pin_hash)) {
+      return res.status(401).json({ error: 'PIN incorrecto' });
+    }
+    req.labSpace = space;
+    next();
+  } catch (err) {
+    console.error('Error al validar PIN del laboratorio:', err);
+    res.status(500).json({ error: 'No se pudo abrir el espacio' });
+  }
+};
+
+app.get('/api/lab/spaces', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM lab_spaces ORDER BY created_at ASC');
+    res.json({ spaces: result.rows.map(labSpacePublic) });
+  } catch (err) {
+    console.error('Error al listar espacios del laboratorio:', err);
+    res.status(500).json({ error: 'No se pudieron cargar los equipos' });
+  }
+});
+
+app.post('/api/lab/spaces', async (req, res) => {
+  const body = req.body || {};
+  const teamName = cleanText(body.team_name, 60);
+  const members = cleanText(body.members, 300);
+  const pin = String(body.pin ?? '').trim();
+  const slug = slugify(teamName);
+
+  if (!teamName || !slug) return res.status(400).json({ error: 'Escribe el nombre del equipo' });
+  if (pin.length < 4 || pin.length > 20) return res.status(400).json({ error: 'El PIN debe tener entre 4 y 20 caracteres' });
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO lab_spaces (slug, team_name, members, pin_hash)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (slug) DO NOTHING
+       RETURNING *`,
+      [slug, teamName, members, hashPin(pin)]
+    );
+    if (result.rowCount === 0) {
+      return res.status(409).json({ error: `Ya existe un equipo con la dirección /lab/${slug}. Usa otro nombre.` });
+    }
+    res.json({ space: labSpacePublic(result.rows[0]) });
+  } catch (err) {
+    console.error('Error al crear espacio del laboratorio:', err);
+    res.status(500).json({ error: 'No se pudo crear el espacio' });
+  }
+});
+
+app.get('/api/lab/spaces/:slug', requireLabPin, (req, res) => {
+  const s = req.labSpace;
+  res.json({ space: { ...labSpacePublic(s), form_embed: s.form_embed || '', head_code: s.head_code || '' } });
+});
+
+app.put('/api/lab/spaces/:slug', requireLabPin, async (req, res) => {
+  const body = req.body || {};
+  const formEmbed = String(body.form_embed ?? '').trim();
+  const headCode = String(body.head_code ?? '').trim();
+  if (formEmbed.length > LAB_CODE_MAX || headCode.length > LAB_CODE_MAX) {
+    return res.status(400).json({ error: 'El código es demasiado largo. Pega solo el código que entrega HubSpot.' });
+  }
+  try {
+    const result = await pool.query(
+      `UPDATE lab_spaces
+       SET form_embed = $1, head_code = $2, members = $3, updated_at = CURRENT_TIMESTAMP
+       WHERE slug = $4
+       RETURNING *`,
+      [formEmbed, headCode, cleanText(body.members ?? req.labSpace.members, 300), req.labSpace.slug]
+    );
+    const s = result.rows[0];
+    res.json({ space: { ...labSpacePublic(s), form_embed: s.form_embed, head_code: s.head_code } });
+  } catch (err) {
+    console.error('Error al guardar espacio del laboratorio:', err);
+    res.status(500).json({ error: 'No se pudo guardar el código' });
+  }
+});
+
+app.delete('/api/lab/spaces/:slug', requireLabPin, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM lab_spaces WHERE slug = $1', [req.labSpace.slug]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error al eliminar espacio del laboratorio:', err);
+    res.status(500).json({ error: 'No se pudo eliminar el espacio' });
+  }
+});
+
+// Página pública del equipo. Es HTML plano (no la SPA) para que el código de
+// HubSpot quede en el <head> y el <body> igual que en un sitio real.
+// OJO: el código lo pegan los alumnos y se ejecuta sin filtro en este dominio.
+const renderLabPage = (space) => {
+  const team = escapeHtml(space.team_name);
+  const formBlock = space.form_embed?.trim()
+    ? space.form_embed
+    : `<div class="empty">
+         <strong>Aquí aparecerá el formulario de ${team}</strong>
+         <span>Peguen el código de inserción de HubSpot en <a href="/lab/${space.slug}/editar">el editor del equipo</a>.</span>
+       </div>`;
+
+  return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Software Spectra · Admisión 2027 · ${team}</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#0f172a;background:#f8fafc;line-height:1.5}
+  a{color:inherit}
+  .labbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;background:#0f172a;color:#cbd5e1;font-size:13px}
+  .labbar b{color:#fff}
+  .labbar nav{display:flex;gap:14px;white-space:nowrap}
+  .labbar a{color:#7dd3fc;text-decoration:none;font-weight:600}
+  .hero{background:linear-gradient(135deg,#0c4a6e,#0369a1 55%,#0ea5e9);color:#fff;padding:64px 16px 120px}
+  .wrap{max-width:1040px;margin:0 auto}
+  .brand{font-weight:800;letter-spacing:.02em;font-size:15px;opacity:.9}
+  .hero h1{font-size:clamp(30px,5vw,48px);line-height:1.1;margin:18px 0 12px;font-weight:900;max-width:720px}
+  .hero p{font-size:18px;opacity:.9;max-width:600px;margin:0}
+  .main{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:-80px;padding:0 16px 64px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+  .card h2{margin:0 0 6px;font-size:22px;font-weight:800}
+  .muted{color:#64748b;font-size:15px;margin:0 0 20px}
+  .career{display:flex;gap:14px;padding:14px 0;border-top:1px solid #f1f5f9}
+  .career:first-of-type{border-top:0}
+  .career i{font-style:normal;font-size:26px}
+  .career strong{display:block}
+  .career span{color:#64748b;font-size:14px}
+  .empty{display:flex;flex-direction:column;gap:6px;padding:32px 20px;border:2px dashed #cbd5e1;border-radius:14px;text-align:center;color:#64748b;font-size:14px}
+  .empty strong{color:#334155;font-size:16px}
+  footer{text-align:center;color:#94a3b8;font-size:13px;padding:24px 16px 40px}
+  @media (max-width:820px){.main{grid-template-columns:1fr}.labbar{flex-direction:column;align-items:flex-start}}
+</style>
+${space.head_code || ''}
+</head>
+<body>
+<div class="labbar">
+  <span>🧪 Laboratorio Martech · <b>${team}</b></span>
+  <nav><a href="/lab">Todos los equipos</a><a href="/lab/${space.slug}/editar">Editar código</a></nav>
+</div>
+<header class="hero">
+  <div class="wrap">
+    <div class="brand">SOFTWARE SPECTRA</div>
+    <h1>Admisión 2027: elige la carrera que mueve el mundo</h1>
+    <p>Déjanos tus datos y un asesor te contará todo sobre mallas, horarios y becas.</p>
+  </div>
+</header>
+<main class="wrap main">
+  <section class="card">
+    <h2>Nuestras carreras</h2>
+    <p class="muted">Programas con foco en la práctica y vínculo con empresas.</p>
+    <div class="career"><i>📈</i><div><strong>Marketing Digital</strong><span>Inbound, CRM, automatización y analítica.</span></div></div>
+    <div class="career"><i>🚚</i><div><strong>Logística</strong><span>Cadena de suministro, bodegas y distribución.</span></div></div>
+    <div class="career"><i>🌎</i><div><strong>Comercio Exterior</strong><span>Importación, exportación y negocios internacionales.</span></div></div>
+  </section>
+  <section class="card" id="formulario">
+    <h2>Solicita información</h2>
+    <p class="muted">Te respondemos en menos de 24 horas.</p>
+    ${formBlock}
+  </section>
+</main>
+<footer>Página de práctica de ${team} · Laboratorio Martech · softwarespectra.cl</footer>
+</body>
+</html>`;
+};
+
+app.get('/lab/:slug', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM lab_spaces WHERE slug = $1', [req.params.slug]);
+    if (!result.rows[0]) {
+      return res
+        .status(404)
+        .type('html')
+        .send(
+          `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Equipo no encontrado</title>
+<body style="font-family:system-ui,sans-serif;text-align:center;padding:64px 16px;color:#334155">
+<h1>No existe el equipo «${escapeHtml(req.params.slug)}»</h1><p><a href="/lab">Ver todos los equipos del laboratorio</a></p></body>`
+        );
+    }
+    res.set('Cache-Control', 'no-store').type('html').send(renderLabPage(result.rows[0]));
+  } catch (err) {
+    console.error('Error al mostrar página del laboratorio:', err);
+    res.status(500).send('No se pudo cargar la página del equipo');
   }
 });
 
