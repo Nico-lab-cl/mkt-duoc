@@ -10,28 +10,32 @@ export const RULES = [
     titulo: 'Talla, color y foto viven en la variante (SKU)',
     corto: 'SKU por variante',
     explica:
-      'Cada combinación talla + color es una fila propia con su skuId. Sin esto, el carrito sólo sabe qué producto dejaste, no qué talla ni qué foto.'
+      'Cada combinación de talla y color es una fila propia, con su código (skuId). Sin esto, el carro sólo sabe qué modelo dejaste, no qué talla ni qué foto.',
+    terminos: [['sku', 'SKU'], ['llave', 'skuId']]
   },
   {
     id: 'listas',
     titulo: 'Listas cerradas: material, color y sistema de talla',
     corto: 'Listas cerradas',
     explica:
-      'Material y color se eligen de una lista, no se escriben a mano. Las tallas se guardan en un solo sistema (chileno) con tabla de equivalencias.'
+      'Material y color se eligen de un menú, no se escriben a mano. Todas las tallas quedan en número chileno (la L pasa a ser 38).',
+    terminos: [['lista-cerrada', 'Lista cerrada'], ['sistema-talla', 'Sistema de talla']]
   },
   {
     id: 'email',
-    titulo: 'Email normalizado (TRIM + minúsculas) antes de cruzar',
-    corto: 'Email normalizado',
+    titulo: 'Limpiar el email antes de guardarlo (TRIM + minúsculas)',
+    corto: 'Email limpio',
     explica:
-      'El email es la llave para encontrar al cliente en el CRM. « Ana@Gmail.com » y «ana@gmail.com» deben ser la misma persona.'
+      'Se borran los espacios sobrantes y se pasa todo a minúsculas. Así « Ana@Gmail.com » y «ana@gmail.com» son la misma persona en el CRM.',
+    terminos: [['trim', 'TRIM'], ['normalizar', 'Normalizar']]
   },
   {
     id: 'consent',
     titulo: 'Consentimiento por canal (email / WhatsApp)',
     corto: 'Consentimiento por canal',
     explica:
-      'El permiso se guarda por canal en su propia tabla. Un simple «acepta comunicaciones: Sí» no distingue si aceptó email pero rechazó WhatsApp.'
+      'El permiso se guarda por separado para email y para WhatsApp. Un solo «acepta comunicaciones: Sí» no sabe si aceptó email y rechazó WhatsApp.',
+    terminos: [['consentimiento', 'Opt-in / opt-out']]
   }
 ];
 
@@ -78,15 +82,48 @@ export function lineaComoDato(line, rules) {
   };
 }
 
+// Cómo llega la tienda a saber quién es el cliente que abandonó el carro
+export const IDENTIFICACION = [
+  {
+    id: 'checkout',
+    titulo: 'Escribió su email en el paso 1 del checkout',
+    corto: 'email en el checkout',
+    detalle: 'La tienda pide el email antes que todo. Se guarda apenas lo escribe, aunque nunca apriete «Pagar».'
+  },
+  {
+    id: 'sesion',
+    titulo: 'Tenía su cuenta abierta (sesión iniciada)',
+    corto: 'sesión iniciada',
+    detalle: 'La tienda sabe quién es desde que entró, sin que escriba nada.'
+  },
+  {
+    id: 'cookie',
+    titulo: 'Se suscribió antes al newsletter (cookie)',
+    corto: 'cookie de newsletter',
+    detalle: 'Hace semanas dejó su email en un popup. Su navegador guardó una cookie que lo reconoce al volver.'
+  },
+  {
+    id: 'anonimo',
+    titulo: 'Nadie: visitante anónimo',
+    corto: 'anónimo',
+    detalle: 'Miró, agregó al carro y se fue sin dejar ningún dato. Para el CRM no existe.'
+  }
+];
+
+export const esAnonimo = (cliente) => cliente.ident === 'anonimo';
+
 function clienteComoDato(cliente, rules) {
+  if (esAnonimo(cliente)) return { visitanteId: 'anon-8f2c1a', email: null };
   return {
     email: rules.email ? normEmail(cliente.email) : cliente.email,
     nombre: cliente.nombre,
-    telefono: cliente.telefono
+    telefono: cliente.telefono,
+    identificado_por: IDENTIFICACION.find((i) => i.id === cliente.ident)?.corto
   };
 }
 
 function consentComoDato(cliente, rules) {
+  if (esAnonimo(cliente)) return null;
   if (rules.consent) {
     return [
       { canal: 'email', estado: cliente.okEmail ? 'opt-in' : 'opt-out' },
@@ -121,76 +158,110 @@ export function buildEvento(tipo, cart, cliente, rules, id, fecha = fmtFecha()) 
 const esTallaAmbigua = (t) => /[,\s-]/.test(String(t).trim());
 const esTallaNoChilena = (t) => /[A-Za-z]/.test(String(t));
 
-/** Problemas que tendría la automatización con este evento. */
+/**
+ * Problemas que tendría la automatización con este evento, en lenguaje simple.
+ * `terminos` apunta a entradas del glosario (guia.js).
+ */
 export function alertasDeEvento(ev, cliente, rules, contactos) {
   const out = [];
-  const add = (nivel, texto, regla) => out.push({ nivel, texto, regla });
+  const add = (nivel, texto, regla, terminos = []) => out.push({ nivel, texto, regla, terminos });
+
+  if (esAnonimo(cliente)) {
+    add(
+      'error',
+      'No dejó su email ni tenía sesión iniciada: el CRM no sabe quién es y no le puede escribir. Lo único posible es mostrarle anuncios del producto (remarketing).',
+      null,
+      ['cookie', 'remarketing']
+    );
+  }
 
   ev.items.forEach((it) => {
     const p = productById(it.productId);
     if (esTallaAmbigua(it.talla))
       add(
         'error',
-        `«${it.nombre}»: el evento dice talla «${it.talla}». El correo no sabe cuál dejó en el carro.`,
-        'sku'
+        `«${it.nombre}»: el correo dirá «talla ${it.talla}», porque el sistema no guardó cuál eligió. Sólo guarda las tallas que existen.`,
+        'sku',
+        ['sku']
       );
     else if (esTallaNoChilena(it.talla))
       add(
         'warn',
-        `«${it.nombre}»: talla «${it.talla}» convive con tallas 37, 38… sin sistema_talla. No se puede segmentar ni filtrar por talla.`,
-        'listas'
+        `«${it.nombre}»: la talla «${it.talla}» está en otro sistema y el resto en números chilenos (37, 38…). El sistema no sabe a qué talla chilena equivale.`,
+        'listas',
+        ['sistema-talla', 'lista-cerrada']
       );
     if (!it.foto)
-      add('error', `«${it.nombre}»: no hay foto. El correo sale con la imagen rota.`, 'sku');
+      add('error', `«${it.nombre}»: no tiene foto. El correo sale con un cuadro vacío.`, 'sku', ['sku']);
     else if (!rules.sku && p.colores.length > 1)
       add(
         'warn',
-        `«${it.nombre}»: la foto es la del producto, no la de la variante. Puede mostrar otro color del que eligió.`,
-        'sku'
+        `«${it.nombre}»: hay una sola foto para todos los colores. Si eligió otro color, el correo le muestra uno que no eligió.`,
+        'sku',
+        ['sku']
       );
     if (!rules.listas) {
       if (!p.dirty.material)
-        add('error', `«${it.nombre}»: material vacío. No aparece en ningún filtro.`, 'listas');
+        add(
+          'error',
+          `«${it.nombre}»: no dice de qué material es. No aparece cuando alguien filtra por material.`,
+          'listas',
+          ['lista-cerrada']
+        );
       else if (p.dirty.material.toLowerCase().includes('sint') && p.capellada === 'Cuero' && p.suela !== 'Sintético')
         add(
           'error',
-          `«${it.nombre}»: el campo dice ${p.dirty.material}, la descripción dice cuero. ¿A quién le cree la automatización?`,
-          'listas'
+          `«${it.nombre}»: el campo material dice ${p.dirty.material}, pero la descripción dice cuero. Una máquina sólo lee el campo, así que cree que es sintético.`,
+          'listas',
+          ['lista-cerrada']
         );
       else if (p.dirty.material.includes('/'))
         add(
           'warn',
-          `«${it.nombre}»: «${p.dirty.material}» en un solo campo. Es bimaterial: hace falta capellada y suela por separado.`,
-          'listas'
+          `«${it.nombre}»: dice «${p.dirty.material}» en un solo campo. Debería decir capellada: cuero y suela: sintético, cada uno en su campo.`,
+          'listas',
+          ['lista-cerrada']
         );
     }
   });
 
-  if (ev.cliente.email !== normEmail(ev.cliente.email)) {
+  if (ev.cliente.email && ev.cliente.email !== normEmail(ev.cliente.email)) {
     const yaExiste = contactos.some(
       (c) => c.email !== ev.cliente.email && normEmail(c.email) === normEmail(ev.cliente.email)
     );
     add(
       yaExiste ? 'error' : 'warn',
       yaExiste
-        ? `Email «${ev.cliente.email}» sin normalizar: el CRM ya tiene a «${normEmail(ev.cliente.email)}» y crea un contacto duplicado.`
-        : `Email «${ev.cliente.email}» sin normalizar (espacios o mayúsculas). La próxima vez que escriba bien su correo será «otra persona».`,
-      'email'
+        ? `El email llegó como «${ev.cliente.email}», con espacios o mayúsculas. Para el CRM eso no es igual a «${normEmail(ev.cliente.email)}», que ya existía, así que crea una persona nueva: queda duplicada.`
+        : `El email llegó como «${ev.cliente.email}», con espacios o mayúsculas. Si la próxima vez lo escribe bien, el CRM va a creer que es otra persona.`,
+      'email',
+      ['trim', 'normalizar', 'llave']
     );
   }
 
   const m = mensajesPermitidos(cliente, rules);
   if (m.whatsapp && !cliente.okWhatsapp)
-    add('error', 'Se envía WhatsApp a alguien que NO dio permiso para ese canal.', 'consent');
+    add(
+      'error',
+      'Se le manda WhatsApp aunque NO lo aceptó. Sólo marcó «acepto email», pero el sistema guarda un único «acepta comunicaciones: Sí» y lo usa para todo.',
+      'consent',
+      ['consentimiento']
+    );
   if (m.email && !cliente.okEmail)
-    add('error', 'Se envía email a alguien que NO dio permiso para ese canal.', 'consent');
+    add(
+      'error',
+      'Se le manda email aunque NO lo aceptó. Sólo marcó WhatsApp, pero el sistema guarda un único «acepta comunicaciones: Sí».',
+      'consent',
+      ['consentimiento']
+    );
 
-  if (!out.length) add('ok', 'Datos limpios: la automatización puede armar el mensaje sin adivinar nada.');
+  if (!out.length) add('ok', 'Todo bien: el mensaje se arma con datos claros, sin adivinar nada.');
   return out;
 }
 
 /** Qué canales dispara la automatización según el modelo de consentimiento. */
 export function mensajesPermitidos(cliente, rules) {
+  if (esAnonimo(cliente)) return { email: false, whatsapp: false };
   if (rules.consent) return { email: cliente.okEmail, whatsapp: cliente.okWhatsapp };
   const general = cliente.okEmail || cliente.okWhatsapp;
   return { email: general, whatsapp: general };

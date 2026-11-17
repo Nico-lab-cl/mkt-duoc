@@ -11,8 +11,11 @@ import {
   ImageOff,
   ArrowRight,
   Undo2,
-  Ban
+  Ban,
+  Megaphone
 } from 'lucide-react';
+import { Termino } from './Glosario';
+import { terminoById } from './guia';
 import { PRODUCTS, clp } from './catalogo';
 import {
   RULES,
@@ -131,6 +134,17 @@ function Alerta({ a }) {
         {a.regla && (
           <span className="block text-xs mt-0.5 opacity-80">Lo arregla la regla: «{ruleName(a.regla)}»</span>
         )}
+        {a.terminos?.length > 0 && (
+          <span className="block text-xs mt-0.5">
+            ¿Qué es?{' '}
+            {a.terminos.map((id, k) => (
+              <span key={id}>
+                {k > 0 && ' · '}
+                <Termino id={id}>{terminoById(id)?.termino}</Termino>
+              </span>
+            ))}
+          </span>
+        )}
       </span>
     </li>
   );
@@ -147,8 +161,9 @@ function TabEvento({ ev, alertas, ultima }) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-slate-500">
-        {ultima.tipo === 'abandono' ? 'Carro abandonado' : 'Pedido pagado'} por {ultima.cliente.nombre}. El
-        evento se <b>recalcula con las reglas actuales</b>: préndelas y apágalas para ver qué cambia.
+        {ultima.tipo === 'abandono' ? 'Carro abandonado' : 'Pedido pagado'} por{' '}
+        {ultima.cliente.ident === 'anonimo' ? 'un visitante anónimo' : ultima.cliente.nombre || ultima.cliente.email.trim()}.
+        Lo de abajo <b>se recalcula con las reglas actuales</b>: préndelas y apágalas para ver qué cambia.
       </p>
       <div>
         <h3 className="text-sm font-semibold mb-2">¿Qué problema tendría la automatización?</h3>
@@ -159,7 +174,13 @@ function TabEvento({ ev, alertas, ultima }) {
         </ul>
       </div>
       <div>
-        <h3 className="text-sm font-semibold mb-2">Lo que viaja de la tienda al CRM (JSON)</h3>
+        <h3 className="text-sm font-semibold mb-1">Lo que la tienda le manda al CRM</h3>
+        <p className="text-xs text-slate-600 mb-2 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">
+          Esto es un <Termino id="evento">evento</Termino> escrito en <Termino id="json">JSON</Termino>: una ficha
+          con etiquetas a la izquierda y valores a la derecha. Lo que está entre <code>[ ]</code> es una lista, en
+          este caso los zapatos del carro. El CRM sólo conoce lo que viene aquí: si la talla no está, no la puede
+          inventar.
+        </p>
         <pre className="text-xs bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto leading-relaxed">
           {pretty(ev)}
         </pre>
@@ -182,8 +203,8 @@ function TabMensajes({ ev, ultima, rules }) {
   if (!ev || ultima.tipo !== 'abandono')
     return (
       <Vacio>
-        Los mensajes de recuperación salen cuando alguien <b>abandona</b> el carro. Llena el carro y usa
-        «Cerrar la pestaña (abandonar)».
+        Los mensajes de recuperación salen cuando alguien <b>abandona</b> el carro. Llena el carro y apreta
+        «Irse sin pagar».
       </Vacio>
     );
   const c = ultima.cliente;
@@ -192,11 +213,55 @@ function TabMensajes({ ev, ultima, rules }) {
   const material = (i) =>
     i.material_capellada ? `${i.material_capellada} (suela ${i.material_suela.toLowerCase()})` : i.material;
 
+  if (c.ident === 'anonimo')
+    return (
+      <div className="space-y-4">
+        <p className="text-sm bg-rose-50 border border-rose-200 text-rose-900 rounded-xl px-3 py-2">
+          <b>No sale ningún email ni WhatsApp.</b> El visitante no dejó su email ni tenía sesión: el CRM no sabe
+          quién es. No hay a quién escribirle.
+        </p>
+        <div>
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Megaphone className="w-4 h-4" /> Lo que sí se puede hacer:{' '}
+            <Termino id="remarketing">remarketing</Termino>
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            El píxel de Meta o Google vio qué zapato dejó. Con eso se le muestra un anuncio en Instagram o en
+            otros sitios, sin saber su nombre ni su email.
+          </p>
+          <div className="mt-2 max-w-xs border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+            <div className="px-3 py-2 text-xs flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-amber-500" />
+              <span>
+                <b>pasos.calzado</b>
+                <span className="block text-[10px] text-slate-400">Publicidad</span>
+              </span>
+            </div>
+            {it.foto ? (
+              <img src={it.foto} alt="" className="w-full aspect-[3/2] object-cover" />
+            ) : (
+              <div className="w-full aspect-[3/2] bg-slate-100 grid place-items-center text-slate-400">
+                <ImageOff className="w-6 h-6" />
+              </div>
+            )}
+            <p className="px-3 py-2 text-xs">
+              ¿Todavía lo estás pensando? <b>{it.nombre}</b> te espera. {clp(it.precio)}
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Para la próxima: ofrecer algo a cambio del email (un 10 % de descuento en un popup) convierte a este
+          visitante anónimo en alguien a quien sí se le puede escribir.
+        </p>
+      </div>
+    );
+
   return (
     <div className="space-y-5">
       <p className="text-xs text-slate-500">
-        La automatización se dispara 1 hora después del abandono (acá, al instante) y arma el mensaje sólo con
-        los campos del evento. No lee descripciones ni adivina.
+        En la vida real esto sale cuando vence la <Termino id="sesion">sesión</Termino> más la espera que haya
+        configurado la tienda (acá, al instante). El mensaje se arma <b>sólo con los datos del evento</b>: no lee
+        descripciones ni adivina.
       </p>
 
       {/* Email */}
@@ -209,7 +274,7 @@ function TabMensajes({ ev, ultima, rules }) {
               <p className="text-xs text-slate-500">
                 Para: <code className="bg-slate-100 px-1 rounded">{ev.cliente.email}</code>
               </p>
-              <p className="font-semibold">Hola {c.nombre}, ¿te olvidaste de algo?</p>
+              <p className="font-semibold">Hola <Marca bad={!c.nombre.trim()}>{c.nombre.trim() || "(sin nombre)"}</Marca>, ¿te olvidaste de algo?</p>
               {ev.items.map((i, k) => (
                 <div key={k} className="flex gap-3 items-center border border-slate-100 rounded-lg p-2">
                   {i.foto ? (
@@ -249,7 +314,7 @@ function TabMensajes({ ev, ultima, rules }) {
         {m.whatsapp && (
           <div className="mt-2 bg-[#e5ddd5] rounded-xl p-3">
             <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none px-3 py-2 text-sm shadow-sm">
-              Hola {c.nombre} 👋 dejaste <b>{it.nombre}</b> talla{' '}
+              Hola {c.nombre.trim() || "👋"} dejaste <b>{it.nombre}</b> talla{' '}
               <Marca bad={ambigua(it.talla)}>{it.talla}</Marca> en tu carro. ¡Quedan pocas unidades!{' '}
               <span className="text-sky-700 underline">pasos.example/carro</span>
               <span className="block text-[10px] text-right text-slate-400 mt-1">para {ev.cliente.telefono}</span>
@@ -357,34 +422,45 @@ function TabCrm({ contactos, pedidos, setPedidos }) {
 
       <div>
         <h3 className="text-sm font-semibold mb-1">Pedidos</h3>
+        <p className="text-xs text-slate-500 mb-2">
+          Un pedido es como una boleta: arriba la{' '}
+          <Termino id="cabecera-detalle">cabecera</Termino> (quién compró y cuándo) y abajo una línea por cada
+          producto. Prueba devolver uno de los pares y mira qué entiende el CRM.
+        </p>
         {pedidos.length === 0 ? (
           <Vacio>Sin pedidos todavía. Prueba el escenario «Compra 3 tallas y devuelve 2».</Vacio>
         ) : (
           <div className="space-y-3">
             {pedidos.map((p, pi) => {
-              const comprados = p.devueltoTodo ? 0 : p.ev.items.filter((i) => i.estado !== 'devuelto').length;
+              const items = p.ev.items;
+              const quedan = p.devueltoTodo ? [] : items.filter((i) => i.estado !== 'devuelto');
+              const nombre = p.ev.cliente.nombre || p.ev.cliente.email.trim();
               return (
-                <div key={p.ev.orderId} className="border border-slate-200 rounded-xl p-3">
-                  <div className="flex flex-wrap justify-between gap-2 text-xs">
-                    <span className="font-mono font-semibold">{p.ev.orderId}</span>
-                    <span className="text-slate-500">
-                      {p.ev.cliente.email} · modelo {p.modeloSku ? 'con detalle por SKU' : 'sin SKU (estado en la cabecera)'}
+                <div key={p.ev.orderId} className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="bg-slate-50 px-3 py-2 text-xs flex flex-wrap justify-between gap-2">
+                    <span>
+                      <span className="text-slate-400 uppercase tracking-wide mr-1">Cabecera</span>
+                      <span className="font-mono font-semibold">{p.ev.orderId}</span> · {nombre}
                     </span>
+                    {!p.modeloSku && (
+                      <span>
+                        Estado del pedido:{' '}
+                        <b className={p.ev.estado === 'devuelto' ? 'text-rose-700' : 'text-emerald-700'}>{p.ev.estado}</b>
+                      </span>
+                    )}
                   </div>
-                  {!p.modeloSku && (
-                    <p className="text-xs mt-1">
-                      Estado del pedido: <b>{p.ev.estado}</b>
-                    </p>
-                  )}
-                  <ul className="mt-2 space-y-1">
-                    {p.ev.items.map((it, ii) => {
+                  <ul className="px-3 py-2 space-y-1">
+                    <li className="text-[10px] uppercase tracking-wide text-slate-400">Detalle</li>
+                    {items.map((it, ii) => {
                       const dev = p.devueltoTodo || it.estado === 'devuelto';
                       return (
                         <li key={ii} className="flex items-center gap-2 text-xs">
                           <span className={`flex-1 ${dev ? 'line-through text-slate-400' : ''}`}>
                             {it.nombre} · talla {it.talla}
                           </span>
-                          {p.modeloSku && <span className="text-slate-500">{it.estado}</span>}
+                          {p.modeloSku && (
+                            <span className={it.estado === 'devuelto' ? 'text-rose-700' : 'text-emerald-700'}>{it.estado}</span>
+                          )}
                           <button
                             onClick={() => devolver(pi, ii)}
                             disabled={dev}
@@ -397,16 +473,26 @@ function TabCrm({ contactos, pedidos, setPedidos }) {
                     })}
                   </ul>
                   {p.devueltoTodo && (
-                    <p className="text-xs mt-2 text-rose-800 bg-rose-50 border border-rose-200 rounded-lg px-2 py-1.5">
-                      Sin detalle por SKU, devolver una talla marca <b>todo el pedido</b> como devuelto. El CRM cree que
-                      no compró nada y la mete al flujo de «vuelve a comprar».
-                    </p>
+                    <div className="text-xs m-3 mt-0 text-rose-900 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 space-y-1">
+                      <p className="font-semibold">¿Qué pasó?</p>
+                      <p>
+                        {nombre} devolvió <b>un</b> par. Pero en este pedido las líneas no tienen estado propio: el único
+                        lugar donde se puede anotar «devuelto» es la cabecera, y eso marca <b>el pedido entero</b>.
+                      </p>
+                      <p>
+                        Resultado: el CRM cree que {nombre} no se quedó con nada. Le va a mandar correos de «¡vuelve a
+                        comprar!» aunque sí compró, y nadie sabe qué talla le quedó bien.
+                      </p>
+                      <p className="italic">Es como devolver la leche en el supermercado y que te anulen la boleta entera.</p>
+                    </div>
                   )}
-                  {p.modeloSku && comprados < p.ev.items.length && (
-                    <p className="text-xs mt-2 text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5">
-                      El estado vive en cada ítem: el CRM sabe que se quedó con {comprados} de {p.ev.items.length} y cuál talla
-                      le quedó bien.
-                    </p>
+                  {p.modeloSku && quedan.length < items.length && (
+                    <div className="text-xs m-3 mt-0 text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                      Cada par es una línea con su propio estado, como en una boleta. El CRM sabe que {nombre} se quedó
+                      con {quedan.length} de {items.length}
+                      {quedan.length > 0 && <> (talla {quedan.map((q) => q.talla).join(', ')})</>}: la próxima vez le
+                      puede recomendar esa talla.
+                    </div>
                   )}
                 </div>
               );
