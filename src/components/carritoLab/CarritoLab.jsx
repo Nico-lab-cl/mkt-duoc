@@ -601,7 +601,7 @@ export default function CarritoLab() {
                 </div>
                 {cliente.ident === 'checkout' && capturado && (
                   <p className="text-xs mt-2 inline-flex items-center gap-1.5 text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
-                    <Radio className="w-3.5 h-3.5" /> La tienda ya guardó tu email junto al carro. No apretaste ningún botón.
+                    <Radio className="w-3.5 h-3.5" /> La tienda ya tiene tu email asociado al carro, aunque no apretaste «Pagar».
                   </p>
                 )}
                 <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-sm">

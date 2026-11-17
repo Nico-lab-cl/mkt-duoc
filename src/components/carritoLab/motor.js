@@ -88,7 +88,7 @@ export const IDENTIFICACION = [
     id: 'checkout',
     titulo: 'Escribió su email en el paso 1 del checkout',
     corto: 'email en el checkout',
-    detalle: 'La tienda pide el email antes que todo. Se guarda apenas lo escribe, aunque nunca apriete «Pagar».'
+    detalle: 'Apretó «Finalizar compra» y escribió su email, que es lo primero que pide el checkout. Queda asociado al carro aunque nunca apriete «Pagar».'
   },
   {
     id: 'sesion',

@@ -11,7 +11,7 @@ export function Termino({ id, children, className = '' }) {
     <button
       type="button"
       onClick={() => verTermino(id)}
-      title={t ? `${t.termino}: ${t.simple}` : undefined}
+      title={t ? t.definicion || `${t.termino}: ${t.simple}` : undefined}
       className={`inline text-sky-700 underline decoration-dotted underline-offset-2 hover:text-sky-900 ${className}`}
     >
       {children}
@@ -24,7 +24,7 @@ const sinTildes = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(
 export default function Glosario({ resaltado }) {
   const [q, setQ] = useState('');
   const lista = GLOSARIO.filter(
-    (g) => !q.trim() || sinTildes(g.termino + ' ' + g.simple).includes(sinTildes(q.trim()))
+    (g) => !q.trim() || sinTildes(`${g.termino} ${g.definicion || ''} ${g.simple}`).includes(sinTildes(q.trim()))
   );
   const numero = (id) => BIBLIOGRAFIA.findIndex((b) => b.id === id) + 1;
 
@@ -35,8 +35,9 @@ export default function Glosario({ resaltado }) {
           <BookOpen className="w-6 h-6 text-sky-600" /> Glosario y bibliografía
         </h2>
         <p className="text-slate-600 mt-2 max-w-3xl">
-          Las palabras técnicas del laboratorio, explicadas en simple y con un ejemplo. Los números entre corchetes
-          llevan a la fuente.
+          Los conceptos técnicos del laboratorio: primero la definición formal (con sus siglas y el término en
+          inglés, como aparecerá en la industria), luego una explicación en simple y un ejemplo. Los números entre
+          corchetes llevan a la fuente.
         </p>
         <label className="mt-4 flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-2 max-w-md">
           <Search className="w-4 h-4 text-slate-400" />
@@ -59,7 +60,16 @@ export default function Glosario({ resaltado }) {
             }`}
           >
             <h3 className="font-bold text-lg">{g.termino}</h3>
-            <p className="text-sm text-slate-700 mt-1 leading-relaxed">{g.simple}</p>
+            {g.definicion && (
+              <p className="text-sm text-slate-800 mt-1 leading-relaxed">
+                <span className="block text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Definición</span>
+                {g.definicion}
+              </p>
+            )}
+            <p className="text-sm text-slate-700 mt-2 leading-relaxed">
+              <span className="block text-[11px] uppercase tracking-wide text-slate-400 font-semibold">En simple</span>
+              {g.simple}
+            </p>
             <p className="text-sm mt-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-amber-950">
               <b>Ejemplo:</b> {g.ejemplo}
             </p>

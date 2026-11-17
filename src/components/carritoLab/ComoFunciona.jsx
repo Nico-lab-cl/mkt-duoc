@@ -91,7 +91,7 @@ const CAPTURA = [
     icon: AtSign,
     titulo: 'Escribe su email en el paso 1 del checkout',
     texto:
-      'Las tiendas piden el email antes que la dirección o la tarjeta. Apenas lo escribe y pasa al siguiente campo, la tienda lo guarda junto al carro, aunque nunca apriete «Pagar». Es la forma más común.',
+      'El email no se pide al agregar al carro: se pide recién cuando la persona aprieta «Finalizar compra» y llega al checkout, y es el primer dato (antes que la dirección o la tarjeta). Si lo escribe y se va sin pagar, la tienda ya tiene su email asociado al carro. En Shopify, si a los 10 minutos no ha pagado, aparece como checkout abandonado. Es la forma más común.',
     color: 'emerald'
   },
   {
@@ -182,10 +182,37 @@ export default function ComoFunciona({ irA }) {
         <p className="text-sm text-slate-700 mt-3 bg-white border border-slate-200 rounded-xl p-3 flex gap-2">
           <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
           <span>
-            Además, en VTEX el correo sólo les llega a quienes aceptaron recibir comunicaciones. Tener el email no
-            basta: también hace falta el <Termino id="consentimiento">permiso</Termino>.
+            Además, en VTEX y en Shopify el correo automático, por defecto, sólo les llega a quienes aceptaron
+            recibir comunicaciones. Tener el email no basta: también hace falta el{' '}
+            <Termino id="consentimiento">permiso</Termino>.
           </span>
         </p>
+
+        <div className="mt-4 bg-white border border-slate-200 rounded-2xl p-4">
+          <h4 className="font-semibold">Pruébalo en una tienda de prueba de Shopify</h4>
+          <p className="text-sm text-slate-600 mt-1">
+            Si sólo agregas un producto al carro y cierras, <b>no va a aparecer nada</b>: la tienda nunca te pidió el
+            email, así que eres un visitante anónimo. Shopify distingue dos cosas:{' '}
+            <Termino id="checkout-abandonado">carro abandonado y checkout abandonado</Termino>. Para ver uno:
+          </p>
+          <ol className="list-decimal list-inside text-sm text-slate-700 mt-2 space-y-1">
+            <li>Abre tu tienda (en las tiendas de prueba te pide la contraseña de la tienda).</li>
+            <li>Agrega un producto y aprieta <b>«Finalizar compra»</b> para llegar al checkout.</li>
+            <li>
+              En <b>Contacto</b> escribe un <b>email</b> tuyo, no un teléfono: con teléfono no se puede mandar el
+              correo de recuperación. Marca también la casilla para recibir novedades y ofertas.
+            </li>
+            <li>No completes nada más. Cierra la pestaña.</li>
+            <li>
+              Espera <b>más de 10 minutos</b> y entra al panel: <b>Pedidos › Checkouts abandonados</b> (puede decir
+              «Pagos abandonados», según el idioma). Ahí aparece tu email con el carro.
+            </li>
+            <li>
+              El correo automático se activa en <b>Marketing › Automatizaciones</b>. Por defecto sólo se envía a
+              quienes aceptaron recibir marketing.
+            </li>
+          </ol>
+        </div>
       </section>
 
       <section>

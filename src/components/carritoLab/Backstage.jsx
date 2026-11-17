@@ -176,10 +176,11 @@ function TabEvento({ ev, alertas, ultima }) {
       <div>
         <h3 className="text-sm font-semibold mb-1">Lo que la tienda le manda al CRM</h3>
         <p className="text-xs text-slate-600 mb-2 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">
-          Esto es un <Termino id="evento">evento</Termino> escrito en <Termino id="json">JSON</Termino>: una ficha
-          con etiquetas a la izquierda y valores a la derecha. Lo que está entre <code>[ ]</code> es una lista, en
-          este caso los zapatos del carro. El CRM sólo conoce lo que viene aquí: si la talla no está, no la puede
-          inventar.
+          Esto es un <Termino id="evento">evento</Termino> en formato <Termino id="json">JSON</Termino>{' '}
+          (JavaScript Object Notation): un objeto <code>{'{ }'}</code> formado por pares clave–valor, con la clave a la
+          izquierda y el valor a la derecha. Lo que está entre <code>[ ]</code> es un arreglo, en este caso los
+          productos del carro. El CRM sólo conoce lo que viene aquí: si la clave <code>talla</code> no tiene un valor
+          claro, no la puede inventar.
         </p>
         <pre className="text-xs bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto leading-relaxed">
           {pretty(ev)}
