@@ -183,6 +183,30 @@ export const GLOSARIO = [
     fuentes: ['wiki-pk']
   },
   {
+    id: 'tipo-campo',
+    termino: 'Tipo de campo',
+    simple:
+      'Define qué se puede escribir en un campo: texto libre, número, una opción de una lista, sí/no, una imagen o un ID. Elegir bien el tipo evita errores antes de que pasen.',
+    ejemplo: 'Si «precio» es de tipo Número, nadie puede escribir «$39.990» ni «consultar».',
+    fuentes: ['wiki-pk']
+  },
+  {
+    id: 'interno-etiqueta',
+    termino: 'Nombre interno y etiqueta',
+    simple:
+      'Cada campo tiene dos nombres. El nombre interno lo usan las máquinas: minúsculas, sin espacios ni tildes. La etiqueta es la que ve la gente en la tienda o en el CRM.',
+    ejemplo: 'Nombre interno: material_capellada. Etiqueta: «Material de la capellada».',
+    fuentes: ['json']
+  },
+  {
+    id: 'valor-interno',
+    termino: 'Valor interno',
+    simple:
+      'En una lista cerrada, cada opción también tiene dos caras: la etiqueta que ve el cliente y el valor interno que viaja entre sistemas. Si cambias la etiqueta (por ejemplo, la traduces), el valor interno sigue igual y nada se rompe.',
+    ejemplo: 'Etiqueta «Café» → valor interno cafe. En el JSON viaja "color": "cafe"; en el correo se lee «Café».',
+    fuentes: ['merchant-group']
+  },
+  {
     id: 'trim',
     termino: 'TRIM',
     simple:

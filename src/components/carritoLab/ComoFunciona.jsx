@@ -223,16 +223,25 @@ export default function ComoFunciona({ irA }) {
           <li>Prendan una regla a la vez y miren qué problema desaparece.</li>
           <li>Prueben con un visitante anónimo: ¿qué se puede hacer si no dejó su email?</li>
           <li>
-            Con lo aprendido, que le pidan a la IA un modelo de datos para su tienda y revisen si cumple las 4
-            reglas.
+            Pasen a la <b>Práctica</b>: cada equipo inventa sus productos, define sus campos y prueba su propio carro
+            abandonado. El revisor les marca dónde se equivocaron.
           </li>
+          <li>Al final, que copien su modelo, se lo pasen a la IA y comparen lo que dice con el revisor.</li>
         </ol>
-        <button
-          onClick={() => irA('simulador')}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 font-semibold text-sm"
-        >
-          Ir al simulador <ArrowRight className="w-4 h-4" />
-        </button>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button
+            onClick={() => irA('simulador')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 font-semibold text-sm"
+          >
+            Ir al simulador <ArrowRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => irA('practica')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-semibold text-sm"
+          >
+            Ir a la práctica <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </section>
     </div>
   );

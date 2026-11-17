@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   HelpCircle,
   BookOpen,
+  PencilRuler,
   Radio,
   ShoppingCart,
   Plus,
@@ -32,6 +33,7 @@ import {
 } from './motor';
 import Backstage from './Backstage';
 import ComoFunciona from './ComoFunciona';
+import Practica from './Practica';
 import Glosario, { Termino } from './Glosario';
 import { GlosarioNav } from './navContext';
 
@@ -50,12 +52,13 @@ const CLIENTE_VACIO = { ident: 'checkout', nombre: '', email: '', telefono: '', 
 const VISTAS = [
   { id: 'como', label: '¿Cómo funciona?', icon: HelpCircle },
   { id: 'simulador', label: 'Simulador', icon: ShoppingCart },
+  { id: 'practica', label: 'Práctica: arma tu catálogo', icon: PencilRuler },
   { id: 'glosario', label: 'Glosario y bibliografía', icon: BookOpen }
 ];
 
 const vistaInicial = () => {
   const h = window.location.hash.replace('#', '');
-  if (h === 'simulador') return 'simulador';
+  if (h === 'simulador' || h === 'practica') return h;
   if (h === 'glosario' || h.startsWith('g-') || h.startsWith('b-')) return 'glosario';
   return 'como';
 };
@@ -266,6 +269,7 @@ export default function CarritoLab() {
 
       {vista === 'como' && <ComoFunciona irA={irA} />}
       {vista === 'glosario' && <Glosario resaltado={resaltado} />}
+      {vista === 'practica' && <Practica />}
 
       {vista === 'simulador' && (
       <>
