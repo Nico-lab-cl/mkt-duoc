@@ -45,6 +45,25 @@ const pool = new Pool({
   ssl: false
 });
 
+// Laboratorio EFT (MKA1213). Mismo SQL que server/sql/eft_lab.sql, por si se
+// quiere correr a mano en la base de datos.
+const EFT_LAB_SQL = `
+  CREATE TABLE IF NOT EXISTS eft_lab_entregas (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    lab TEXT NOT NULL DEFAULT 'eje1',
+    group_id INTEGER,
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    pieza_imagen BYTEA,
+    pieza_mime TEXT,
+    submitted_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, lab)
+  );
+  CREATE INDEX IF NOT EXISTS idx_eft_lab_entregas_lab ON eft_lab_entregas(lab, group_id);
+`;
+
 // Probar conexión e inicializar tablas
 pool.connect(async (err, client, release) => {
   if (err) {
@@ -239,6 +258,15 @@ pool.connect(async (err, client, release) => {
     console.log('🚀 Tablas de base de datos y grupos de 3° y 4° año verificados/creados');
   } catch (dbErr) {
     console.error('❌ Error inicializando tablas:', dbErr);
+  }
+
+  // Laboratorio EFT: una entrega por estudiante y por eje. Va aparte para que
+  // un fallo aquí no impida crear el resto de las tablas (y viceversa).
+  try {
+    await client.query(EFT_LAB_SQL);
+    console.log('🧪 Tabla eft_lab_entregas verificada/creada');
+  } catch (dbErr) {
+    console.error('❌ Error creando eft_lab_entregas:', dbErr);
   } finally {
     release();
   }
@@ -2350,6 +2378,183 @@ app.delete('/api/seo/projects/:id', async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar proyecto SEO:', err);
     res.status(500).json({ success: false, error: 'Error al eliminar proyecto' });
+  }
+});
+
+// ==========================================
+// LABORATORIO EFT (MKA1213) — /eft-lab
+// Cada estudiante guarda su avance con su cuenta; el profesor lo revisa en
+// /eft-lab/revision. La clasificación del Flywheel tiene un solo intento:
+// una vez guardada la etapa de un formato, el servidor no deja cambiarla.
+// ==========================================
+
+const EFT_LABS = ['eje1'];
+const EFT_DATA_MAX = 200000; // caracteres del JSON de avance
+const EFT_IMG_MAX = 3 * 1024 * 1024; // bytes de la pieza ya comprimida
+
+const requireUser = async (req, res, next) => {
+  const userId = Number(req.headers['x-user-id'] || req.query.uid);
+  if (!userId) return res.status(401).json({ error: 'Inicia sesión para usar el laboratorio' });
+  try {
+    const r = await pool.query('SELECT id, role, full_name, email, group_id FROM users WHERE id = $1', [userId]);
+    if (!r.rows.length) return res.status(401).json({ error: 'Usuario no encontrado. Vuelve a iniciar sesión.' });
+    req.user = r.rows[0];
+    next();
+  } catch (err) {
+    console.error('Error verificando usuario del laboratorio:', err);
+    res.status(500).json({ error: 'Error al verificar el usuario' });
+  }
+};
+
+const eftLab = (req, res) => {
+  const lab = req.params.lab;
+  if (!EFT_LABS.includes(lab)) {
+    res.status(404).json({ error: 'Laboratorio inexistente' });
+    return null;
+  }
+  return lab;
+};
+
+const eftPublic = (row) =>
+  row
+    ? { data: row.data || {}, submitted_at: row.submitted_at, updated_at: row.updated_at, has_image: !!row.has_image }
+    : { data: {}, submitted_at: null, updated_at: null, has_image: false };
+
+app.get('/api/eft-lab/:lab/me', requireUser, async (req, res) => {
+  const lab = eftLab(req, res);
+  if (!lab) return;
+  try {
+    const r = await pool.query(
+      `SELECT data, submitted_at, updated_at, (pieza_imagen IS NOT NULL) AS has_image
+       FROM eft_lab_entregas WHERE user_id = $1 AND lab = $2`,
+      [req.user.id, lab]
+    );
+    res.json(eftPublic(r.rows[0]));
+  } catch (err) {
+    console.error('Error leyendo avance EFT:', err);
+    res.status(500).json({ error: 'No se pudo cargar tu avance' });
+  }
+});
+
+// Guarda el avance. `enviar: true` marca la entrega como enviada al profesor.
+app.put('/api/eft-lab/:lab/me', requireUser, async (req, res) => {
+  const lab = eftLab(req, res);
+  if (!lab) return;
+  const incoming = req.body?.data;
+  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+    return res.status(400).json({ error: 'Datos inválidos' });
+  }
+  try {
+    const prev = await pool.query('SELECT data FROM eft_lab_entregas WHERE user_id = $1 AND lab = $2', [req.user.id, lab]);
+    const prevData = prev.rows[0]?.data || {};
+    // Un solo intento: lo ya clasificado manda sobre lo que llegue
+    const data = {
+      ...incoming,
+      clasif: { ...(incoming.clasif || {}), ...(prevData.clasif || {}) }
+    };
+    if (JSON.stringify(data).length > EFT_DATA_MAX) {
+      return res.status(413).json({ error: 'Tu avance es demasiado largo para guardarse' });
+    }
+    const r = await pool.query(
+      `INSERT INTO eft_lab_entregas (user_id, lab, group_id, data, submitted_at)
+       VALUES ($1, $2, $3, $4, CASE WHEN $5 THEN NOW() ELSE NULL END)
+       ON CONFLICT (user_id, lab) DO UPDATE SET
+         data = EXCLUDED.data,
+         group_id = EXCLUDED.group_id,
+         submitted_at = CASE WHEN $5 THEN NOW() ELSE eft_lab_entregas.submitted_at END,
+         updated_at = NOW()
+       RETURNING data, submitted_at, updated_at, (pieza_imagen IS NOT NULL) AS has_image`,
+      [req.user.id, lab, req.user.group_id, data, !!req.body.enviar]
+    );
+    res.json(eftPublic(r.rows[0]));
+  } catch (err) {
+    console.error('Error guardando avance EFT:', err);
+    res.status(500).json({ error: 'No se pudo guardar tu avance' });
+  }
+});
+
+app.put('/api/eft-lab/:lab/me/imagen', requireUser, async (req, res) => {
+  const lab = eftLab(req, res);
+  if (!lab) return;
+  const { mime, data_base64 } = req.body || {};
+  if (!/^image\/(jpeg|png|webp)$/.test(mime || '') || !data_base64) {
+    return res.status(400).json({ error: 'Sube una imagen JPG, PNG o WebP' });
+  }
+  const buffer = Buffer.from(String(data_base64).replace(/^data:[^,]+,/, ''), 'base64');
+  if (!buffer.length || buffer.length > EFT_IMG_MAX) {
+    return res.status(413).json({ error: 'La imagen es demasiado pesada' });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO eft_lab_entregas (user_id, lab, group_id, pieza_imagen, pieza_mime)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, lab) DO UPDATE SET
+         pieza_imagen = EXCLUDED.pieza_imagen, pieza_mime = EXCLUDED.pieza_mime, updated_at = NOW()`,
+      [req.user.id, lab, req.user.group_id, buffer, mime]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error guardando pieza EFT:', err);
+    res.status(500).json({ error: 'No se pudo guardar la imagen' });
+  }
+});
+
+app.delete('/api/eft-lab/:lab/me/imagen', requireUser, async (req, res) => {
+  const lab = eftLab(req, res);
+  if (!lab) return;
+  try {
+    await pool.query(
+      'UPDATE eft_lab_entregas SET pieza_imagen = NULL, pieza_mime = NULL, updated_at = NOW() WHERE user_id = $1 AND lab = $2',
+      [req.user.id, lab]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error borrando pieza EFT:', err);
+    res.status(500).json({ error: 'No se pudo quitar la imagen' });
+  }
+});
+
+// La imagen se pide desde <img src>, así que el id viaja en ?uid. Solo la ve
+// su dueño o un administrador.
+app.get('/api/eft-lab/:lab/imagen/:userId', requireUser, async (req, res) => {
+  const lab = eftLab(req, res);
+  if (!lab) return;
+  const owner = Number(req.params.userId);
+  if (req.user.role !== 'admin' && req.user.id !== owner) {
+    return res.status(403).json({ error: 'No tienes permiso para ver esta imagen' });
+  }
+  try {
+    const r = await pool.query('SELECT pieza_imagen, pieza_mime FROM eft_lab_entregas WHERE user_id = $1 AND lab = $2', [owner, lab]);
+    const row = r.rows[0];
+    if (!row?.pieza_imagen) return res.status(404).type('text/plain').send('Sin imagen');
+    res.set('Cache-Control', 'private, no-store');
+    res.type(row.pieza_mime || 'image/jpeg').send(row.pieza_imagen);
+  } catch (err) {
+    console.error('Error leyendo pieza EFT:', err);
+    res.status(500).json({ error: 'No se pudo cargar la imagen' });
+  }
+});
+
+// Panel del profesor: todos los estudiantes, hayan empezado o no.
+app.get('/api/admin/eft-lab/:lab', requireAdmin, async (req, res) => {
+  const lab = eftLab(req, res);
+  if (!lab) return;
+  try {
+    const r = await pool.query(
+      `SELECT u.id AS user_id, u.full_name, u.email, u.campus, u.career_year, u.group_id,
+              g.name AS group_name, e.data, e.submitted_at, e.created_at AS started_at, e.updated_at,
+              (e.pieza_imagen IS NOT NULL) AS has_image
+       FROM users u
+       LEFT JOIN groups g ON g.id = u.group_id
+       LEFT JOIN eft_lab_entregas e ON e.user_id = u.id AND e.lab = $1
+       WHERE u.role = 'student' OR e.id IS NOT NULL
+       ORDER BY g.name NULLS LAST, u.full_name`,
+      [lab]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('Error listando entregas EFT:', err);
+    res.status(500).json({ error: 'No se pudieron cargar las entregas' });
   }
 });
 

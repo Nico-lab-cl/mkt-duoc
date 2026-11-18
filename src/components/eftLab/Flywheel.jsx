@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { CircleCheck, CircleAlert, CircleX, Lightbulb, X } from 'lucide-react';
-import { ETAPAS, FORMATOS, evaluarFormato, formatoById, personaById } from './datos';
+import { useMemo, useState } from 'react';
+import { CircleCheck, CircleAlert, CircleX, Lightbulb, Lock } from 'lucide-react';
+import { ETAPAS, FORMATOS, barajar, etapaById, evaluarFormato, formatoById, personaById } from './datos';
 
 const COLOR = {
   sky: { head: 'bg-sky-600', ring: 'ring-sky-400', soft: 'bg-sky-50 border-sky-200' },
@@ -15,13 +15,16 @@ const ICONO = {
   mal: <CircleX className="w-4 h-4 text-rose-600 shrink-0" />
 };
 
-export default function Flywheel({ estado, set }) {
+export default function Flywheel({ estado, set, user }) {
   const [elegido, setElegido] = useState(null);
+  const [porConfirmar, setPorConfirmar] = useState(null); // { fid, etapa }
   const [abierto, setAbierto] = useState(null);
   const persona = personaById(estado.persona);
   const clasif = estado.clasif;
 
-  const pendientes = FORMATOS.filter((f) => !clasif[f.id]);
+  // Mezclados para que no queden agrupados por etapa; el orden es fijo por estudiante
+  const mezclados = useMemo(() => barajar(FORMATOS, user?.id), [user?.id]);
+  const pendientes = mezclados.filter((f) => !clasif[f.id]);
   const colocados = Object.entries(clasif);
   const buenos = colocados.filter(([fid, et]) => et !== 'no' && evaluarFormato(fid, et) !== 'mal');
   const etapasCubiertas = new Set(buenos.map(([, et]) => et));
@@ -30,18 +33,16 @@ export default function Flywheel({ estado, set }) {
 
   const colocar = (etapaId) => {
     if (!elegido) return;
-    set('clasif', (c) => ({ ...c, [elegido]: etapaId }));
-    setAbierto(elegido);
-    setElegido(null);
+    setPorConfirmar({ fid: elegido, etapa: etapaId });
   };
 
-  const quitar = (fid) => {
-    set('clasif', (c) => {
-      const n = { ...c };
-      delete n[fid];
-      return n;
-    });
-    if (abierto === fid) setAbierto(null);
+  // Un solo intento: lo que se confirma queda guardado y ya no se puede mover
+  const confirmar = () => {
+    const { fid, etapa } = porConfirmar;
+    set('clasif', (c) => (c[fid] ? c : { ...c, [fid]: etapa }), { inmediato: true });
+    setAbierto(fid);
+    setElegido(null);
+    setPorConfirmar(null);
   };
 
   return (
@@ -60,6 +61,13 @@ export default function Flywheel({ estado, set }) {
             </p>
             <p className="text-sm text-slate-500 mt-1">
               Su objeción: <i>{persona.objecion}</i>
+            </p>
+            <p className="mt-3 text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 flex gap-2">
+              <Lock className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>
+                <b>Tienes un solo intento.</b> Cada formato que confirmes queda guardado y tu profesor ve el resultado. Piensa
+                antes de ubicarlo.
+              </span>
             </p>
           </div>
           <div
@@ -109,6 +117,23 @@ export default function Flywheel({ estado, set }) {
           </div>
         </div>
 
+        {porConfirmar && (
+          <div className="mt-4 sticky top-2 z-10 rounded-xl bg-slate-900 text-white p-3 flex flex-wrap items-center gap-3 justify-between shadow-lg">
+            <p className="text-sm">
+              ¿Ubicar <b>{formatoById(porConfirmar.fid).nombre}</b> en <b>{etapaById(porConfirmar.etapa).nombre}</b>? No
+              podrás cambiarlo.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setPorConfirmar(null)} className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-sm">
+                Cancelar
+              </button>
+              <button onClick={confirmar} className="px-3 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-600 text-sm font-semibold">
+                Confirmar
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Etapas */}
         <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {ETAPAS.map((et) => {
@@ -140,9 +165,7 @@ export default function Flywheel({ estado, set }) {
                           <button className="flex-1 text-left font-medium" onClick={() => setAbierto(ver ? null : fid)}>
                             {f.nombre}
                           </button>
-                          <button onClick={() => quitar(fid)} aria-label={`Quitar ${f.nombre}`} className="text-slate-400 hover:text-slate-700">
-                            <X className="w-4 h-4" />
-                          </button>
+                          <Lock className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" aria-label="Respuesta guardada" />
                         </div>
                         {ver && (
                           <div className="mt-2 text-xs text-slate-600 space-y-1">

@@ -566,3 +566,90 @@ export const PREGUNTAS_GERENCIA = [
     ]
   }
 ];
+
+/** Baraja estable: el mismo estudiante ve siempre el mismo orden. */
+export const barajar = (lista, semilla) => {
+  let s = (Number(semilla) || 1) >>> 0;
+  const rnd = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const a = [...lista];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+const CAMPOS_HERR = ['funciones', 'ventajas', 'limitaciones'];
+
+/** Todo lo que el entregable y el panel docente calculan a partir del avance. */
+export const resumenEntrega = (e) => {
+  const clasif = e.clasif || {};
+  const ejemplos = e.ejemplos || {};
+  const herrSel = e.herrSel || [];
+  const herrNotas = e.herrNotas || {};
+  const autoeval = e.autoeval || {};
+  const brief = e.brief || {};
+  const quiz = e.quiz || {};
+
+  const filas = ETAPAS.filter((x) => x.id !== 'no').flatMap((et) =>
+    Object.entries(clasif)
+      .filter(([fid, et2]) => et2 === et.id && evaluarFormato(fid, et2) !== 'mal' && formatoById(fid))
+      .map(([fid]) => ({ etapa: et.nombre, formato: formatoById(fid).nombre, ejemplo: (ejemplos[fid] || '').trim() }))
+  );
+  const etapasCubiertas = new Set(filas.map((f) => f.etapa)).size;
+  const conEjemplo = filas.filter((f) => f.ejemplo).length;
+
+  const resultados = Object.entries(clasif).map(([fid, et]) => evaluarFormato(fid, et));
+  const flywheel = {
+    total: resultados.length,
+    ok: resultados.filter((r) => r === 'ok').length,
+    parcial: resultados.filter((r) => r === 'parcial').length,
+    mal: resultados.filter((r) => r === 'mal').length
+  };
+
+  const herrCompletas = herrSel.filter((id) => CAMPOS_HERR.every((c) => (herrNotas[id]?.[c] || '').trim()));
+  const elegida = herramientaById(e.herrElegida);
+  const porque = (herrNotas.__porque || '').trim();
+  const evidencias = PRINCIPIOS.filter((p) => (autoeval[p.id]?.evidencia || '').trim());
+
+  const quizRes = {
+    respondidas: Object.keys(quiz).length,
+    buenas: QUIZ.filter((q, i) => quiz[i] === q.ok).length,
+    total: QUIZ.length
+  };
+
+  const checks = [
+    {
+      id: 'IE1.1.2',
+      ok: filas.length >= 5 && etapasCubiertas === 3,
+      texto: `${filas.length} formatos bien ubicados en ${etapasCubiertas} de 3 etapas (mínimo 5 y las 3 etapas)`,
+      ir: 'flywheel'
+    },
+    {
+      id: 'IE1.1.1',
+      ok: filas.length >= 5 && conEjemplo === filas.length,
+      texto: `${conEjemplo} de ${filas.length} formatos con ejemplo real`,
+      ir: 'flywheel'
+    },
+    {
+      id: 'IE1.2.1',
+      ok: herrCompletas.length >= 2 && !!elegida && !!porque,
+      texto: `${herrCompletas.length} herramientas comparadas completas (mínimo 2) · elección ${elegida && porque ? 'justificada' : 'pendiente'}`,
+      ir: 'herramientas'
+    },
+    {
+      id: 'IE1.2.2',
+      ok: evidencias.length >= 4 && !!brief.etapa && !!brief.mensaje,
+      texto: `${evidencias.length} de ${PRINCIPIOS.length} principios con evidencia (mínimo 4) · brief ${brief.etapa && brief.mensaje ? 'completo' : 'pendiente'}`,
+      ir: 'pieza'
+    }
+  ];
+
+  return { filas, etapasCubiertas, conEjemplo, flywheel, herrCompletas, elegida, porque, evidencias, quiz: quizRes, checks, CAMPOS_HERR };
+};

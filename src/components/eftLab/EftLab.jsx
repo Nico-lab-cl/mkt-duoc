@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Briefcase, RefreshCw, Wrench, Palette, Sparkles, GraduationCap, FileText, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Briefcase, RefreshCw, Wrench, Palette, Sparkles, GraduationCap, FileText, LogOut, Cloud, CloudOff, ClipboardList } from 'lucide-react';
 import usePageScroll from '../feedbackDocente/usePageScroll';
+import { useProject } from '../../context/ProjectContext';
+import Login from '../Login';
 import { MARCA } from './datos';
 import Caso from './Caso';
 import Flywheel from './Flywheel';
@@ -9,16 +11,20 @@ import TallerDiseno from './TallerDiseno';
 import TuPieza from './TuPieza';
 import Simulacro from './Simulacro';
 import Entregable from './Entregable';
+import Revision from './Revision';
 
 /**
  * Laboratorio EFT · Eje 1 (MKA1213 Inbound Marketing II).
- * Ruta pública: /eft-lab
+ * Rutas: /eft-lab (estudiantes, con su cuenta) y /eft-lab/revision (profesor).
  *
  * Repaso interactivo de la primera parte del examen final: Flywheel de
  * contenidos (IE1.1.1, IE1.1.2) y herramientas y principios de diseño
- * (IE1.2.1, IE1.2.2). Todo vive en el navegador del alumno: el avance se
- * guarda en localStorage y nada viaja al servidor.
+ * (IE1.2.1, IE1.2.2). El avance de cada estudiante se guarda en el servidor
+ * (tabla eft_lab_entregas) para que el profesor lo revise.
  */
+
+const LAB = 'eje1';
+const RUTA = '/eft-lab';
 
 const VISTAS = [
   { id: 'caso', label: 'El caso y la pauta', icon: Briefcase },
@@ -29,8 +35,6 @@ const VISTAS = [
   { id: 'simulacro', label: 'Simulacro', icon: GraduationCap },
   { id: 'entregable', label: 'Mi entregable', icon: FileText }
 ];
-
-const CLAVE = 'eft-lab-eje1-v1';
 
 const ESTADO_INICIAL = {
   persona: 'carolina',
@@ -45,40 +49,160 @@ const ESTADO_INICIAL = {
   quiz: {}
 };
 
-const leer = () => {
-  try {
-    const raw = window.localStorage.getItem(CLAVE);
-    return raw ? { ...ESTADO_INICIAL, ...JSON.parse(raw) } : ESTADO_INICIAL;
-  } catch {
-    return ESTADO_INICIAL;
-  }
-};
-
 const vistaInicial = () => {
   const h = window.location.hash.replace('#', '');
   return VISTAS.some((v) => v.id === h) ? h : 'caso';
 };
 
+const mismo = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+function Encabezado({ children, subtitulo }) {
+  return (
+    <header className="bg-slate-900 text-white print:hidden">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-1 flex flex-wrap items-start gap-4 justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-teal-300 font-semibold">
+            MKA1213 Inbound Marketing II · Laboratorio EFT
+          </p>
+          <h1 className="text-xl sm:text-2xl font-bold">Eje 1: Contenidos, Flywheel y diseño</h1>
+          <p className="text-sm text-slate-300 mt-1 max-w-2xl">{subtitulo}</p>
+        </div>
+        {children}
+      </div>
+    </header>
+  );
+}
+
 export default function EftLab() {
   usePageScroll();
-  const [vista, setVista] = useState(vistaInicial);
-  const [estado, setEstado] = useState(leer);
-  const [imagen, setImagen] = useState(null); // objectURL de la pieza subida (no se guarda)
+  const { currentUser, setCurrentUser } = useProject();
+  // Se fija al montar: el login de la app cambia la URL a "/" antes de volver aquí
+  const [esRevision] = useState(() => window.location.pathname.replace(/\/$/, '') === `${RUTA}/revision`);
 
+  // El login de la app principal deja la URL en "/"; la devolvemos al lab.
   useEffect(() => {
-    try {
-      window.localStorage.setItem(CLAVE, JSON.stringify(estado));
-    } catch {
-      /* modo incógnito o almacenamiento bloqueado: el lab sigue funcionando */
+    document.title = esRevision ? 'Revisión Laboratorio EFT' : `Laboratorio EFT · ${MARCA}`;
+    const destino = esRevision ? `${RUTA}/revision` : RUTA;
+    if (currentUser && !window.location.pathname.startsWith(destino)) {
+      window.history.replaceState(null, '', destino + window.location.hash);
     }
-  }, [estado]);
+  }, [currentUser, esRevision]);
+
+  const salir = () => {
+    setCurrentUser(null);
+    window.history.replaceState(null, '', esRevision ? `${RUTA}/revision` : RUTA);
+  };
+
+  if (!currentUser || currentUser.role === 'guest') {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Encabezado subtitulo="Inicia sesión con tu cuenta del simulador para guardar tu avance. Tu profesor revisará tu trabajo desde aquí." />
+        <Login onNext={() => {}} />
+      </div>
+    );
+  }
+
+  if (esRevision) {
+    return (
+      <div className="min-h-screen bg-slate-100 text-slate-900">
+        <Encabezado subtitulo="Revisión docente: avance y entregas de cada estudiante.">
+          <Usuario user={currentUser} salir={salir} />
+        </Encabezado>
+        {currentUser.role === 'admin' ? (
+          <Revision user={currentUser} />
+        ) : (
+          <p className="max-w-6xl mx-auto p-6">Esta página es solo para el profesor.</p>
+        )}
+      </div>
+    );
+  }
+
+  return <LabEstudiante user={currentUser} salir={salir} />;
+}
+
+function Usuario({ user, salir, extra }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      {extra}
+      <span className="px-3 py-2 rounded-lg bg-white/10">{user.full_name || user.email}</span>
+      <button onClick={salir} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20">
+        <LogOut className="w-4 h-4" /> Salir
+      </button>
+    </div>
+  );
+}
+
+function LabEstudiante({ user, salir }) {
+  const [vista, setVista] = useState(vistaInicial);
+  const [estado, setEstado] = useState(ESTADO_INICIAL);
+  const [meta, setMeta] = useState({ submitted_at: null, updated_at: null, has_image: false });
+  const [carga, setCarga] = useState('cargando'); // cargando | listo | error
+  const [guardado, setGuardado] = useState('ok'); // ok | guardando | error
+  const [imgVersion, setImgVersion] = useState(0);
+  const urgente = useRef(false);
+  const ultimoEnviado = useRef(null);
+
+  const headers = { 'Content-Type': 'application/json', 'x-user-id': String(user.id) };
 
   useEffect(() => {
-    document.title = `Laboratorio EFT · ${MARCA}`;
-  }, []);
+    let vivo = true;
+    fetch(`/api/eft-lab/${LAB}/me`, { headers: { 'x-user-id': String(user.id) } })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((d) => {
+        if (!vivo) return;
+        const inicial = { ...ESTADO_INICIAL, ...d.data };
+        ultimoEnviado.current = inicial;
+        setEstado(inicial);
+        setMeta(d);
+        setCarga('listo');
+      })
+      .catch(() => vivo && setCarga('error'));
+    return () => {
+      vivo = false;
+    };
+  }, [user.id]);
 
-  const set = (campo, valor) =>
+  const guardar = useCallback(
+    async (datos, enviar = false) => {
+      setGuardado('guardando');
+      try {
+        const r = await fetch(`/api/eft-lab/${LAB}/me`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ data: datos, enviar })
+        });
+        if (!r.ok) throw new Error();
+        const d = await r.json();
+        ultimoEnviado.current = datos;
+        setMeta(d);
+        // El servidor manda en la clasificación (un solo intento)
+        if (!mismo(d.data.clasif, datos.clasif)) {
+          setEstado((e) => ({ ...e, clasif: d.data.clasif }));
+        }
+        setGuardado('ok');
+        return true;
+      } catch {
+        setGuardado('error');
+        return false;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user.id]
+  );
+
+  // Autoguardado: espera a que el estudiante deje de escribir. La clasificación
+  // del Flywheel se guarda al instante para que no se pueda reintentar recargando.
+  useEffect(() => {
+    if (carga !== 'listo' || mismo(estado, ultimoEnviado.current)) return;
+    const t = window.setTimeout(() => guardar(estado), urgente.current ? 0 : 1200);
+    urgente.current = false;
+    return () => window.clearTimeout(t);
+  }, [estado, carga, guardar]);
+
+  const set = (campo, valor, { inmediato = false } = {}) => {
+    if (inmediato) urgente.current = true;
     setEstado((e) => ({ ...e, [campo]: typeof valor === 'function' ? valor(e[campo]) : valor }));
+  };
 
   const irA = (v) => {
     setVista(v);
@@ -86,16 +210,47 @@ export default function EftLab() {
     window.scrollTo(0, 0);
   };
 
-  const reiniciar = () => {
-    if (!window.confirm('¿Borrar todo tu avance en este navegador?')) return;
-    setEstado(ESTADO_INICIAL);
-    setImagen(null);
-    irA('caso');
+  const imagen = meta.has_image ? `/api/eft-lab/${LAB}/imagen/${user.id}?uid=${user.id}&v=${imgVersion}` : null;
+
+  const subirImagen = async (dataUrl, mime) => {
+    const r = await fetch(`/api/eft-lab/${LAB}/me/imagen`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ mime, data_base64: dataUrl })
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(d.error || 'No se pudo subir la imagen');
+    }
+    setMeta((m) => ({ ...m, has_image: true }));
+    setImgVersion((v) => v + 1);
   };
 
-  const props = { estado, set, irA };
+  const quitarImagen = async () => {
+    await fetch(`/api/eft-lab/${LAB}/me/imagen`, { method: 'DELETE', headers });
+    setMeta((m) => ({ ...m, has_image: false }));
+  };
+
+  const enviar = () => guardar(estado, true);
+
+  const props = { estado, set, irA, user };
   const idx = VISTAS.findIndex((v) => v.id === vista);
   const siguiente = VISTAS[idx + 1];
+
+  const indicador =
+    carga !== 'listo' ? null : guardado === 'guardando' ? (
+      <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 text-slate-300">
+        <Cloud className="w-4 h-4" /> Guardando…
+      </span>
+    ) : guardado === 'error' ? (
+      <button onClick={() => guardar(estado)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-600">
+        <CloudOff className="w-4 h-4" /> Sin guardar · reintentar
+      </button>
+    ) : (
+      <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 text-teal-200">
+        <Cloud className="w-4 h-4" /> Guardado
+      </span>
+    );
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -111,12 +266,20 @@ export default function EftLab() {
               informe y tu video.
             </p>
           </div>
-          <button
-            onClick={reiniciar}
-            className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20"
-          >
-            <RotateCcw className="w-4 h-4" /> Empezar de cero
-          </button>
+          <Usuario
+            user={user}
+            salir={salir}
+            extra={
+              <>
+                {user.role === 'admin' && (
+                  <a href={`${RUTA}/revision`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-700">
+                    <ClipboardList className="w-4 h-4" /> Revisión
+                  </a>
+                )}
+                {indicador}
+              </>
+            }
+          />
         </div>
         <nav className="max-w-6xl mx-auto px-2 sm:px-4 mt-4 flex gap-1 overflow-x-auto">
           {VISTAS.map(({ id, label, icon: Icon }, i) => (
@@ -134,23 +297,36 @@ export default function EftLab() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        {vista === 'caso' && <Caso {...props} />}
-        {vista === 'flywheel' && <Flywheel {...props} />}
-        {vista === 'herramientas' && <Herramientas {...props} />}
-        {vista === 'taller' && <TallerDiseno {...props} />}
-        {vista === 'pieza' && <TuPieza {...props} imagen={imagen} setImagen={setImagen} />}
-        {vista === 'simulacro' && <Simulacro {...props} />}
-        {vista === 'entregable' && <Entregable {...props} imagen={imagen} />}
-
-        {siguiente && (
-          <div className="mt-8 flex justify-end print:hidden">
-            <button
-              onClick={() => irA(siguiente.id)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700"
-            >
-              Siguiente: {siguiente.label} →
-            </button>
+        {carga === 'cargando' && <p className="text-slate-500">Cargando tu avance…</p>}
+        {carga === 'error' && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-4">
+            No pudimos cargar tu avance. Revisa tu conexión y recarga la página. Si sigue fallando, cierra sesión y vuelve
+            a entrar.
           </div>
+        )}
+        {carga === 'listo' && (
+          <>
+            {vista === 'caso' && <Caso {...props} />}
+            {vista === 'flywheel' && <Flywheel {...props} />}
+            {vista === 'herramientas' && <Herramientas {...props} />}
+            {vista === 'taller' && <TallerDiseno {...props} />}
+            {vista === 'pieza' && <TuPieza {...props} imagen={imagen} subirImagen={subirImagen} quitarImagen={quitarImagen} />}
+            {vista === 'simulacro' && <Simulacro {...props} />}
+            {vista === 'entregable' && (
+              <Entregable {...props} imagen={imagen} meta={meta} onEnviar={enviar} guardado={guardado} />
+            )}
+
+            {siguiente && (
+              <div className="mt-8 flex justify-end print:hidden">
+                <button
+                  onClick={() => irA(siguiente.id)}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700"
+                >
+                  Siguiente: {siguiente.label} →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

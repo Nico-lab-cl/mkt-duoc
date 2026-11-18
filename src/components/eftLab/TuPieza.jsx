@@ -48,8 +48,35 @@ const Campo = ({ label, children }) => (
 const input =
   'w-full rounded-lg border border-slate-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white';
 
-export default function TuPieza({ estado, set, irA, imagen, setImagen }) {
+/** Reduce la imagen a 1400 px y JPEG para que pese poco en la base de datos. */
+const comprimir = (file) =>
+  new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 1400;
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * k);
+      canvas.height = Math.round(img.height * k);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('No pudimos leer esa imagen. Prueba con un JPG o PNG.'));
+    };
+    img.src = url;
+  });
+
+export default function TuPieza({ estado, set, irA, imagen, subirImagen, quitarImagen }) {
   const [copiado, setCopiado] = useState(false);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorImg, setErrorImg] = useState('');
   const b = { persona: estado.persona, ...estado.brief };
   const persona = personaById(b.persona);
   const prompt = armarPrompt(b, persona);
@@ -71,11 +98,19 @@ export default function TuPieza({ estado, set, irA, imagen, setImagen }) {
     }
   };
 
-  const subir = (e) => {
+  const subir = async (e) => {
     const f = e.target.files?.[0];
+    e.target.value = '';
     if (!f) return;
-    if (imagen) URL.revokeObjectURL(imagen);
-    setImagen(URL.createObjectURL(f));
+    setErrorImg('');
+    setSubiendo(true);
+    try {
+      await subirImagen(await comprimir(f), 'image/jpeg');
+    } catch (err) {
+      setErrorImg(err.message);
+    } finally {
+      setSubiendo(false);
+    }
   };
 
   const ev = (pid, campo, valor) =>
@@ -186,7 +221,7 @@ export default function TuPieza({ estado, set, irA, imagen, setImagen }) {
       <section className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
         <h2 className="text-xl font-bold">Paso 3: sube tu pieza y evalúala como lo haría el docente</h2>
         <p className="text-sm text-slate-600 mt-1">
-          La imagen queda solo en tu navegador (no se sube a ningún servidor). Para cada principio, elige tu nivel y
+          La imagen se guarda en tu entrega y solo la ven tú y tu profesor. Para cada principio, elige tu nivel y
           escribe la evidencia: <b>dónde</b> se ve en la pieza y <b>para qué</b> lo hiciste. Esas frases son tu
           justificación del informe.
         </p>
@@ -196,23 +231,24 @@ export default function TuPieza({ estado, set, irA, imagen, setImagen }) {
             {imagen ? (
               <div className="space-y-2">
                 <img src={imagen} alt="Tu pieza" className="w-full rounded-xl border border-slate-200 shadow" />
-                <button
-                  onClick={() => {
-                    URL.revokeObjectURL(imagen);
-                    setImagen(null);
-                  }}
-                  className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-rose-700"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Quitar imagen
-                </button>
+                <div className="flex gap-3">
+                  <label className="inline-flex items-center gap-1 text-xs text-teal-700 hover:underline cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" /> Reemplazar
+                    <input type="file" accept="image/*" className="sr-only" onChange={subir} disabled={subiendo} />
+                  </label>
+                  <button onClick={quitarImagen} className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-rose-700">
+                    <Trash2 className="w-3.5 h-3.5" /> Quitar imagen
+                  </button>
+                </div>
               </div>
             ) : (
               <label className="flex flex-col items-center justify-center gap-2 aspect-square rounded-xl border-2 border-dashed border-slate-300 text-slate-500 cursor-pointer hover:border-teal-500 hover:text-teal-700">
                 <Upload className="w-8 h-8" />
-                <span className="text-sm font-semibold">Sube tu pieza (JPG o PNG)</span>
-                <input type="file" accept="image/*" className="sr-only" onChange={subir} />
+                <span className="text-sm font-semibold">{subiendo ? 'Subiendo…' : 'Sube tu pieza (JPG o PNG)'}</span>
+                <input type="file" accept="image/*" className="sr-only" onChange={subir} disabled={subiendo} />
               </label>
             )}
+            {errorImg && <p className="mt-2 text-sm text-rose-700">{errorImg}</p>}
             {promedio !== null && (
               <div className="mt-3 rounded-xl bg-slate-900 text-white p-3 text-sm">
                 <p className="font-semibold">
