@@ -20,6 +20,7 @@ import FeedbackDocentePanel from './components/feedbackDocente/FeedbackDocentePa
 import LabHome from './components/labMartech/LabHome';
 import LabEditor from './components/labMartech/LabEditor';
 import CarritoLab from './components/carritoLab/CarritoLab';
+import EftLab from './components/eftLab/EftLab';
 
 const AppContent = () => {
   const { currentUser, setCurrentUser, logActivity } = useProject();
@@ -37,9 +38,12 @@ const AppContent = () => {
   const labEditorSlug = path.match(/^\/lab\/([^/]+)\/editar\/?$/)?.[1] || null;
   const isLabHome = /^\/lab\/?$/.test(path);
   const isCarritoLab = /^\/carrito-lab\/?$/.test(path);
+  const isEftLab = /^\/eft-lab\/?$/.test(path);
 
   const [view, setView] = useState(
-    isCarritoLab
+    isEftLab
+      ? 'eft-lab'
+      : isCarritoLab
       ? 'carrito-lab'
       : labEditorSlug
       ? 'lab-editor'
@@ -64,7 +68,7 @@ const AppContent = () => {
   // Determinar la vista inicial o transiciones automáticas
   useEffect(() => {
     // Los formularios públicos de briefing nunca deben redirigir, aunque haya sesión iniciada
-    if (['clinica-briefing', 'candidata-briefing', 'feedback-docente', 'feedback-docente-panel', 'lab-home', 'lab-editor', 'carrito-lab'].includes(view)) return;
+    if (['clinica-briefing', 'candidata-briefing', 'feedback-docente', 'feedback-docente-panel', 'lab-home', 'lab-editor', 'carrito-lab', 'eft-lab'].includes(view)) return;
 
     if (currentUser) {
       if (currentUser.role === 'guest') {
@@ -188,6 +192,7 @@ const AppContent = () => {
       {view === 'lab-editor' && <LabEditor slug={labEditorSlug} />}
 
       {view === 'carrito-lab' && <CarritoLab />}
+      {view === 'eft-lab' && <EftLab />}
 
       {view === 'success' && (
         <Success onBackToDashboard={() => setView('dashboard')} />
