@@ -41,7 +41,7 @@ export default function Entregable({ estado, irA, imagen, meta, onEnviar, guarda
     '',
     'COMPARACIÓN DE HERRAMIENTAS DE DISEÑO',
     ...herrSel.flatMap((id) => [
-      `${herramientaById(id).nombre}`,
+      `${herramientaById(id, estado.herrOtra).nombre}`,
       ...CAMPOS_HERR.map((c) => `  ${c}: ${herrNotas[id]?.[c] || '-'}`)
     ]),
     elegida ? `Elegida: ${elegida.nombre}. ${porque}` : '',
@@ -191,7 +191,7 @@ export default function Entregable({ estado, irA, imagen, meta, onEnviar, guarda
                   <th className="p-2" />
                   {herrSel.map((id) => (
                     <th key={id} className="p-2">
-                      {herramientaById(id).nombre}
+                      {herramientaById(id, estado.herrOtra).nombre}
                     </th>
                   ))}
                 </tr>

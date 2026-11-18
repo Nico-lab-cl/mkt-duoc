@@ -287,7 +287,14 @@ export const FORMATOS = [
 export const formatoById = (id) => FORMATOS.find((f) => f.id === id);
 export const etapaById = (id) => ETAPAS.find((e) => e.id === id);
 export const personaById = (id) => PERSONAS.find((p) => p.id === id) || PERSONAS[0];
-export const herramientaById = (id) => HERRAMIENTAS.find((h) => h.id === id);
+/**
+ * 'otra' es la herramienta que propone el propio estudiante; su nombre se
+ * guarda aparte (estado.herrOtra) y se pasa como segundo argumento.
+ */
+export const herramientaById = (id, otraNombre = '') =>
+  id === 'otra'
+    ? { id: 'otra', nombre: otraNombre.trim() || 'Otra herramienta', tipo: 'Elegida por ti', funciones: '', ventajas: '', limitaciones: '' }
+    : HERRAMIENTAS.find((h) => h.id === id);
 
 /** 'ok' si es la etapa principal, 'parcial' si es aceptable con matiz, 'mal' si no. */
 export const evaluarFormato = (formatoId, etapaId) => {
@@ -361,6 +368,30 @@ export const HERRAMIENTAS = [
     funciones: 'Diseño con componentes, prototipos de landing y apps, trabajo en equipo.',
     ventajas: 'Control total y estándar de la industria para web y UX.',
     limitaciones: 'Curva de aprendizaje alta; exagerado para un post rápido.'
+  },
+  {
+    id: 'claude',
+    nombre: 'Claude',
+    tipo: 'Asistente de IA',
+    funciones: 'Redacta y mejora copys, analiza una pieza subida como imagen y arma páginas web o prototipos interactivos a partir de una descripción.',
+    ventajas: 'Muy bueno para textos y para criticar un diseño con argumentos; permite prototipar una landing sin saber programar.',
+    limitaciones: 'No genera imágenes tipo foto: hay que combinarlo con otra herramienta. Tiene límites de uso en el plan gratis.'
+  },
+  {
+    id: 'codex',
+    nombre: 'ChatGPT Codex',
+    tipo: 'Agente de código',
+    funciones: 'Agente de OpenAI que escribe y modifica código: puede construir una landing, un formulario o una calculadora a partir de instrucciones.',
+    ventajas: 'Entrega páginas que funcionan de verdad, no solo maquetas.',
+    limitaciones: 'Está pensado para programar: hay que revisar el código y publicarlo en un hosting; el acceso depende del plan de ChatGPT.'
+  },
+  {
+    id: 'antigravity',
+    nombre: 'Google Antigravity',
+    tipo: 'Agente de código',
+    funciones: 'Entorno de desarrollo de Google donde agentes de IA (Gemini) construyen y prueban aplicaciones web a partir de instrucciones.',
+    ventajas: 'Puede armar y probar en el navegador una landing o una calculadora completa.',
+    limitaciones: 'Es un programa de escritorio para desarrollo: curva de aprendizaje mayor y exagerado para una pieza gráfica.'
   }
 ];
 
@@ -392,8 +423,26 @@ export const ESCENARIOS_HERRAMIENTA = [
   {
     id: 'landing',
     texto: 'Debes mostrar a la gerencia un prototipo de la landing con el formulario.',
-    correctas: ['figma', 'canva'],
-    explica: 'Figma es el estándar para prototipos web; Canva sirve si es una maqueta simple.'
+    correctas: ['figma', 'canva', 'claude', 'antigravity', 'codex'],
+    explica: 'Figma es el estándar para prototipos de diseño y Canva sirve para una maqueta simple. Si quieres que se pueda usar de verdad, Claude, Antigravity o Codex la construyen como página web.'
+  },
+  {
+    id: 'calculadora',
+    texto: 'Quieres construir la calculadora de ahorro de energía (el lead magnet interactivo) y que funcione en la web.',
+    correctas: ['antigravity', 'codex', 'claude'],
+    explica: 'Una calculadora necesita lógica, no solo diseño: los agentes de código (Antigravity, Codex) o Claude la construyen a partir de instrucciones. Las herramientas de plantillas solo la dibujan.'
+  },
+  {
+    id: 'copys',
+    texto: 'Necesitas 10 variantes del titular que respondan a la objeción «es caro» y que alguien critique tu pieza antes de entregarla.',
+    correctas: ['claude', 'chatgpt', 'gemini'],
+    explica: 'Los asistentes de IA conversacionales sirven para generar variantes de texto y para revisar una imagen con argumentos. Tú decides cuál queda: la pauta pide criterio propio.'
+  },
+  {
+    id: 'carrusel',
+    texto: 'Debes armar un carrusel de 5 láminas para Instagram con la misma plantilla de marca.',
+    correctas: ['canva', 'express', 'figma'],
+    explica: 'Para repetir una plantilla en varias láminas sirven las herramientas con páginas y estilos: Canva, Adobe Express o Figma.'
   }
 ];
 
@@ -614,7 +663,7 @@ export const resumenEntrega = (e) => {
   };
 
   const herrCompletas = herrSel.filter((id) => CAMPOS_HERR.every((c) => (herrNotas[id]?.[c] || '').trim()));
-  const elegida = herramientaById(e.herrElegida);
+  const elegida = herramientaById(e.herrElegida, e.herrOtra);
   const porque = (herrNotas.__porque || '').trim();
   const evidencias = PRINCIPIOS.filter((p) => (autoeval[p.id]?.evidencia || '').trim());
 
@@ -651,5 +700,13 @@ export const resumenEntrega = (e) => {
     }
   ];
 
-  return { filas, etapasCubiertas, conEjemplo, flywheel, herrCompletas, elegida, porque, evidencias, quiz: quizRes, checks, CAMPOS_HERR };
+  const escenarios = e.escenarios || {};
+  const escRes = {
+    respondidos: Object.keys(escenarios).length,
+    buenas: ESCENARIOS_HERRAMIENTA.filter((x) => x.correctas.includes(escenarios[x.id])).length,
+    abiertas: Object.values(escenarios).filter((v) => v === 'otra').length,
+    total: ESCENARIOS_HERRAMIENTA.length
+  };
+
+  return { filas, etapasCubiertas, conEjemplo, flywheel, herrCompletas, elegida, porque, evidencias, quiz: quizRes, escenarios: escRes, checks, CAMPOS_HERR };
 };

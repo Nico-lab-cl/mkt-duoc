@@ -44,6 +44,8 @@ const ESTADO_INICIAL = {
   herrNotas: {},
   herrElegida: '',
   escenarios: {},
+  escenariosOtra: {},
+  herrOtra: '',
   brief: {},
   autoeval: {},
   quiz: {}

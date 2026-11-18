@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CircleCheck, CircleAlert, CircleX, Download, RefreshCw, Search, X, Image as ImageIcon } from 'lucide-react';
-import { ESCALA, ETAPAS, PRINCIPIOS, etapaById, evaluarFormato, formatoById, resumenEntrega } from './datos';
+import { CircleCheck, CircleAlert, CircleX, Download, RefreshCw, Search, X, PenLine, Image as ImageIcon } from 'lucide-react';
+import { ESCALA, ESCENARIOS_HERRAMIENTA, ETAPAS, PRINCIPIOS, etapaById, evaluarFormato, formatoById, herramientaById, resumenEntrega } from './datos';
 import Entregable from './Entregable';
 
 const LAB = 'eje1';
@@ -65,7 +65,7 @@ export default function Revision({ user }) {
   const cuenta = (e) => visibles.filter((f) => f.estado === e).length;
 
   const descargar = () => {
-    const head = ['Nombre', 'Email', 'Grupo', 'Sede', 'Estado', 'Enviado', 'Actualizado', 'Flywheel bien', 'Flywheel aceptable', 'Flywheel mal', 'Flywheel ubicados', 'IE1.1.2', 'IE1.1.1', 'IE1.2.1', 'IE1.2.2', 'Simulacro', 'Pieza'];
+    const head = ['Nombre', 'Email', 'Grupo', 'Sede', 'Estado', 'Enviado', 'Actualizado', 'Flywheel bien', 'Flywheel aceptable', 'Flywheel mal', 'Flywheel ubicados', 'IE1.1.2', 'IE1.1.1', 'IE1.2.1', 'IE1.2.2', 'Herramientas (bien)', 'Herramientas (abiertas)', 'Simulacro', 'Pieza'];
     const lines = visibles.map((f) => {
       const r = f.r;
       return [
@@ -74,6 +74,7 @@ export default function Revision({ user }) {
         f.updated_at ? new Date(f.updated_at).toLocaleString('es-CL') : '',
         r?.flywheel.ok ?? '', r?.flywheel.parcial ?? '', r?.flywheel.mal ?? '', r?.flywheel.total ?? '',
         ...(r ? r.checks.map((c) => (c.ok ? 'Sí' : 'No')) : ['', '', '', '']),
+        r ? `${r.escenarios.buenas}/${r.escenarios.total}` : '', r?.escenarios.abiertas ?? '',
         r ? `${r.quiz.buenas}/${r.quiz.total}` : '', f.has_image ? 'Sí' : 'No'
       ].map(csv).join(';');
     });
@@ -282,6 +283,47 @@ function Detalle({ fila, admin, cerrar }) {
                 })}
               </div>
             )}
+          </section>
+
+          <section className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h3 className="text-lg font-bold">¿Qué herramienta usarías para…?</h3>
+            <div className="mt-3 space-y-2">
+              {ESCENARIOS_HERRAMIENTA.map((e, i) => {
+                const r = d.escenarios?.[e.id];
+                const otra = d.escenariosOtra?.[e.id] || {};
+                const ok = r && e.correctas.includes(r);
+                return (
+                  <div key={e.id} className="text-sm border-t border-slate-100 pt-2 flex gap-2 items-start">
+                    {!r ? (
+                      <span className="w-4 shrink-0 text-slate-300">—</span>
+                    ) : r === 'otra' ? (
+                      <PenLine className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                    ) : ok ? (
+                      ICONO.ok
+                    ) : (
+                      ICONO.mal
+                    )}
+                    <span>
+                      <span className="text-slate-500">
+                        {i + 1}. {e.texto}
+                      </span>
+                      <span className="block">
+                        {!r ? (
+                          <span className="text-slate-400">Sin responder</span>
+                        ) : r === 'otra' ? (
+                          <>
+                            <b className="text-sky-800">Otra: {otra.nombre || '(sin nombre)'}</b>
+                            {otra.porque && <span> · {otra.porque}</span>}
+                          </>
+                        ) : (
+                          <b>{herramientaById(r)?.nombre}</b>
+                        )}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </section>
 
           <section className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">

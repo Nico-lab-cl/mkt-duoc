@@ -81,7 +81,7 @@ export default function TuPieza({ estado, set, irA, imagen, subirImagen, quitarI
   const persona = personaById(b.persona);
   const prompt = armarPrompt(b, persona);
   const formatosEtapa = FORMATOS.filter((f) => f.etapa === b.etapa || f.tambien.includes(b.etapa));
-  const herramienta = herramientaById(estado.herrElegida);
+  const herramienta = herramientaById(estado.herrElegida, estado.herrOtra);
 
   const setB = (campo, valor) => {
     if (campo === 'persona') set('persona', valor);
