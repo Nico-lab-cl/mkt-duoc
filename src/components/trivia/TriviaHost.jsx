@@ -136,7 +136,19 @@ function Configurar({ crear }) {
       <div className="mt-6 grid sm:grid-cols-3 gap-4 text-sm">
         <label className="font-semibold">
           Ejes
-          <select className={sel} value={cfg.eje} onChange={(e) => setCfg((c) => ({ ...c, eje: e.target.value }))}>
+          <select
+            className={sel}
+            value={cfg.eje}
+            onChange={(e) => {
+              const eje = e.target.value;
+              // Cada eje tiene 20 preguntas: se ajusta la cantidad si quedó por sobre eso
+              setCfg((c) => ({
+                ...c,
+                eje,
+                cantidad: eje ? Math.min(c.cantidad, 20) : Math.max(10, Math.round(c.cantidad / 10) * 10)
+              }));
+            }}
+          >
             {EJES.map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
@@ -147,8 +159,10 @@ function Configurar({ crear }) {
         <label className="font-semibold">
           Preguntas
           <select className={sel} value={cfg.cantidad} onChange={(e) => setCfg((c) => ({ ...c, cantidad: Number(e.target.value) }))}>
-            {[5, 10, 15, 20].map((n) => (
-              <option key={n}>{n}</option>
+            {(cfg.eje ? [5, 10, 15, 20] : [10, 20, 30, 40, 50, 60]).map((n) => (
+              <option key={n} value={n}>
+                {n === 60 || (cfg.eje && n === 20) ? `Todas (${n})` : n}
+              </option>
             ))}
           </select>
         </label>

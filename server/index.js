@@ -3003,7 +3003,7 @@ const triviaPregunta = (g, conRespuesta) => {
 };
 
 app.post('/api/trivia', requireAuthAdmin, (req, res) => {
-  const cantidad = Math.min(30, Math.max(3, Number(req.body?.cantidad) || 10));
+  const cantidad = Math.min(EVAL_EFT.preguntas.length, Math.max(3, Number(req.body?.cantidad) || 10));
   const segundos = Math.min(120, Math.max(10, Number(req.body?.segundos) || 30));
   const eje = Number(req.body?.eje) || null;
   const fuente = EVAL_EFT.preguntas.filter((p) => !eje || p.eje === eje);
