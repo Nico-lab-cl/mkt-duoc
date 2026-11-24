@@ -14,6 +14,7 @@ import {
   renderHubspotForm,
   renderHubspotTracking
 } from './services/hubspotEmbed.js';
+import EVAL_EFT from './evaluaciones/eftFinal.js';
 
 dotenv.config();
 
@@ -62,7 +63,44 @@ const EFT_LAB_SQL = `
     UNIQUE (user_id, lab)
   );
   CREATE INDEX IF NOT EXISTS idx_eft_lab_entregas_lab ON eft_lab_entregas(lab, group_id);
+
+  CREATE TABLE IF NOT EXISTS eval_intentos (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    eval_id TEXT NOT NULL,
+    group_id INTEGER,
+    orden JSONB NOT NULL,
+    respuestas JSONB NOT NULL DEFAULT '{}'::jsonb,
+    salidas INTEGER NOT NULL DEFAULT 0,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deadline TIMESTAMPTZ NOT NULL,
+    finished_at TIMESTAMPTZ,
+    puntaje INTEGER,
+    total INTEGER,
+    UNIQUE (user_id, eval_id)
+  );
+  CREATE TABLE IF NOT EXISTS eval_config (
+    eval_id TEXT PRIMARY KEY,
+    abierta BOOLEAN NOT NULL DEFAULT FALSE,
+    retro_publicada BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  );
 `;
+
+// Token de sesión firmado (HMAC del id). Antes la app identificaba al usuario
+// solo por el id que mandaba el navegador; para la evaluación con nota eso no
+// basta. El token viaja dentro del objeto user que la app ya guarda.
+const AUTH_SECRET =
+  process.env.AUTH_SECRET ||
+  crypto.createHash('sha256').update(`simulador-auth:${process.env.DATABASE_URL || 'local'}`).digest('hex');
+const firmar = (id) => crypto.createHmac('sha256', AUTH_SECRET).update(`user:${id}`).digest('hex');
+const conToken = (user) => (user ? { ...user, auth_token: firmar(user.id) } : user);
+const tokenValido = (id, token) => {
+  if (!id || !token) return false;
+  const a = Buffer.from(firmar(id));
+  const b = Buffer.from(String(token));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
 
 // Probar conexión e inicializar tablas
 pool.connect(async (err, client, release) => {
@@ -288,7 +326,7 @@ app.post('/api/login', async (req, res) => {
       if (user.must_change_password) {
         return res.json({ success: true, mustChangePassword: true, email: user.email });
       }
-      res.json({ success: true, user });
+      res.json({ success: true, user: conToken(user) });
     } else {
       res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
     }
@@ -332,7 +370,7 @@ app.post('/api/change-password', async (req, res) => {
       [newPassword, checkUser.rows[0].id]
     );
 
-    res.json({ success: true, user: updateResult.rows[0] });
+    res.json({ success: true, user: conToken(updateResult.rows[0]) });
   } catch (err) {
     console.error('Error al cambiar contraseña:', err);
     res.status(500).json({ error: 'Error en el servidor al actualizar la contraseña' });
@@ -448,7 +486,7 @@ app.post('/api/select-group', async (req, res) => {
       'SELECT id, email, full_name, role, group_id, career_year, campus, must_change_password FROM users WHERE id = $1', 
       [userId]
     );
-    res.json({ success: true, user: userResult.rows[0] });
+    res.json({ success: true, user: conToken(userResult.rows[0]) });
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar grupo' });
   }
@@ -2555,6 +2593,342 @@ app.get('/api/admin/eft-lab/:lab', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error listando entregas EFT:', err);
     res.status(500).json({ error: 'No se pudieron cargar las entregas' });
+  }
+});
+
+// ==========================================
+// EVALUACIÓN DE SELECCIÓN MÚLTIPLE — /eft-lab/evaluacion
+// Un intento por estudiante, tiempo controlado por el servidor y respuestas
+// correctas que nunca salen del servidor mientras se rinde.
+// ==========================================
+
+const EVALS = { [EVAL_EFT.id]: EVAL_EFT };
+const EVAL_GRACIA_MS = 15000; // margen por latencia al guardar la última respuesta
+
+const requireAuth = async (req, res, next) => {
+  const userId = Number(req.headers['x-user-id']);
+  if (!tokenValido(userId, req.headers['x-auth-token'])) {
+    return res.status(401).json({ error: 'Tu sesión expiró. Cierra sesión y vuelve a entrar.', code: 'reauth' });
+  }
+  try {
+    const r = await pool.query('SELECT id, role, full_name, email, group_id FROM users WHERE id = $1', [userId]);
+    if (!r.rows.length) return res.status(401).json({ error: 'Usuario no encontrado', code: 'reauth' });
+    req.user = r.rows[0];
+    next();
+  } catch (err) {
+    console.error('Error verificando sesión:', err);
+    res.status(500).json({ error: 'Error al verificar la sesión' });
+  }
+};
+
+const requireAuthAdmin = (req, res, next) =>
+  requireAuth(req, res, () => (req.user.role === 'admin' ? next() : res.status(403).json({ error: 'Solo para el profesor' })));
+
+const evalDe = (req, res) => {
+  const ev = EVALS[req.params.evalId];
+  if (!ev) res.status(404).json({ error: 'Evaluación inexistente' });
+  return ev;
+};
+
+const barajarSeguro = (lista) => {
+  const a = [...lista];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+const evalConfig = async (evalId) => {
+  const r = await pool.query('SELECT abierta, retro_publicada FROM eval_config WHERE eval_id = $1', [evalId]);
+  return r.rows[0] || { abierta: false, retro_publicada: false };
+};
+
+const decimasDe = (ev, pct) => ev.decimas.find((t) => pct >= t.min)?.decimas || 0;
+
+const puntuar = (ev, row) => {
+  const porId = new Map(ev.preguntas.map((p) => [p.id, p]));
+  const resp = row.respuestas || {};
+  const total = row.orden.length;
+  const puntaje = row.orden.filter(({ id }) => porId.get(id) && resp[id] === porId.get(id).ok).length;
+  return { puntaje, total };
+};
+
+const terminado = (row) => !!row.finished_at;
+const vencido = (row) => !row.finished_at && Date.now() > new Date(row.deadline).getTime() + EVAL_GRACIA_MS;
+
+const finalizar = async (ev, row) => {
+  if (terminado(row)) return row;
+  const { puntaje, total } = puntuar(ev, row);
+  const r = await pool.query(
+    `UPDATE eval_intentos SET finished_at = LEAST(NOW(), deadline + interval '15 seconds'), puntaje = $2, total = $3
+     WHERE id = $1 AND finished_at IS NULL RETURNING *`,
+    [row.id, puntaje, total]
+  );
+  return r.rows[0] || (await pool.query('SELECT * FROM eval_intentos WHERE id = $1', [row.id])).rows[0];
+};
+
+// Lee el intento y, si se le acabó el tiempo, lo cierra con lo que alcanzó a responder
+const intentoDe = async (ev, userId) => {
+  const r = await pool.query('SELECT * FROM eval_intentos WHERE user_id = $1 AND eval_id = $2', [userId, ev.id]);
+  const row = r.rows[0];
+  if (row && vencido(row)) return finalizar(ev, row);
+  return row || null;
+};
+
+const resumenIntento = (ev, row) => {
+  if (!row) return null;
+  const base = {
+    estado: terminado(row) ? 'terminado' : 'en_curso',
+    started_at: row.started_at,
+    deadline: row.deadline,
+    finished_at: row.finished_at,
+    restante_seg: terminado(row) ? 0 : Math.max(0, Math.floor((new Date(row.deadline).getTime() - Date.now()) / 1000)),
+    respondidas: Object.keys(row.respuestas || {}).length,
+    total: row.orden.length
+  };
+  if (!terminado(row)) return base;
+  const pct = row.total ? Math.round((row.puntaje / row.total) * 1000) / 10 : 0;
+  return { ...base, puntaje: row.puntaje, porcentaje: pct, decimas: decimasDe(ev, pct) };
+};
+
+const preguntasPara = (ev, row) => {
+  const porId = new Map(ev.preguntas.map((p) => [p.id, p]));
+  return row.orden
+    .filter(({ id }) => porId.has(id))
+    .map(({ id, ops }) => {
+      const p = porId.get(id);
+      return { id, eje: p.eje, q: p.q, ops: ops.map((i) => ({ i, t: p.ops[i] })) };
+    });
+};
+
+const detalleIntento = (ev, row) => {
+  const porId = new Map(ev.preguntas.map((p) => [p.id, p]));
+  return preguntasPara(ev, row).map((p) => ({
+    ...p,
+    tu: row.respuestas?.[p.id] ?? null,
+    ok: porId.get(p.id).ok,
+    exp: porId.get(p.id).exp
+  }));
+};
+
+const metaEval = (ev) => ({
+  id: ev.id,
+  titulo: ev.titulo,
+  minutos: ev.minutos,
+  total: ev.preguntas.length,
+  decimas: ev.decimas,
+  ejes: ev.ejes
+});
+
+app.get('/api/eval/:evalId', requireAuth, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    const [config, row] = await Promise.all([evalConfig(ev.id), intentoDe(ev, req.user.id)]);
+    res.json({ ...metaEval(ev), config, intento: resumenIntento(ev, row) });
+  } catch (err) {
+    console.error('Error leyendo evaluación:', err);
+    res.status(500).json({ error: 'No se pudo cargar la evaluación' });
+  }
+});
+
+app.post('/api/eval/:evalId/iniciar', requireAuth, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    let row = await intentoDe(ev, req.user.id);
+    if (!row) {
+      const config = await evalConfig(ev.id);
+      if (!config.abierta) return res.status(403).json({ error: 'La evaluación todavía no está abierta' });
+      const orden = barajarSeguro(ev.preguntas).map((p) => ({ id: p.id, ops: barajarSeguro([0, 1, 2, 3]) }));
+      await pool.query(
+        `INSERT INTO eval_intentos (user_id, eval_id, group_id, orden, deadline)
+         VALUES ($1, $2, $3, $4, NOW() + ($5 || ' minutes')::interval)
+         ON CONFLICT (user_id, eval_id) DO NOTHING`,
+        [req.user.id, ev.id, req.user.group_id, JSON.stringify(orden), String(ev.minutos)]
+      );
+      row = await intentoDe(ev, req.user.id);
+    }
+    if (terminado(row)) return res.json({ intento: resumenIntento(ev, row) });
+    res.json({ intento: resumenIntento(ev, row), preguntas: preguntasPara(ev, row), respuestas: row.respuestas || {} });
+  } catch (err) {
+    console.error('Error iniciando evaluación:', err);
+    res.status(500).json({ error: 'No se pudo iniciar la evaluación' });
+  }
+});
+
+app.put('/api/eval/:evalId/respuesta', requireAuth, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  const { qid, op } = req.body || {};
+  if (typeof qid !== 'string' || !Number.isInteger(op) || op < 0 || op > 3) {
+    return res.status(400).json({ error: 'Respuesta inválida' });
+  }
+  try {
+    const row = await intentoDe(ev, req.user.id);
+    if (!row) return res.status(409).json({ error: 'No has iniciado la evaluación' });
+    if (terminado(row)) return res.status(409).json({ error: 'La evaluación ya terminó', intento: resumenIntento(ev, row) });
+    if (!row.orden.some((o) => o.id === qid)) return res.status(400).json({ error: 'Pregunta inválida' });
+    const r = await pool.query(
+      `UPDATE eval_intentos SET respuestas = respuestas || jsonb_build_object($2::text, $3::int)
+       WHERE id = $1 AND finished_at IS NULL AND NOW() <= deadline + interval '15 seconds'
+       RETURNING respuestas`,
+      [row.id, qid, op]
+    );
+    if (!r.rows.length) return res.status(409).json({ error: 'Se acabó el tiempo' });
+    res.json({ ok: true, respondidas: Object.keys(r.rows[0].respuestas).length });
+  } catch (err) {
+    console.error('Error guardando respuesta:', err);
+    res.status(500).json({ error: 'No se pudo guardar la respuesta' });
+  }
+});
+
+// Cuenta las veces que el estudiante sale de la pestaña mientras rinde (dato para el profesor)
+app.post('/api/eval/:evalId/salida', requireAuth, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    await pool.query(
+      'UPDATE eval_intentos SET salidas = salidas + 1 WHERE user_id = $1 AND eval_id = $2 AND finished_at IS NULL',
+      [req.user.id, ev.id]
+    );
+    res.json({ ok: true });
+  } catch {
+    res.json({ ok: false });
+  }
+});
+
+app.post('/api/eval/:evalId/terminar', requireAuth, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    const row = await intentoDe(ev, req.user.id);
+    if (!row) return res.status(409).json({ error: 'No has iniciado la evaluación' });
+    res.json({ intento: resumenIntento(ev, await finalizar(ev, row)) });
+  } catch (err) {
+    console.error('Error terminando evaluación:', err);
+    res.status(500).json({ error: 'No se pudo cerrar la evaluación' });
+  }
+});
+
+app.get('/api/eval/:evalId/resultado', requireAuth, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    const [config, row] = await Promise.all([evalConfig(ev.id), intentoDe(ev, req.user.id)]);
+    if (!row || !terminado(row)) return res.status(409).json({ error: 'Aún no terminas la evaluación' });
+    res.json({
+      intento: resumenIntento(ev, row),
+      retro_publicada: config.retro_publicada,
+      detalle: config.retro_publicada ? detalleIntento(ev, row) : null
+    });
+  } catch (err) {
+    console.error('Error leyendo resultado:', err);
+    res.status(500).json({ error: 'No se pudo cargar el resultado' });
+  }
+});
+
+app.get('/api/admin/eval/:evalId', requireAuthAdmin, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    const abiertos = await pool.query('SELECT * FROM eval_intentos WHERE eval_id = $1 AND finished_at IS NULL', [ev.id]);
+    for (const row of abiertos.rows) if (vencido(row)) await finalizar(ev, row);
+
+    const r = await pool.query(
+      `SELECT u.id AS user_id, u.full_name, u.email, u.campus, g.name AS group_name, i.*
+       FROM users u
+       LEFT JOIN groups g ON g.id = u.group_id
+       LEFT JOIN eval_intentos i ON i.user_id = u.id AND i.eval_id = $1
+       WHERE u.role = 'student' OR i.id IS NOT NULL
+       ORDER BY g.name NULLS LAST, u.full_name`,
+      [ev.id]
+    );
+    const filas = r.rows.map((x) => ({
+      user_id: x.user_id,
+      full_name: x.full_name,
+      email: x.email,
+      campus: x.campus,
+      group_name: x.group_name,
+      salidas: x.salidas ?? 0,
+      intento: x.id ? resumenIntento(ev, x) : null
+    }));
+    res.json({ ...metaEval(ev), config: await evalConfig(ev.id), filas });
+  } catch (err) {
+    console.error('Error listando evaluación:', err);
+    res.status(500).json({ error: 'No se pudo cargar la evaluación' });
+  }
+});
+
+app.put('/api/admin/eval/:evalId/config', requireAuthAdmin, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  const actual = await evalConfig(ev.id);
+  const abierta = typeof req.body?.abierta === 'boolean' ? req.body.abierta : actual.abierta;
+  const retro = typeof req.body?.retro_publicada === 'boolean' ? req.body.retro_publicada : actual.retro_publicada;
+  try {
+    const r = await pool.query(
+      `INSERT INTO eval_config (eval_id, abierta, retro_publicada) VALUES ($1, $2, $3)
+       ON CONFLICT (eval_id) DO UPDATE SET abierta = $2, retro_publicada = $3, updated_at = NOW()
+       RETURNING abierta, retro_publicada`,
+      [ev.id, abierta, retro]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('Error guardando configuración de evaluación:', err);
+    res.status(500).json({ error: 'No se pudo guardar' });
+  }
+});
+
+app.get('/api/admin/eval/:evalId/intento/:userId', requireAuthAdmin, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    const row = await intentoDe(ev, Number(req.params.userId));
+    if (!row) return res.status(404).json({ error: 'Sin intento' });
+    res.json({ intento: resumenIntento(ev, row), salidas: row.salidas, detalle: detalleIntento(ev, row) });
+  } catch (err) {
+    console.error('Error leyendo intento:', err);
+    res.status(500).json({ error: 'No se pudo cargar el intento' });
+  }
+});
+
+// Permite que un estudiante vuelva a rendir (por ejemplo, si tuvo un problema técnico)
+app.delete('/api/admin/eval/:evalId/intento/:userId', requireAuthAdmin, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    await pool.query('DELETE FROM eval_intentos WHERE user_id = $1 AND eval_id = $2', [Number(req.params.userId), ev.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error reiniciando intento:', err);
+    res.status(500).json({ error: 'No se pudo reiniciar' });
+  }
+});
+
+// Banco completo con respuestas y estadística por pregunta (solo profesor)
+app.get('/api/admin/eval/:evalId/banco', requireAuthAdmin, async (req, res) => {
+  const ev = evalDe(req, res);
+  if (!ev) return;
+  try {
+    const r = await pool.query('SELECT respuestas FROM eval_intentos WHERE eval_id = $1 AND finished_at IS NOT NULL', [ev.id]);
+    const preguntas = ev.preguntas.map((p) => {
+      const elegidas = [0, 0, 0, 0];
+      let respondidas = 0;
+      for (const { respuestas } of r.rows) {
+        const v = respuestas?.[p.id];
+        if (Number.isInteger(v)) {
+          elegidas[v]++;
+          respondidas++;
+        }
+      }
+      return { ...p, respondidas, elegidas, acierto: respondidas ? Math.round((elegidas[p.ok] / respondidas) * 100) : null };
+    });
+    res.json({ ...metaEval(ev), intentos: r.rows.length, preguntas });
+  } catch (err) {
+    console.error('Error leyendo banco:', err);
+    res.status(500).json({ error: 'No se pudo cargar el banco' });
   }
 });
 

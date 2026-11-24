@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CircleCheck, CircleAlert, CircleX, Download, RefreshCw, Search, X, PenLine, Image as ImageIcon } from 'lucide-react';
 import { ESCALA, ESCENARIOS_HERRAMIENTA, ETAPAS, PRINCIPIOS, etapaById, evaluarFormato, formatoById, herramientaById, resumenEntrega } from './datos';
 import Entregable from './Entregable';
+import RevisionEval from './RevisionEval';
 
 const LAB = 'eje1';
 
@@ -24,7 +25,7 @@ const ICONO = {
 
 const csv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
-export default function Revision({ user }) {
+function RevisionLab({ user }) {
   const [filas, setFilas] = useState(null);
   const [error, setError] = useState('');
   const [filtro, setFiltro] = useState({ grupo: '', sede: '', estado: '', q: '' });
@@ -349,5 +350,34 @@ function Detalle({ fila, admin, cerrar }) {
         </div>
       </div>
     </div>
+  );
+}
+
+const PESTANAS = [
+  { id: 'lab', label: 'Laboratorio Eje 1' },
+  { id: 'eval', label: 'Evaluación' }
+];
+
+export default function Revision({ user }) {
+  const [tab, setTab] = useState(() => (window.location.hash === '#evaluacion' ? 'eval' : 'lab'));
+  const cambiar = (t) => {
+    setTab(t);
+    window.history.replaceState(null, '', t === 'eval' ? '#evaluacion' : '#laboratorio');
+  };
+  return (
+    <>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 flex gap-2">
+        {PESTANAS.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => cambiar(p.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold ${tab === p.id ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </nav>
+      {tab === 'lab' ? <RevisionLab user={user} /> : <RevisionEval user={user} />}
+    </>
   );
 }

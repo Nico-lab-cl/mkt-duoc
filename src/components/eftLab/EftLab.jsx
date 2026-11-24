@@ -12,6 +12,7 @@ import TuPieza from './TuPieza';
 import Simulacro from './Simulacro';
 import Entregable from './Entregable';
 import Revision from './Revision';
+import Evaluacion from './Evaluacion';
 
 /**
  * Laboratorio EFT · Eje 1 (MKA1213 Inbound Marketing II).
@@ -58,15 +59,15 @@ const vistaInicial = () => {
 
 const mismo = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-function Encabezado({ children, subtitulo }) {
+function Encabezado({ children, subtitulo, titulo = 'Eje 1: Contenidos, Flywheel y diseño' }) {
   return (
     <header className="bg-slate-900 text-white print:hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-1 flex flex-wrap items-start gap-4 justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-4 flex flex-wrap items-start gap-4 justify-between">
         <div>
           <p className="text-xs uppercase tracking-widest text-teal-300 font-semibold">
             MKA1213 Inbound Marketing II · Laboratorio EFT
           </p>
-          <h1 className="text-xl sm:text-2xl font-bold">Eje 1: Contenidos, Flywheel y diseño</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{titulo}</h1>
           <p className="text-sm text-slate-300 mt-1 max-w-2xl">{subtitulo}</p>
         </div>
         {children}
@@ -75,39 +76,74 @@ function Encabezado({ children, subtitulo }) {
   );
 }
 
+const MODOS = {
+  lab: { ruta: RUTA, titulo: 'Eje 1: Contenidos, Flywheel y diseño', doc: `Laboratorio EFT · ${MARCA}` },
+  revision: { ruta: `${RUTA}/revision`, titulo: 'Revisión docente', doc: 'Revisión Laboratorio EFT' },
+  evaluacion: { ruta: `${RUTA}/evaluacion`, titulo: 'Evaluación: Caso Smart Home', doc: 'Evaluación MKA1213' }
+};
+
+const modoInicial = () => {
+  const p = window.location.pathname.replace(/\/$/, '');
+  if (p === MODOS.revision.ruta) return 'revision';
+  if (p === MODOS.evaluacion.ruta) return 'evaluacion';
+  return 'lab';
+};
+
 export default function EftLab() {
   usePageScroll();
   const { currentUser, setCurrentUser } = useProject();
   // Se fija al montar: el login de la app cambia la URL a "/" antes de volver aquí
-  const [esRevision] = useState(() => window.location.pathname.replace(/\/$/, '') === `${RUTA}/revision`);
+  const [modo] = useState(modoInicial);
+  const { ruta, titulo, doc } = MODOS[modo];
 
-  // El login de la app principal deja la URL en "/"; la devolvemos al lab.
+  // El login de la app principal deja la URL en "/"; la devolvemos a esta página.
   useEffect(() => {
-    document.title = esRevision ? 'Revisión Laboratorio EFT' : `Laboratorio EFT · ${MARCA}`;
-    const destino = esRevision ? `${RUTA}/revision` : RUTA;
-    if (currentUser && !window.location.pathname.startsWith(destino)) {
-      window.history.replaceState(null, '', destino + window.location.hash);
+    document.title = doc;
+    if (currentUser && !window.location.pathname.startsWith(ruta)) {
+      window.history.replaceState(null, '', ruta + window.location.hash);
     }
-  }, [currentUser, esRevision]);
+  }, [currentUser, ruta, doc]);
 
   const salir = () => {
     setCurrentUser(null);
-    window.history.replaceState(null, '', esRevision ? `${RUTA}/revision` : RUTA);
+    window.history.replaceState(null, '', ruta);
   };
 
   if (!currentUser || currentUser.role === 'guest') {
     return (
       <div className="min-h-screen bg-slate-50">
-        <Encabezado subtitulo="Inicia sesión con tu cuenta del simulador para guardar tu avance. Tu profesor revisará tu trabajo desde aquí." />
+        <Encabezado
+          titulo={titulo}
+          subtitulo={
+            modo === 'evaluacion'
+              ? 'Inicia sesión con tu cuenta del simulador para rendir la evaluación.'
+              : 'Inicia sesión con tu cuenta del simulador para guardar tu avance. Tu profesor revisará tu trabajo desde aquí.'
+          }
+        />
         <Login onNext={() => {}} />
       </div>
     );
   }
 
-  if (esRevision) {
+  // La evaluación y el panel docente exigen la sesión firmada que entrega el login nuevo
+  if (modo !== 'lab' && !currentUser.auth_token) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Encabezado titulo={titulo} subtitulo="Necesitamos que vuelvas a iniciar sesión." />
+        <div className="max-w-md mx-auto mt-10 bg-white rounded-2xl p-6 shadow-sm text-center">
+          <p className="text-slate-700">Por seguridad, cierra sesión y vuelve a entrar con tu correo y contraseña.</p>
+          <button onClick={salir} className="mt-4 px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700">
+            Volver a iniciar sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (modo === 'revision') {
     return (
       <div className="min-h-screen bg-slate-100 text-slate-900">
-        <Encabezado subtitulo="Revisión docente: avance y entregas de cada estudiante.">
+        <Encabezado titulo={titulo} subtitulo="Avance del laboratorio y resultados de la evaluación de cada estudiante.">
           <Usuario user={currentUser} salir={salir} />
         </Encabezado>
         {currentUser.role === 'admin' ? (
@@ -115,6 +151,17 @@ export default function EftLab() {
         ) : (
           <p className="max-w-6xl mx-auto p-6">Esta página es solo para el profesor.</p>
         )}
+      </div>
+    );
+  }
+
+  if (modo === 'evaluacion') {
+    return (
+      <div className="min-h-screen bg-slate-100 text-slate-900">
+        <Encabezado titulo={titulo} subtitulo="Selección múltiple situacional · 3 ejes de la EFT">
+          <Usuario user={currentUser} salir={salir} />
+        </Encabezado>
+        <Evaluacion user={currentUser} salir={salir} />
       </div>
     );
   }

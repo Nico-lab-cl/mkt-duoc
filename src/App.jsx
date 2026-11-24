@@ -38,7 +38,7 @@ const AppContent = () => {
   const labEditorSlug = path.match(/^\/lab\/([^/]+)\/editar\/?$/)?.[1] || null;
   const isLabHome = /^\/lab\/?$/.test(path);
   const isCarritoLab = /^\/carrito-lab\/?$/.test(path);
-  const isEftLab = /^\/eft-lab(\/revision)?\/?$/.test(path);
+  const isEftLab = /^\/eft-lab(\/(revision|evaluacion))?\/?$/.test(path);
 
   const [view, setView] = useState(
     isEftLab
