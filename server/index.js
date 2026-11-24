@@ -2984,9 +2984,29 @@ const triviaAvanzar = (g) => {
   if (restanteMs(g) === 0 || todos) g.fase = 'resultado';
 };
 
-const triviaRanking = (g) =>
+// Opciones del avatar (deben coincidir con src/components/trivia/comun.js)
+const AVATAR = {
+  color: ['#f43f5e', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'],
+  forma: ['gota', 'cubo', 'fantasma'],
+  ojos: ['puntos', 'grandes', 'anime', 'lentes'],
+  sombrero: ['ninguno', 'gorro', 'corona', 'gorra', 'cuernos', 'flor', 'antena'],
+  accesorio: ['ninguno', 'bigote', 'corbata', 'audifonos', 'bufanda']
+};
+const limpiarAvatar = (a) =>
+  Object.fromEntries(
+    Object.entries(AVATAR).map(([k, ops]) => [k, ops.includes(a?.[k]) ? a[k] : ops[crypto.randomInt(ops.length)]])
+  );
+
+// Orden por puntos; `menos` permite reconstruir el ranking anterior a la pregunta actual
+const triviaRanking = (g, menos = null) =>
   [...g.jugadores.values()]
-    .map((j) => ({ id: j.id, nombre: j.nombre, puntos: j.puntos, racha: j.racha }))
+    .map((j) => ({
+      id: j.id,
+      nombre: j.nombre,
+      avatar: j.avatar,
+      puntos: j.puntos - (menos ? j.respuestas[menos]?.puntos || 0 : 0),
+      racha: j.racha
+    }))
     .sort((a, b) => b.puntos - a.puntos || a.nombre.localeCompare(b.nombre));
 
 const triviaPregunta = (g, conRespuesta) => {
@@ -2995,11 +3015,14 @@ const triviaPregunta = (g, conRespuesta) => {
   const base = { q: p.q, ops: p.ops, eje: p.eje };
   if (!conRespuesta) return base;
   const conteo = [0, 0, 0, 0];
+  let rapido = null;
   for (const j of g.jugadores.values()) {
     const r = j.respuestas[g.idx];
-    if (r) conteo[r.op]++;
+    if (!r) continue;
+    conteo[r.op]++;
+    if (r.ok && (!rapido || r.ms < rapido.ms)) rapido = { nombre: j.nombre, avatar: j.avatar, ms: r.ms };
   }
-  return { ...base, ok: p.ok, exp: p.exp, conteo };
+  return { ...base, ok: p.ok, exp: p.exp, conteo, rapido };
 };
 
 app.post('/api/trivia', requireAuthAdmin, (req, res) => {
@@ -3080,9 +3103,17 @@ app.post('/api/trivia/:pin/unirse', (req, res) => {
   if (usados.has(nombre.toLowerCase())) return res.status(409).json({ error: 'Ese nombre ya está en uso. Prueba con otro.' });
   const id = crypto.randomBytes(6).toString('hex');
   const tk = crypto.randomBytes(16).toString('hex');
-  g.jugadores.set(id, { id, tk, nombre, puntos: 0, racha: 0, respuestas: {} });
-  res.json({ pid: id, tk, nombre });
+  const avatar = limpiarAvatar(req.body?.avatar);
+  g.jugadores.set(id, { id, tk, nombre, avatar, puntos: 0, racha: 0, respuestas: {} });
+  res.json({ pid: id, tk, nombre, avatar });
 });
+
+// Racha de aciertos seguidos que el jugador llevaba al terminar la pregunta `idx`
+const rachaHasta = (j, idx) => {
+  let n = 0;
+  for (let i = idx; i >= 0 && j.respuestas[i]?.ok; i--) n++;
+  return n;
+};
 
 const triviaJugador = (g, req, res) => {
   const pid = String(req.query.pid || req.body?.pid || '');
@@ -3120,10 +3151,22 @@ app.get('/api/trivia/:pin/jugador', (req, res) => {
     out.respondi = mia ? mia.op : null;
   } else if (g.fase === 'resultado' || g.fase === 'ranking') {
     const p = g.preguntas[g.idx];
-    out.resultado = { ok: p.ok, opCorrecta: p.ops[p.ok], respondi: mia ? mia.op : null, acerte: !!mia?.ok, ganados: mia?.puntos || 0 };
+    const antes = triviaRanking(g, g.idx);
+    out.resultado = {
+      ok: p.ok,
+      opCorrecta: p.ops[p.ok],
+      respondi: mia ? mia.op : null,
+      acerte: !!mia?.ok,
+      ganados: mia?.puntos || 0,
+      ms: mia?.ms ?? null,
+      segundos: g.segundos,
+      posAnterior: antes.findIndex((x) => x.id === j.id) + 1,
+      rachaRota: !mia?.ok && (g.idx > 0 ? rachaHasta(j, g.idx - 1) : 0)
+    };
   } else if (g.fase === 'final') {
-    out.podio = ranking.slice(0, 3).map(({ nombre, puntos }) => ({ nombre, puntos }));
+    out.podio = ranking.slice(0, 3).map(({ nombre, puntos, avatar }) => ({ nombre, puntos, avatar }));
   }
+  out.avatar = j.avatar;
   res.json(out);
 });
 

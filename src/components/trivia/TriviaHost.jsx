@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { Maximize, Play, Trophy, Users, X, Eye, ChevronRight, RotateCcw } from 'lucide-react';
 import { authFetch } from '../eftLab/api';
 import Forma from './forma';
+import Avatar, { Confeti, AnimEstilos } from './Avatar';
 import { OPCIONES, useSondeo, segundosRestantes } from './comun';
 
 const CLAVE = 'trivia-host-pin';
@@ -93,7 +94,8 @@ export default function TriviaHost({ user }) {
   const pantallaCompleta = () => document.documentElement.requestFullscreen?.().catch(() => {});
 
   return (
-    <div className="min-h-screen bg-indigo-950 text-white">
+    <div className="min-h-screen bg-indigo-950 text-white overflow-x-hidden">
+      <AnimEstilos />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 text-sm">
         <p className="font-bold tracking-wide">
           Trivia MKA1213 {pin && <span className="text-indigo-300 font-normal">· PIN {pin}</span>}
@@ -224,16 +226,20 @@ function Lobby({ g, accion }) {
           <Play className="w-6 h-6" /> Comenzar
         </button>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-3">
         {g.jugadores.length === 0 && <p className="text-indigo-300">Esperando jugadores…</p>}
-        {g.jugadores.map((j) => (
+        {g.jugadores.map((j, n) => (
           <button
             key={j.id}
             onClick={() => expulsar(j)}
             title="Sacar de la trivia"
-            className="group inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/15 hover:bg-rose-600 font-semibold text-lg"
+            className="group tv-pop relative flex flex-col items-center w-24 rounded-2xl p-2 bg-white/10 hover:bg-rose-600"
           >
-            {j.nombre} <X className="w-4 h-4 opacity-0 group-hover:opacity-100" />
+            <span className="tv-flotar" style={{ animationDelay: `${(n % 7) * 0.3}s` }}>
+              <Avatar a={j.avatar} className="w-16 h-16" />
+            </span>
+            <span className="mt-1 w-full truncate text-sm font-semibold">{j.nombre}</span>
+            <X className="absolute top-1 right-1 w-4 h-4 opacity-0 group-hover:opacity-100" />
           </button>
         ))}
       </div>
@@ -336,7 +342,17 @@ function Resultado({ g, accion }) {
           </div>
         ))}
       </div>
-      <p className="mt-5 bg-white/10 rounded-xl p-4 text-lg text-indigo-50">
+      {p.rapido && (
+        <div className="mt-5 flex items-center gap-3 bg-amber-400/15 border border-amber-300/40 rounded-xl p-3 tv-subir">
+          <span className="tv-saltar-rapido">
+            <Avatar a={p.rapido.avatar} expresion="feliz" className="w-14 h-14" />
+          </span>
+          <p className="text-lg">
+            ⚡ <b>Más rápido:</b> {p.rapido.nombre} en {(p.rapido.ms / 1000).toFixed(1).replace('.', ',')} s
+          </p>
+        </div>
+      )}
+      <p className="mt-4 bg-white/10 rounded-xl p-4 text-lg text-indigo-50">
         <b>Por qué:</b> {p.exp}
       </p>
     </section>
@@ -359,10 +375,21 @@ function Ranking({ g, accion }) {
       </p>
       <ol className="mt-6 space-y-3">
         {top.map((j, n) => (
-          <li key={j.id} className={`flex items-center gap-4 rounded-xl px-5 py-4 text-2xl font-bold ${n === 0 ? 'bg-amber-400 text-indigo-950' : 'bg-white/10'}`}>
+          <li
+            key={j.id}
+            className={`tv-subir flex items-center gap-4 rounded-xl px-5 py-3 text-2xl font-bold ${n === 0 ? 'bg-amber-400 text-indigo-950' : 'bg-white/10'}`}
+            style={{ animationDelay: `${(top.length - n) * 0.12}s` }}
+          >
             <span className="w-8 tabular-nums">{n + 1}</span>
+            <span className={n === 0 ? 'tv-saltar' : ''}>
+              <Avatar a={j.avatar} expresion={n === 0 ? 'feliz' : 'neutral'} className="w-12 h-12" />
+            </span>
             <span className="flex-1 truncate">{j.nombre}</span>
-            {j.racha >= 2 && <span className="text-base font-semibold">🔥 {j.racha}</span>}
+            {j.racha >= 2 && (
+              <span className="text-base font-semibold">
+                <span className="tv-fuego">🔥</span> {j.racha}
+              </span>
+            )}
             <span className="tabular-nums">{j.puntos}</span>
           </li>
         ))}
@@ -371,9 +398,14 @@ function Ranking({ g, accion }) {
   );
 }
 
-function Puesto({ j, lugar, alto, color }) {
+function Puesto({ j, lugar, alto, color, anim, delay }) {
   return (
-    <div className="flex flex-col items-center w-28 sm:w-40">
+    <div className="flex flex-col items-center w-28 sm:w-40 tv-subir" style={{ animationDelay: delay }}>
+      {j && (
+        <span className={anim}>
+          <Avatar a={j.avatar} expresion="feliz" className="w-20 h-20 sm:w-24 sm:h-24" />
+        </span>
+      )}
       <p className="font-black text-xl sm:text-2xl text-center truncate w-full">{j?.nombre || '—'}</p>
       <p className="text-indigo-200 tabular-nums">{j ? `${j.puntos} pts` : ''}</p>
       <div className={`${color} ${alto} w-full rounded-t-xl mt-2 flex items-start justify-center pt-3 text-4xl font-black text-indigo-950`}>
@@ -387,11 +419,12 @@ function Final({ g, nueva }) {
   const [p1, p2, p3] = g.jugadores;
   return (
     <section className="mt-6">
+      {p1 && <Confeti cantidad={140} />}
       <h2 className="text-center text-5xl font-black">¡Podio!</h2>
-      <div className="mt-10 flex items-end justify-center gap-3 sm:gap-6">
-        <Puesto j={p2} lugar="2" alto="h-32" color="bg-slate-300" />
-        <Puesto j={p1} lugar="1" alto="h-44" color="bg-amber-400" />
-        <Puesto j={p3} lugar="3" alto="h-24" color="bg-orange-400" />
+      <div className="mt-8 flex items-end justify-center gap-3 sm:gap-6">
+        <Puesto j={p2} lugar="2" alto="h-32" color="bg-slate-300" anim="tv-flotar" delay=".4s" />
+        <Puesto j={p1} lugar="1" alto="h-44" color="bg-amber-400" anim="tv-saltar" delay=".8s" />
+        <Puesto j={p3} lugar="3" alto="h-24" color="bg-orange-400" anim="tv-flotar" delay="0s" />
       </div>
       <div className="max-w-2xl mx-auto mt-10">
         <h3 className="font-bold text-indigo-200">Ranking completo</h3>

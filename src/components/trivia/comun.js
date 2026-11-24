@@ -31,5 +31,17 @@ export function useSondeo(fn, ms, activo = true) {
   }, [ms, activo]);
 }
 
+// Opciones del avatar (deben coincidir con AVATAR en server/index.js)
+export const AVATAR_OPCIONES = {
+  color: ['#f43f5e', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'],
+  forma: ['gota', 'cubo', 'fantasma'],
+  ojos: ['puntos', 'grandes', 'anime', 'lentes'],
+  sombrero: ['ninguno', 'gorro', 'corona', 'gorra', 'cuernos', 'flor', 'antena'],
+  accesorio: ['ninguno', 'bigote', 'corbata', 'audifonos', 'bufanda']
+};
+
+export const avatarAlAzar = () =>
+  Object.fromEntries(Object.entries(AVATAR_OPCIONES).map(([k, ops]) => [k, ops[Math.floor(Math.random() * ops.length)]]));
+
 /** Cuenta regresiva local a partir de los ms que informó el servidor. */
 export const segundosRestantes = (finEn) => Math.max(0, Math.ceil((finEn - Date.now()) / 1000));
