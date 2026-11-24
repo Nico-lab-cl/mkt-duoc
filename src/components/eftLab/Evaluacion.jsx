@@ -60,10 +60,17 @@ export default function Evaluacion({ user, salir }) {
     cargar();
   }, [cargar]);
 
-  const comenzar = async () => {
-    if (!window.confirm(`Tienes un solo intento y ${info.minutos} minutos desde que empieces. El tiempo corre aunque cierres la página. ¿Comenzar ahora?`)) return;
+  const esProfe = user.role === 'admin';
+
+  const comenzar = async (nuevo = false) => {
+    const msg = esProfe
+      ? nuevo
+        ? '¿Empezar un intento nuevo? Se borra tu intento anterior de práctica.'
+        : `Modo profesor: intento de práctica de ${info.minutos} minutos que no cuenta en los resultados. ¿Comenzar?`
+      : `Tienes un solo intento y ${info.minutos} minutos desde que empieces. El tiempo corre aunque cierres la página. ¿Comenzar ahora?`;
+    if (!window.confirm(msg)) return;
     try {
-      entrar(await authFetch(user, `${base}/iniciar`, { method: 'POST' }));
+      entrar(await authFetch(user, `${base}/iniciar`, { method: 'POST', body: JSON.stringify({ nuevo }) }));
     } catch (e) {
       manejarError(e);
       if (e.status === 403) cargar();
@@ -88,15 +95,23 @@ export default function Evaluacion({ user, salir }) {
           <RefreshCw className="w-4 h-4" /> Reintentar
         </button>
       )}
-      {fase === 'intro' && info && <Intro info={info} comenzar={comenzar} recargar={cargar} />}
+      {esProfe && fase !== 'cargando' && (
+        <p className="mb-4 bg-sky-50 border border-sky-200 text-sky-900 rounded-xl p-3 text-sm">
+          <b>Modo profesor:</b> puedes rendir las veces que quieras, aunque la evaluación esté cerrada. Tus intentos no
+          aparecen en los resultados ni en la estadística del curso, y siempre ves la retroalimentación.
+        </p>
+      )}
+      {fase === 'intro' && info && <Intro info={info} comenzar={() => comenzar(false)} recargar={cargar} esProfe={esProfe} />}
       {fase === 'rindiendo' && examen && <Rindiendo user={user} info={info} examen={examen} setExamen={setExamen} terminar={terminar} />}
-      {fase === 'terminado' && resultado && <Resultado info={info} resultado={resultado} recargar={verResultado} />}
+      {fase === 'terminado' && resultado && (
+        <Resultado info={info} resultado={resultado} recargar={verResultado} nuevoIntento={esProfe ? () => comenzar(true) : null} />
+      )}
     </main>
   );
 }
 
-function Intro({ info, comenzar, recargar }) {
-  const abierta = info.config?.abierta;
+function Intro({ info, comenzar, recargar, esProfe }) {
+  const abierta = info.config?.abierta || esProfe;
   return (
     <section className="bg-white rounded-2xl p-5 sm:p-7 shadow-sm">
       <p className="text-xs uppercase tracking-widest text-teal-700 font-semibold">Evaluación</p>
@@ -326,7 +341,7 @@ function Rindiendo({ user, info, examen, setExamen, terminar }) {
   );
 }
 
-function Resultado({ info, resultado, recargar }) {
+function Resultado({ info, resultado, recargar, nuevoIntento }) {
   const [soloMalas, setSoloMalas] = useState(false);
   const { intento, retro_publicada: retro, detalle } = resultado;
   const lista = (detalle || []).filter((p) => !soloMalas || p.tu !== p.ok);
@@ -351,6 +366,14 @@ function Resultado({ info, resultado, recargar }) {
         <p className="text-xs text-slate-500 mt-3">
           Décimas: {info?.decimas.map((t) => `${t.min === 100 ? '100 %' : `≥${t.min} %`} = ${t.decimas}`).join(' · ')}
         </p>
+        {nuevoIntento && (
+          <button
+            onClick={nuevoIntento}
+            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-700"
+          >
+            <RefreshCw className="w-4 h-4" /> Nuevo intento
+          </button>
+        )}
       </section>
 
       {!retro ? (

@@ -2736,11 +2736,18 @@ app.get('/api/eval/:evalId', requireAuth, async (req, res) => {
 app.post('/api/eval/:evalId/iniciar', requireAuth, async (req, res) => {
   const ev = evalDe(req, res);
   if (!ev) return;
+  // El profesor (admin) puede rendir cuantas veces quiera, aunque esté cerrada,
+  // y sus intentos no cuentan en los resultados del curso.
+  const esProfe = req.user.role === 'admin';
   try {
     let row = await intentoDe(ev, req.user.id);
+    if (row && esProfe && req.body?.nuevo === true) {
+      await pool.query('DELETE FROM eval_intentos WHERE id = $1', [row.id]);
+      row = null;
+    }
     if (!row) {
       const config = await evalConfig(ev.id);
-      if (!config.abierta) return res.status(403).json({ error: 'La evaluación todavía no está abierta' });
+      if (!config.abierta && !esProfe) return res.status(403).json({ error: 'La evaluación todavía no está abierta' });
       const orden = barajarSeguro(ev.preguntas).map((p) => ({ id: p.id, ops: barajarSeguro([0, 1, 2, 3]) }));
       await pool.query(
         `INSERT INTO eval_intentos (user_id, eval_id, group_id, orden, deadline)
@@ -2820,8 +2827,8 @@ app.get('/api/eval/:evalId/resultado', requireAuth, async (req, res) => {
     if (!row || !terminado(row)) return res.status(409).json({ error: 'Aún no terminas la evaluación' });
     res.json({
       intento: resumenIntento(ev, row),
-      retro_publicada: config.retro_publicada,
-      detalle: config.retro_publicada ? detalleIntento(ev, row) : null
+      retro_publicada: config.retro_publicada || req.user.role === 'admin',
+      detalle: config.retro_publicada || req.user.role === 'admin' ? detalleIntento(ev, row) : null
     });
   } catch (err) {
     console.error('Error leyendo resultado:', err);
@@ -2841,7 +2848,7 @@ app.get('/api/admin/eval/:evalId', requireAuthAdmin, async (req, res) => {
        FROM users u
        LEFT JOIN groups g ON g.id = u.group_id
        LEFT JOIN eval_intentos i ON i.user_id = u.id AND i.eval_id = $1
-       WHERE u.role = 'student' OR i.id IS NOT NULL
+       WHERE u.role = 'student' OR (i.id IS NOT NULL AND u.role <> 'admin')
        ORDER BY g.name NULLS LAST, u.full_name`,
       [ev.id]
     );
@@ -2912,7 +2919,12 @@ app.get('/api/admin/eval/:evalId/banco', requireAuthAdmin, async (req, res) => {
   const ev = evalDe(req, res);
   if (!ev) return;
   try {
-    const r = await pool.query('SELECT respuestas FROM eval_intentos WHERE eval_id = $1 AND finished_at IS NOT NULL', [ev.id]);
+    // Las estadísticas excluyen los intentos de práctica del profesor
+    const r = await pool.query(
+      `SELECT i.respuestas FROM eval_intentos i JOIN users u ON u.id = i.user_id
+       WHERE i.eval_id = $1 AND i.finished_at IS NOT NULL AND u.role <> 'admin'`,
+      [ev.id]
+    );
     const preguntas = ev.preguntas.map((p) => {
       const elegidas = [0, 0, 0, 0];
       let respondidas = 0;
