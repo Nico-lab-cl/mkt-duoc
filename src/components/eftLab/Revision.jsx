@@ -376,6 +376,14 @@ export default function Revision({ user }) {
             {p.label}
           </button>
         ))}
+        <a
+          href="/eft-lab/trivia"
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-700 text-white hover:bg-indigo-800"
+        >
+          Trivia en vivo ↗
+        </a>
       </nav>
       {tab === 'lab' ? <RevisionLab user={user} /> : <RevisionEval user={user} />}
     </>

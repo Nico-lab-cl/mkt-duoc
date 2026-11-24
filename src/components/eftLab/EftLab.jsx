@@ -13,6 +13,7 @@ import Simulacro from './Simulacro';
 import Entregable from './Entregable';
 import Revision from './Revision';
 import Evaluacion from './Evaluacion';
+import TriviaHost from '../trivia/TriviaHost';
 
 /**
  * Laboratorio EFT · Eje 1 (MKA1213 Inbound Marketing II).
@@ -79,13 +80,15 @@ function Encabezado({ children, subtitulo, titulo = 'Eje 1: Contenidos, Flywheel
 const MODOS = {
   lab: { ruta: RUTA, titulo: 'Eje 1: Contenidos, Flywheel y diseño', doc: `Laboratorio EFT · ${MARCA}` },
   revision: { ruta: `${RUTA}/revision`, titulo: 'Revisión docente', doc: 'Revisión Laboratorio EFT' },
-  evaluacion: { ruta: `${RUTA}/evaluacion`, titulo: 'Evaluación: Caso Smart Home', doc: 'Evaluación MKA1213' }
+  evaluacion: { ruta: `${RUTA}/evaluacion`, titulo: 'Evaluación: Caso Smart Home', doc: 'Evaluación MKA1213' },
+  trivia: { ruta: `${RUTA}/trivia`, titulo: 'Trivia en vivo', doc: 'Trivia MKA1213' }
 };
 
 const modoInicial = () => {
   const p = window.location.pathname.replace(/\/$/, '');
   if (p === MODOS.revision.ruta) return 'revision';
   if (p === MODOS.evaluacion.ruta) return 'evaluacion';
+  if (p === MODOS.trivia.ruta) return 'trivia';
   return 'lab';
 };
 
@@ -151,6 +154,21 @@ export default function EftLab() {
         ) : (
           <p className="max-w-6xl mx-auto p-6">Esta página es solo para el profesor.</p>
         )}
+      </div>
+    );
+  }
+
+  if (modo === 'trivia') {
+    return currentUser.role === 'admin' ? (
+      <TriviaHost user={currentUser} />
+    ) : (
+      <div className="min-h-screen bg-slate-50">
+        <Encabezado titulo={titulo} subtitulo="Esta página es para el profesor.">
+          <Usuario user={currentUser} salir={salir} />
+        </Encabezado>
+        <p className="max-w-6xl mx-auto p-6">
+          Para jugar, entra a <a className="text-teal-700 underline" href="/trivia">/trivia</a> con el PIN que muestra la pantalla.
+        </p>
       </div>
     );
   }

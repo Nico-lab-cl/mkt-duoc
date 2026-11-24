@@ -2944,6 +2944,211 @@ app.get('/api/admin/eval/:evalId/banco', requireAuthAdmin, async (req, res) => {
   }
 });
 
+// ==========================================
+// TRIVIA EN VIVO (tipo Kahoot) — profesor en /eft-lab/trivia, alumnos en /trivia
+// Las partidas viven en memoria: duran una clase y los celulares consultan el
+// estado cada segundo (sin websockets). Si el servidor se reinicia, la partida
+// en curso se pierde.
+// ==========================================
+
+const TRIVIAS = new Map();
+const TRIVIA_MAX_JUGADORES = 200;
+const TRIVIA_TTL_MS = 4 * 60 * 60 * 1000;
+
+setInterval(() => {
+  const limite = Date.now() - TRIVIA_TTL_MS;
+  for (const [pin, g] of TRIVIAS) if (g.actualizado < limite) TRIVIAS.delete(pin);
+}, 10 * 60 * 1000).unref();
+
+const nuevoPin = () => {
+  let pin;
+  do pin = String(crypto.randomInt(100000, 1000000));
+  while (TRIVIAS.has(pin));
+  return pin;
+};
+
+const triviaDe = (req, res) => {
+  const g = TRIVIAS.get(String(req.params.pin));
+  if (!g) res.status(404).json({ error: 'No existe una trivia con ese PIN (o ya terminó).' });
+  else g.actualizado = Date.now();
+  return g;
+};
+
+const restanteMs = (g) => (g.fase === 'pregunta' ? Math.max(0, g.inicio + g.segundos * 1000 - Date.now()) : 0);
+
+// Pasa a resultados cuando se acaba el tiempo o ya respondieron todos
+const triviaAvanzar = (g) => {
+  if (g.fase !== 'pregunta') return;
+  const jugadores = [...g.jugadores.values()];
+  const todos = jugadores.length > 0 && jugadores.every((j) => j.respuestas[g.idx]);
+  if (restanteMs(g) === 0 || todos) g.fase = 'resultado';
+};
+
+const triviaRanking = (g) =>
+  [...g.jugadores.values()]
+    .map((j) => ({ id: j.id, nombre: j.nombre, puntos: j.puntos, racha: j.racha }))
+    .sort((a, b) => b.puntos - a.puntos || a.nombre.localeCompare(b.nombre));
+
+const triviaPregunta = (g, conRespuesta) => {
+  const p = g.preguntas[g.idx];
+  if (!p) return null;
+  const base = { q: p.q, ops: p.ops, eje: p.eje };
+  if (!conRespuesta) return base;
+  const conteo = [0, 0, 0, 0];
+  for (const j of g.jugadores.values()) {
+    const r = j.respuestas[g.idx];
+    if (r) conteo[r.op]++;
+  }
+  return { ...base, ok: p.ok, exp: p.exp, conteo };
+};
+
+app.post('/api/trivia', requireAuthAdmin, (req, res) => {
+  const cantidad = Math.min(30, Math.max(3, Number(req.body?.cantidad) || 10));
+  const segundos = Math.min(120, Math.max(10, Number(req.body?.segundos) || 30));
+  const eje = Number(req.body?.eje) || null;
+  const fuente = EVAL_EFT.preguntas.filter((p) => !eje || p.eje === eje);
+  const preguntas = barajarSeguro(fuente)
+    .slice(0, cantidad)
+    .map((p) => {
+      // Mismo orden de alternativas para todos (la pantalla y los celulares usan los mismos colores)
+      const orden = barajarSeguro([0, 1, 2, 3]);
+      return { id: p.id, eje: p.eje, q: p.q, ops: orden.map((i) => p.ops[i]), ok: orden.indexOf(p.ok), exp: p.exp };
+    });
+  const pin = nuevoPin();
+  TRIVIAS.set(pin, {
+    pin,
+    hostId: req.user.id,
+    creado: Date.now(),
+    actualizado: Date.now(),
+    preguntas,
+    segundos,
+    idx: -1,
+    fase: 'lobby',
+    inicio: 0,
+    jugadores: new Map()
+  });
+  res.json({ pin });
+});
+
+app.get('/api/trivia/:pin/host', requireAuthAdmin, (req, res) => {
+  const g = triviaDe(req, res);
+  if (!g) return;
+  triviaAvanzar(g);
+  const ranking = triviaRanking(g);
+  res.json({
+    pin: g.pin,
+    fase: g.fase,
+    idx: g.idx,
+    total: g.preguntas.length,
+    segundos: g.segundos,
+    restanteMs: restanteMs(g),
+    jugadores: ranking,
+    respondidas: g.idx >= 0 ? [...g.jugadores.values()].filter((j) => j.respuestas[g.idx]).length : 0,
+    pregunta: g.fase === 'lobby' || g.fase === 'final' ? null : triviaPregunta(g, g.fase !== 'pregunta'),
+    ejes: EVAL_EFT.ejes
+  });
+});
+
+app.post('/api/trivia/:pin/host/accion', requireAuthAdmin, (req, res) => {
+  const g = triviaDe(req, res);
+  if (!g) return;
+  const { accion, pid } = req.body || {};
+  triviaAvanzar(g);
+  if (accion === 'siguiente') {
+    if (g.idx + 1 >= g.preguntas.length) g.fase = 'final';
+    else {
+      g.idx += 1;
+      g.fase = 'pregunta';
+      g.inicio = Date.now();
+    }
+  } else if (accion === 'revelar' && g.fase === 'pregunta') g.fase = 'resultado';
+  else if (accion === 'ranking' && g.fase === 'resultado') g.fase = 'ranking';
+  else if (accion === 'terminar') g.fase = 'final';
+  else if (accion === 'expulsar' && pid) g.jugadores.delete(String(pid));
+  else return res.status(400).json({ error: 'Acción no válida en este momento' });
+  res.json({ ok: true, fase: g.fase, idx: g.idx });
+});
+
+app.post('/api/trivia/:pin/unirse', (req, res) => {
+  const g = triviaDe(req, res);
+  if (!g) return;
+  if (g.fase === 'final') return res.status(409).json({ error: 'Esta trivia ya terminó.' });
+  const nombre = String(req.body?.nombre || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+  if (nombre.length < 2) return res.status(400).json({ error: 'Escribe un nombre de al menos 2 letras.' });
+  if (g.jugadores.size >= TRIVIA_MAX_JUGADORES) return res.status(409).json({ error: 'La trivia está llena.' });
+  const usados = new Set([...g.jugadores.values()].map((j) => j.nombre.toLowerCase()));
+  if (usados.has(nombre.toLowerCase())) return res.status(409).json({ error: 'Ese nombre ya está en uso. Prueba con otro.' });
+  const id = crypto.randomBytes(6).toString('hex');
+  const tk = crypto.randomBytes(16).toString('hex');
+  g.jugadores.set(id, { id, tk, nombre, puntos: 0, racha: 0, respuestas: {} });
+  res.json({ pid: id, tk, nombre });
+});
+
+const triviaJugador = (g, req, res) => {
+  const pid = String(req.query.pid || req.body?.pid || '');
+  const tk = String(req.query.tk || req.body?.tk || '');
+  const j = g.jugadores.get(pid);
+  if (!j || j.tk !== tk) {
+    res.status(401).json({ error: 'Ya no estás en esta trivia. Vuelve a unirte.', code: 'fuera' });
+    return null;
+  }
+  return j;
+};
+
+app.get('/api/trivia/:pin/jugador', (req, res) => {
+  const g = triviaDe(req, res);
+  if (!g) return;
+  const j = triviaJugador(g, req, res);
+  if (!j) return;
+  triviaAvanzar(g);
+  const ranking = triviaRanking(g);
+  const posicion = ranking.findIndex((x) => x.id === j.id) + 1;
+  const mia = g.idx >= 0 ? j.respuestas[g.idx] : null;
+  const out = {
+    fase: g.fase,
+    idx: g.idx,
+    total: g.preguntas.length,
+    nombre: j.nombre,
+    puntos: j.puntos,
+    racha: j.racha,
+    posicion,
+    jugadores: ranking.length,
+    restanteMs: restanteMs(g)
+  };
+  if (g.fase === 'pregunta') {
+    out.pregunta = triviaPregunta(g, false);
+    out.respondi = mia ? mia.op : null;
+  } else if (g.fase === 'resultado' || g.fase === 'ranking') {
+    const p = g.preguntas[g.idx];
+    out.resultado = { ok: p.ok, opCorrecta: p.ops[p.ok], respondi: mia ? mia.op : null, acerte: !!mia?.ok, ganados: mia?.puntos || 0 };
+  } else if (g.fase === 'final') {
+    out.podio = ranking.slice(0, 3).map(({ nombre, puntos }) => ({ nombre, puntos }));
+  }
+  res.json(out);
+});
+
+app.post('/api/trivia/:pin/responder', (req, res) => {
+  const g = triviaDe(req, res);
+  if (!g) return;
+  const j = triviaJugador(g, req, res);
+  if (!j) return;
+  triviaAvanzar(g);
+  const op = req.body?.op;
+  if (g.fase !== 'pregunta') return res.status(409).json({ error: 'Se acabó el tiempo' });
+  if (!Number.isInteger(op) || op < 0 || op > 3) return res.status(400).json({ error: 'Respuesta inválida' });
+  if (j.respuestas[g.idx]) return res.status(409).json({ error: 'Ya respondiste' });
+  const ms = Date.now() - g.inicio;
+  const ok = op === g.preguntas[g.idx].ok;
+  // Estilo Kahoot: entre 500 y 1000 puntos según la rapidez, más un bono por racha
+  const racha = ok ? j.racha + 1 : 0;
+  const puntos = ok ? Math.round(1000 * (1 - Math.min(1, ms / (g.segundos * 1000)) / 2)) + Math.min(racha - 1, 5) * 50 : 0;
+  j.respuestas[g.idx] = { op, ms, ok, puntos };
+  j.puntos += puntos;
+  j.racha = racha;
+  triviaAvanzar(g);
+  res.json({ ok: true });
+});
+
 // ESTO ES EL FALLBACK: Captura todo lo que no sea API (SPA)
 const indexHtmlPath = path.resolve(__dirname, '../dist/index.html');
 app.use((req, res) => {

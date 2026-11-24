@@ -295,6 +295,9 @@ function Banco({ user, ejes }) {
   const [banco, setBanco] = useState(null);
   const [orden, setOrden] = useState('original');
   const [eje, setEje] = useState('');
+  // Respuestas ocultas por defecto, para poder proyectar el banco y revelarlas en clase
+  const [reveladas, setReveladas] = useState(() => new Set());
+  const [proyectar, setProyectar] = useState(false);
 
   useEffect(() => {
     authFetch(user, `${base}/banco`).then(setBanco).catch(() => setBanco({ error: true }));
@@ -306,10 +309,29 @@ function Banco({ user, ejes }) {
   let lista = banco.preguntas.filter((p) => !eje || String(p.eje) === eje);
   if (orden === 'dificiles') lista = [...lista].sort((a, b) => (a.acierto ?? 101) - (b.acierto ?? 101));
 
+  const alternar = (id) =>
+    setReveladas((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const todas = (mostrar) => setReveladas(mostrar ? new Set(lista.map((p) => p.id)) : new Set());
+
   return (
     <section className="space-y-3">
       <div className="bg-white rounded-xl p-3 shadow-sm flex flex-wrap gap-2 items-center text-sm">
         <span className="text-slate-600">{banco.intentos} intentos terminados</span>
+        <button onClick={() => todas(true)} className="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">
+          Mostrar todas las respuestas
+        </button>
+        <button onClick={() => todas(false)} className="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">
+          Ocultar todas
+        </button>
+        <label className="inline-flex items-center gap-2 px-2">
+          <input type="checkbox" checked={proyectar} onChange={(e) => setProyectar(e.target.checked)} />
+          Modo proyección (letra grande, sin estadísticas)
+        </label>
         <select className="rounded-lg border border-slate-300 p-2 bg-white" value={eje} onChange={(e) => setEje(e.target.value)}>
           <option value="">Todos los ejes</option>
           {Object.entries(ejes || {}).map(([k, v]) => (
@@ -323,31 +345,50 @@ function Banco({ user, ejes }) {
           <option value="dificiles">Más falladas primero</option>
         </select>
       </div>
-      {lista.map((p) => (
-        <div key={p.id} className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex flex-wrap justify-between gap-2 text-xs text-slate-500">
-            <span>
-              {p.id} · {ejes?.[p.eje]}
-            </span>
-            <span className={p.acierto === null ? '' : p.acierto < 40 ? 'text-rose-700 font-semibold' : p.acierto < 70 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
-              {p.acierto === null ? 'Sin respuestas aún' : `${p.acierto} % de acierto (${p.respondidas} respuestas)`}
-            </span>
-          </div>
-          <p className="mt-2 font-medium">{p.q}</p>
-          <ul className="mt-2 space-y-1 text-sm">
-            {p.ops.map((o, j) => (
-              <li key={j} className={`rounded-lg px-3 py-1.5 flex justify-between gap-3 ${j === p.ok ? 'bg-emerald-50 text-emerald-900' : 'text-slate-700'}`}>
-                <span>
-                  <b>{LETRAS[j]}.</b> {o}
-                  {j === p.ok && <b> · correcta</b>}
+      {lista.map((p, n) => {
+        const ver = reveladas.has(p.id);
+        return (
+          <div key={p.id} className={`bg-white rounded-xl shadow-sm ${proyectar ? 'p-6 sm:p-8' : 'p-4'}`}>
+            <div className={`flex flex-wrap justify-between gap-2 text-slate-500 ${proyectar ? 'text-sm' : 'text-xs'}`}>
+              <span>{proyectar ? `Pregunta ${n + 1} · ${ejes?.[p.eje]}` : `${p.id} · ${ejes?.[p.eje]}`}</span>
+              {!proyectar && ver && (
+                <span className={p.acierto === null ? '' : p.acierto < 40 ? 'text-rose-700 font-semibold' : p.acierto < 70 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
+                  {p.acierto === null ? 'Sin respuestas aún' : `${p.acierto} % de acierto (${p.respondidas} respuestas)`}
                 </span>
-                {p.respondidas > 0 && <span className="shrink-0 text-xs text-slate-500">{p.elegidas[j]}</span>}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-sm text-slate-600 bg-slate-50 rounded-lg p-2.5">{p.exp}</p>
-        </div>
-      ))}
+              )}
+            </div>
+            <p className={`mt-2 font-medium ${proyectar ? 'text-2xl leading-snug' : ''}`}>{p.q}</p>
+            <ul className={`mt-3 space-y-1.5 ${proyectar ? 'text-lg' : 'text-sm'}`}>
+              {p.ops.map((o, j) => {
+                const correcta = ver && j === p.ok;
+                return (
+                  <li
+                    key={j}
+                    className={`rounded-lg px-3 py-2 flex justify-between gap-3 transition ${
+                      correcta ? 'bg-emerald-100 text-emerald-900 ring-2 ring-emerald-500' : ver ? 'text-slate-400' : 'text-slate-700 bg-slate-50'
+                    }`}
+                  >
+                    <span>
+                      <b>{LETRAS[j]}.</b> {o}
+                      {correcta && <b> · correcta</b>}
+                    </span>
+                    {!proyectar && ver && p.respondidas > 0 && <span className="shrink-0 text-xs text-slate-500">{p.elegidas[j]}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+            {ver && <p className={`mt-3 text-slate-700 bg-emerald-50 rounded-lg p-3 ${proyectar ? 'text-lg' : 'text-sm'}`}>{p.exp}</p>}
+            <button
+              onClick={() => alternar(p.id)}
+              className={`mt-3 inline-flex items-center gap-2 rounded-lg font-semibold ${proyectar ? 'px-5 py-3 text-base' : 'px-4 py-2 text-sm'} ${
+                ver ? 'border border-slate-300 text-slate-700 hover:bg-slate-50' : 'bg-teal-600 text-white hover:bg-teal-700'
+              }`}
+            >
+              <Eye className="w-4 h-4" /> {ver ? 'Ocultar respuesta' : 'Mostrar respuesta'}
+            </button>
+          </div>
+        );
+      })}
     </section>
   );
 }
